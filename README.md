@@ -28,28 +28,36 @@ KdxDesignerは、PLCプログラムの設計・管理を行うWindowsデスク�
 
 ## 開発環境のセットアップ
 
-### 必要なツール
+**📖 詳細なセットアップ手順は [SETUP.md](SETUP.md) を参照してください。**
 
-- Visual Studio 2022 または VS Code
-- .NET 8.0 SDK
-- Git
-
-### ビルド手順
+### クイックスタート
 
 ```bash
-# リポジトリのクローン
+# 1. リポジトリのクローン
 git clone https://github.com/KANAMORI-SYSTEM-Inc/KdxDesigner.git
 cd KdxDesigner
 
-# 依存関係の復元
+# 2. 環境変数の設定（初回のみ）
+Copy-Item .env.example .env
+# .envファイルを編集してGITHUB_PACKAGES_TOKEN等を設定
+
+# 3. 依存関係の復元
 dotnet restore
 
-# デバッグビルド
+# 4. デバッグビルド
 dotnet build
 
-# 実行
+# 5. 実行
 dotnet run --project src/KdxDesigner/KdxDesigner.csproj
 ```
+
+### 必要な環境変数
+
+- `GITHUB_PACKAGES_TOKEN` - GitHub Packagesからパッケージを取得するために必要
+- `SUPABASE_URL` - Supabaseプロジェクトの接続URL
+- `SUPABASE_ANON_KEY` - Supabase認証キー
+
+詳細は [SETUP.md](SETUP.md) を参照してください。
 
 ## 依存パッケージ
 
