@@ -1,0 +1,123 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # v2025.10.0, v2025.11.1 など
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Extract version from tag
+      id: get_version
+      shell: pwsh
+      run: |
+        $version = "${{ github.ref }}" -replace 'refs/tags/v', ''
+        $tagName = "${{ github.ref }}" -replace 'refs/tags/', ''
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "TAG_NAME=$tagName" >> $env:GITHUB_OUTPUT
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Release
+      run: dotnet build -c Release --no-restore
+
+    - name: Run tests (if any)
+      run: dotnet test -c Release --no-build --verbosity normal
+      continue-on-error: true
+
+    - name: Publish application
+      shell: pwsh
+      run: |
+        $publishDir = "publish"
+        dotnet publish src/KdxDesigner/KdxDesigner.csproj -c Release -o $publishDir --no-build
+
+        # Create ZIP archive
+        $version = "${{ steps.get_version.outputs.VERSION }}"
+        $zipName = "KdxDesigner-$version-win-x64.zip"
+        Compress-Archive -Path "$publishDir\*" -DestinationPath $zipName
+        echo "ZIP_NAME=$zipName" >> $env:GITHUB_OUTPUT
+
+    - name: Read CHANGELOG
+      id: changelog
+      shell: pwsh
+      run: |
+        if (Test-Path "CHANGELOG.md") {
+          $content = Get-Content "CHANGELOG.md" -Raw
+          # Extract version section
+          $version = "${{ steps.get_version.outputs.VERSION }}"
+          if ($content -match "(?s)## \[$version\](.+?)(?=## \[|\z)") {
+            $changelogContent = $matches[1].Trim()
+          } else {
+            $changelogContent = "Release $version"
+          }
+
+          # GitHub Actions multiline output
+          "CONTENT<<EOF" >> $env:GITHUB_OUTPUT
+          $changelogContent >> $env:GITHUB_OUTPUT
+          "EOF" >> $env:GITHUB_OUTPUT
+        } else {
+          "CONTENT=Release ${{ steps.get_version.outputs.VERSION }}" >> $env:GITHUB_OUTPUT
+        }
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.TAG_NAME }}
+        name: KdxDesigner ${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## 🖥️ KdxDesigner ${{ steps.get_version.outputs.VERSION }}
+
+          ${{ steps.changelog.outputs.CONTENT }}
+
+          ### 📥 Installation
+
+          1. ZIPファイルをダウンロード
+          2. 任意のフォルダに解凍
+          3. `KdxDesigner.exe` を実行
+
+          ### 📋 System Requirements
+
+          - OS: Windows 10/11
+          - .NET: 8.0 Runtime
+          - Database: Supabase (PostgreSQL)
+
+          ### 📦 Included Packages
+
+          このリリースには以下のKdxProjectsパッケージが含まれています:
+          - Kdx.Contracts
+          - Kdx.Core
+          - Kdx.Infrastructure
+          - Kdx.Infrastructure.Supabase
+          - Kdx.Contracts.ViewModels
+
+          ### 📚 Documentation
+
+          - [README](https://github.com/KANAMORI-SYSTEM-Inc/KdxDesigner/blob/master/README.md)
+          - [UPDATE-PACKAGES Guide](https://github.com/KANAMORI-SYSTEM-Inc/KdxDesigner/blob/master/UPDATE-PACKAGES.md)
+        files: KdxDesigner-*.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: KdxDesigner-${{ steps.get_version.outputs.VERSION }}
+        path: KdxDesigner-*.zip
+        retention-days: 90
