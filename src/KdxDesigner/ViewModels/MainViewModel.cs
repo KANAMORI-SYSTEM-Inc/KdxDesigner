@@ -113,7 +113,7 @@ namespace KdxDesigner.ViewModels
         public List<CylinderControlBox> _selectedCylinderControlBoxes = new(); // 選択されたコントロールボックスのリスト
 
 
-        // DIコンストラクタ（推奨）
+        // DIコンストラクタ
         public MainViewModel(IAccessRepository repository, IAuthenticationService authService, SupabaseConnectionHelper? supabaseHelper = null)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
