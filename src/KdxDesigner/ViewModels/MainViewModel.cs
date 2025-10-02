@@ -91,9 +91,6 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty] private bool _isCylinderOutput = false;
         [ObservableProperty] private bool _isDebug = false;
 
-        [ObservableProperty] private int _memoryProgressMax;
-        [ObservableProperty] private int _memoryProgressValue;
-        [ObservableProperty] private string _memoryStatusMessage = string.Empty;
         [ObservableProperty] private List<OutputError> _outputErrors = new();
 
         // メモリ設定状態の表示用プロパティ
@@ -858,18 +855,15 @@ namespace KdxDesigner.ViewModels
 
             try
             {
-                MemoryStatusMessage = "処理を開始します...";
                 OutputErrors.Clear();
                 var allGeneratedErrors = new List<OutputError>();
                 var allOutputRows = new List<LadderCsvRow>();
 
                 // --- 1. データ準備 ---
-                MemoryStatusMessage = "データ準備中...";
                 var (data, prepErrors) = PrepareDataForOutput();
                 allGeneratedErrors.AddRange(prepErrors);
 
                 // --- 2. 各ビルダーによるラダー生成 ---
-                MemoryStatusMessage = "ラダー生成中...";
 
                 // ProcessBuilder (out パラメータ方式を維持、または新しい方式に修正)
                 var processRows = ProcessBuilder.GenerateAllLadderCsvRows(
@@ -942,8 +936,7 @@ namespace KdxDesigner.ViewModels
                 // --- 4. CSVエクスポート ---
                 if (OutputErrors.Any(e => e.IsCritical))
                 {
-                    MemoryStatusMessage = "致命的なエラーのため、CSV出力を中止しました。";
-                    MessageBox.Show(MemoryStatusMessage, "エラー");
+                    MessageBox.Show("致命的なエラーのため、CSV出力を中止しました。", "エラー");
                     return;
                 }
                 ExportLadderCsvFile(processRows, "Process.csv", "全ラダー");
@@ -958,7 +951,6 @@ namespace KdxDesigner.ViewModels
                 var errorMessage = $"出力処理中に致命的なエラーが発生しました: {ex.Message}";
                 var stackMessage = $"出力処理中に致命的なエラーが発生しました: {ex.StackTrace}";
 
-                MemoryStatusMessage = errorMessage;
                 MessageBox.Show(errorMessage, "エラー");
                 MessageBox.Show(stackMessage, "エラー");
 
@@ -975,7 +967,6 @@ namespace KdxDesigner.ViewModels
 
             try
             {
-                MemoryStatusMessage = $"{categoryName} CSVファイル出力中...";
                 string csvPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
                 LadderCsvExporter.ExportLadderCsv(rows, csvPath);
             }
@@ -1153,19 +1144,51 @@ namespace KdxDesigner.ViewModels
             IsMemoryConfigured = false;
             if (!ValidateMemorySettings()) return;
 
-            // 3. データ準備
-            var prepData = PrepareDataForMemorySetting();
-
-            // 4. Mnemonic/Timerテーブルへの事前保存
-            if (prepData == null)
+            // 進捗ウィンドウを作成
+            var progressViewModel = new MemoryProgressViewModel();
+            var progressWindow = new Views.MemoryProgressWindow
             {
-                // データ準備に失敗した場合、ユーザーに通知して処理を中断
-                MessageBox.Show("データ準備に失敗しました。CycleまたはPLCが選択されているか確認してください。", "エラー");
-                return;
-            }
+                DataContext = progressViewModel,
+                Owner = Application.Current.MainWindow
+            };
 
-            SaveMnemonicAndTimerDevices(prepData.Value);
-            await SaveMemoriesToMemoryTableAsync(prepData.Value);
+            // 進捗ウィンドウを非モーダルで表示
+            progressWindow.Show();
+
+            // UIスレッドをブロックしないようにTask.Runで実行
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    progressViewModel.UpdateStatus("メモリ設定を開始しています...");
+                    await Task.Delay(100); // UIの更新を待つ
+
+                    // 3. データ準備
+                    progressViewModel.UpdateStatus("データを準備しています...");
+                    var prepData = await Application.Current.Dispatcher.InvokeAsync(() => PrepareDataForMemorySetting());
+
+                    // 4. Mnemonic/Timerテーブルへの事前保存
+                    if (prepData == null)
+                    {
+                        // データ準備に失敗した場合、ユーザーに通知して処理を中断
+                        progressViewModel.MarkError("データ準備に失敗しました");
+                        Application.Current.Dispatcher.Invoke(() =>
+                            MessageBox.Show("データ準備に失敗しました。CycleまたはPLCが選択されているか確認してください。", "エラー"));
+                        return;
+                    }
+
+                    await Application.Current.Dispatcher.InvokeAsync(() => SaveMnemonicAndTimerDevices(prepData.Value, progressViewModel));
+                    await SaveMemoriesToMemoryTableAsync(prepData.Value, progressViewModel);
+
+                    progressViewModel.MarkCompleted();
+                }
+                catch (Exception ex)
+                {
+                    progressViewModel.MarkError(ex.Message);
+                    Application.Current.Dispatcher.Invoke(() =>
+                        MessageBox.Show($"メモリ設定中にエラーが発生しました: {ex.Message}", "エラー"));
+                }
+            });
         }
 
         private bool ValidateMemorySettings()
@@ -1235,13 +1258,22 @@ namespace KdxDesigner.ViewModels
         private void SaveMnemonicAndTimerDevices(
             (List<ProcessDetail> details,
             List<Cylinder> cylinders,
-            List<Operation> operations, List<IO> ioList, List<Timer> timers) prepData)
+            List<Operation> operations, List<IO> ioList, List<Timer> timers) prepData,
+            MemoryProgressViewModel? progressViewModel = null)
         {
-            MemoryStatusMessage = "ニーモニックデバイス情報を保存中...";
+            progressViewModel?.UpdateStatus("既存のニーモニックデバイスを削除中...");
             _mnemonicService!.DeleteAllMnemonicDevices();
+
+            progressViewModel?.UpdateStatus($"工程デバイスを保存中... ({Processes.Count}件)");
             _mnemonicService!.SaveMnemonicDeviceProcess(Processes.ToList(), ProcessDeviceStartL, SelectedPlc!.Id);
+
+            progressViewModel?.UpdateStatus($"工程詳細デバイスを保存中... ({prepData.details.Count}件)");
             _mnemonicService!.SaveMnemonicDeviceProcessDetail(prepData.details, DetailDeviceStartL, SelectedPlc!.Id);
+
+            progressViewModel?.UpdateStatus($"操作デバイスを保存中... ({prepData.operations.Count}件)");
             _mnemonicService!.SaveMnemonicDeviceOperation(prepData.operations, OperationDeviceStartM, SelectedPlc!.Id);
+
+            progressViewModel?.UpdateStatus($"シリンダーデバイスを保存中... ({prepData.cylinders.Count}件)");
             _mnemonicService!.SaveMnemonicDeviceCY(prepData.cylinders, CylinderDeviceStartM, SelectedPlc!.Id);
 
             if (_repository == null || _timerService == null || _errorService == null || _prosTimeService == null || _speedService == null)
@@ -1263,29 +1295,44 @@ namespace KdxDesigner.ViewModels
                 return;
             }
 
+            progressViewModel?.UpdateStatus("既存のタイマーデバイスを削除中...");
             _repository.DeleteAllMnemonicTimerDevices();
+
+            progressViewModel?.UpdateStatus("工程詳細のタイマーを保存中...");
             _timerService.SaveWithDetail(timer, details, DeviceStartT, SelectedPlc!.Id, ref timerCount);
+
+            progressViewModel?.UpdateStatus("操作のタイマーを保存中...");
             _timerService.SaveWithOperation(timer, operations, DeviceStartT, SelectedPlc!.Id, ref timerCount);
+
+            progressViewModel?.UpdateStatus("シリンダーのタイマーを保存中...");
             _timerService.SaveWithCY(timer, cylinders, DeviceStartT, SelectedPlc!.Id, ref timerCount);
+            progressViewModel?.AddLog($"タイマーデバイス保存完了 (合計: {timerCount}件)");
 
             // Errorテーブルの保存
+            progressViewModel?.UpdateStatus("エラーテーブルを保存中...");
             _errorService!.DeleteErrorTable();
             _errorService!.SaveMnemonicDeviceOperation(prepData.operations, prepData.ioList, ErrorDeviceStartM, ErrorDeviceStartT, SelectedPlc!.Id, SelectedCycle!.Id);
+            progressViewModel?.AddLog("エラーテーブル保存完了");
 
             // ProsTimeテーブルの保存
+            progressViewModel?.UpdateStatus("工程時間テーブルを保存中...");
             _prosTimeService!.DeleteProsTimeTable();
             _prosTimeService!.SaveProsTime(prepData.operations, ProsTimeStartZR, ProsTimePreviousStartZR, CyTimeStartZR, SelectedPlc!.Id);
+            progressViewModel?.AddLog("工程時間テーブル保存完了");
 
             // Speedテーブルの保存
+            progressViewModel?.UpdateStatus("速度テーブルを保存中...");
             _speedService!.DeleteSpeedTable();
             _speedService!.Save(prepData.cylinders, CylinderDeviceStartD, SelectedPlc!.Id);
+            progressViewModel?.AddLog("速度テーブル保存完了");
         }
 
         // Memoryテーブルへの保存処理
         private async Task SaveMemoriesToMemoryTableAsync(
             (List<ProcessDetail> details,
             List<Cylinder> cylinders,
-            List<Operation> operations, List<IO> ioList, List<Timer> timers) prepData)
+            List<Operation> operations, List<IO> ioList, List<Timer> timers) prepData,
+            MemoryProgressViewModel? progressViewModel = null)
         {
             if (_memoryService == null)
             {
@@ -1293,6 +1340,7 @@ namespace KdxDesigner.ViewModels
                 return;
             }
 
+            progressViewModel?.UpdateStatus("デバイス情報を取得中...");
             var devices = _mnemonicService!.GetMnemonicDevice(SelectedPlc!.Id);
             var timerDevices = _timerService!.GetMnemonicTimerDevice(SelectedPlc!.Id, SelectedCycle!.Id);
 
@@ -1301,19 +1349,22 @@ namespace KdxDesigner.ViewModels
             var devicesO = devices.Where(m => m.MnemonicId == (int)MnemonicType.Operation).ToList();
             var devicesC = devices.Where(m => m.MnemonicId == (int)MnemonicType.CY).ToList();
 
-            MemoryProgressMax = (IsProcessMemory ? devicesP.Count : 0) +
+            progressViewModel?.AddLog($"取得したデバイス数 - 工程: {devicesP.Count}, 工程詳細: {devicesD.Count}, 操作: {devicesO.Count}, シリンダー: {devicesC.Count}, タイマー: {timerDevices.Count}");
+
+            int totalProgress = (IsProcessMemory ? devicesP.Count : 0) +
                                 (IsDetailMemory ? devicesD.Count : 0) +
                                 (IsOperationMemory ? devicesO.Count : 0) +
                                 (IsCylinderMemory ? devicesC.Count : 0) +
                                 (IsErrorMemory ? devicesC.Count : 0) +
                                 (IsTimerMemory ? timerDevices.Count * 2 : 0);
-            MemoryProgressValue = 0;
 
-            if (!await ProcessAndSaveMemoryAsync(IsErrorMemory, devicesC, device => _memoryService.SaveMnemonicMemories(_repository, device), "エラー")) return;
-            //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesT, "Timer (T)")) return;
-            //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesZR, "Timer (ZR)")) return;
+            progressViewModel?.SetProgressMax(totalProgress);
 
-            MemoryStatusMessage = "保存完了！";
+            if (!await ProcessAndSaveMemoryAsync(IsErrorMemory, devicesC, device => _memoryService.SaveMnemonicMemories(_repository, device), "エラー", progressViewModel)) return;
+            //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesT, "Timer (T)", progressViewModel)) return;
+            //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesZR, "Timer (ZR)", progressViewModel)) return;
+
+            progressViewModel?.UpdateStatus("メモリ設定状態を更新中...");
 
             // メモリ設定状態を更新
             UpdateMemoryConfigurationStatus();
@@ -1322,24 +1373,34 @@ namespace KdxDesigner.ViewModels
         }
 
         // Memory保存の繰り返し処理を共通化するヘルパー
-        private async Task<bool> ProcessAndSaveMemoryAsync<T>(bool shouldProcess, IEnumerable<T> devices, Func<T, bool> saveAction, string categoryName)
+        private async Task<bool> ProcessAndSaveMemoryAsync<T>(bool shouldProcess, IEnumerable<T> devices, Func<T, bool> saveAction, string categoryName, MemoryProgressViewModel? progressViewModel = null)
         {
-            if (!shouldProcess) return true;
-
-            MessageBox.Show($"{categoryName}情報をMemoryテーブルにデータを保存します。", "確認");
-            MemoryStatusMessage = $"{categoryName}情報を保存中...";
-
-            foreach (var device in devices)
+            if (!shouldProcess)
             {
+                progressViewModel?.AddLog($"{categoryName}情報: スキップ（設定で無効）");
+                return true;
+            }
+
+            var deviceList = devices.ToList();
+            progressViewModel?.UpdateStatus($"{categoryName}情報をMemoryテーブルに保存中... ({deviceList.Count}件)");
+            MessageBox.Show($"{categoryName}情報をMemoryテーブルにデータを保存します。", "確認");
+
+            int index = 0;
+            foreach (var device in deviceList)
+            {
+                index++;
+                progressViewModel?.UpdateStatus($"{categoryName}情報を保存中... ({index}/{deviceList.Count})");
+
                 bool result = await Task.Run(() => saveAction(device));
                 if (!result)
                 {
-                    MemoryStatusMessage = $"Memoryテーブル（{categoryName}）の保存に失敗しました。";
-                    MessageBox.Show(MemoryStatusMessage, "エラー");
+                    progressViewModel?.MarkError($"{categoryName}情報の保存に失敗 (デバイス {index}/{deviceList.Count})");
+                    MessageBox.Show($"Memoryテーブル（{categoryName}）の保存に失敗しました。", "エラー");
                     return false;
                 }
-                MemoryProgressValue++;
+                progressViewModel?.IncrementProgress();
             }
+            progressViewModel?.AddLog($"{categoryName}情報の保存完了 ({deviceList.Count}件)");
             return true;
         }
 

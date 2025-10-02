@@ -53,7 +53,7 @@ namespace KdxDesigner.Services
                     2 => repository.GetDifinitions("ProcessDetail"),
                     3 => repository.GetDifinitions("Operation"),
                     4 => repository.GetDifinitions("CY"),
-                    _ => new List<Kdx.Contracts.DTOs.Difinitions>()
+                    _ => new List<Definitions>()
                 };
 
                 var memoriesToSave = new List<Memory>();
