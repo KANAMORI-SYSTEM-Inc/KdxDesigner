@@ -1,0 +1,55 @@
+<!-- This is a XAML-based icon design for the application -->
+<Canvas xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+        Width="256" Height="256">
+    <!-- Background Circle -->
+    <Ellipse Width="240" Height="240" 
+             Canvas.Left="8" Canvas.Top="8"
+             Fill="#1E3A8A" />
+    
+    <!-- Inner Circle -->
+    <Ellipse Width="200" Height="200" 
+             Canvas.Left="28" Canvas.Top="28"
+             Fill="#3B82F6" />
+    
+    <!-- Gear/Cog Shape (representing automation/engineering) -->
+    <Path Canvas.Left="78" Canvas.Top="78" 
+          Width="100" Height="100"
+          Fill="White"
+          Data="M 50,20 
+                L 55,25 60,20 60,10 55,5 50,0 45,5 40,10 40,20 45,25 50,20
+                M 50,80
+                L 55,75 60,80 60,90 55,95 50,100 45,95 40,90 40,80 45,75 50,80
+                M 20,50
+                L 25,45 20,40 10,40 5,45 0,50 5,55 10,60 20,60 25,55 20,50
+                M 80,50
+                L 75,45 80,40 90,40 95,45 100,50 95,55 90,60 80,60 75,55 80,50
+                M 50,35
+                A 15,15 0 1,1 50,65
+                A 15,15 0 1,1 50,35" />
+    
+    <!-- Ladder Logic Bars (representing ladder programming) -->
+    <Rectangle Width="60" Height="4" 
+               Canvas.Left="98" Canvas.Top="108"
+               Fill="White" />
+    <Rectangle Width="60" Height="4" 
+               Canvas.Left="98" Canvas.Top="128"
+               Fill="White" />
+    <Rectangle Width="60" Height="4" 
+               Canvas.Left="98" Canvas.Top="148"
+               Fill="White" />
+    
+    <!-- Vertical connectors -->
+    <Rectangle Width="4" Height="44" 
+               Canvas.Left="98" Canvas.Top="108"
+               Fill="White" />
+    <Rectangle Width="4" Height="44" 
+               Canvas.Left="154" Canvas.Top="108"
+               Fill="White" />
+    
+    <!-- Text "KDX" -->
+    <TextBlock Text="KDX" 
+               FontSize="28" 
+               FontWeight="Bold"
+               Foreground="White"
+               Canvas.Left="94" Canvas.Top="180" />
+</Canvas>

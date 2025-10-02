@@ -1,0 +1,23 @@
+{
+  "ErrorResetSignal": "M880",
+  "ResetSignal": "M880",
+  "PauseSignal": "M207",
+  "PauseDelaySignal": "M208",
+  "SoftResetSignal": "M100",
+  "AddressOffset": 1000,
+  "TimerAddressOffset": 2000,
+  "OffConfirmSignal": "M4000",
+  "AlwaysON": "SM400",
+  "AlwaysOFF": "SM401",
+  "Clock01": "SM410",
+  "CycleTime": "D400",
+  "ErrorDevice": "D222",
+  "OutErrorDevice": "M9999",
+  "DebugPulse": "M500",
+  "DebugTest": "M501",
+  "ValveSearchWord": "SV",
+  "LastSelectedCompanyId": 1,
+  "LastSelectedModelId": 1,
+  "LastSelectedCycleId": 4,
+  "LastUsedMemoryProfileId": null
+}

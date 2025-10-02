@@ -1,0 +1,11 @@
+<Window x:Class="KdxDesigner.Views.TimerEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="タイマー編集" Height="150" Width="300"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <TextBlock Text="タイマー編集機能は未実装です。" 
+                   HorizontalAlignment="Center" 
+                   VerticalAlignment="Center"/>
+    </Grid>
+</Window>

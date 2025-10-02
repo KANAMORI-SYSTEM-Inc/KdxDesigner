@@ -1,0 +1,230 @@
+<Window x:Class="KdxDesigner.Views.ProcessDetailPropertiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KdxDesigner.Views"
+        mc:Ignorable="d"
+        Title="工程詳細プロパティ" 
+        Height="600" Width="400"
+        MinHeight="400" MinWidth="300"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Topmost="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- ヘッダー -->
+        <Border Grid.Row="0" Background="LightGray" Padding="10">
+            <TextBlock Text="{Binding SelectedNodeDisplayName}" 
+                       FontSize="16" 
+                       FontWeight="Bold"/>
+        </Border>
+        
+        <!-- プロパティ編集エリア -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 詳細名 -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="詳細名:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding SelectedNodeDetailName, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- ProcessID -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Process:" VerticalAlignment="Center" Margin="0,5"/>
+                <ComboBox Grid.Row="1" Grid.Column="1" 
+                          ItemsSource="{Binding Processes}"
+                          SelectedValue="{Binding SelectedNodeProcessId, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedValuePath="Id"
+                          Margin="0,5">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} - {1}">
+                                        <Binding Path="Id"/>
+                                        <Binding Path="ProcessName"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                
+                <!-- 操作ID -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="操作:" VerticalAlignment="Center" Margin="0,5"/>
+                <ComboBox Grid.Row="2" Grid.Column="1" 
+                          ItemsSource="{Binding FilteredOperations}"
+                          SelectedValue="{Binding SelectedNodeOperationId, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedValuePath="Id"
+                          DisplayMemberPath="OperationName"
+                          Margin="0,5">
+                    <ComboBox.ItemContainerStyle>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
+                
+                <!-- 開始センサー -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="開始センサー:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding SelectedNodeStartSensor, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- 開始タイマー -->
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="開始タイマー:" VerticalAlignment="Top" Margin="0,5"/>
+                <StackPanel Grid.Row="4" Grid.Column="1">
+                    <!-- タイマーフィルタ -->
+                    <Grid Margin="0,5,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" 
+                                 Text="{Binding TimerFilterText, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="フィルタ..."
+                                 Margin="0,0,5,0">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <VisualBrush AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                                        <VisualBrush.Visual>
+                                                            <Label Content="{Binding RelativeSource={RelativeSource AncestorType=TextBox}, Path=Tag}" 
+                                                                   Foreground="Gray" />
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <CheckBox Grid.Column="1" 
+                                  Content="操作関連のみ" 
+                                  IsChecked="{Binding ShowOnlyOperationTimers}"
+                                  VerticalAlignment="Center"/>
+                    </Grid>
+                    <!-- タイマー選択 -->
+                    <ComboBox ItemsSource="{Binding FilteredTimers}"
+                              SelectedValue="{Binding SelectedNodeStartTimerId, UpdateSourceTrigger=PropertyChanged}"
+                              SelectedValuePath="ID"
+                              MaxDropDownHeight="300">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0} - {1}">
+                                            <Binding Path="TimerName"/>
+                                            <Binding Path="ID"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+                
+                <!-- 終了センサー -->
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="終了センサー:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding SelectedNodeFinishSensor, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- カテゴリID -->
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="カテゴリ:" VerticalAlignment="Center" Margin="0,5"/>
+                <ComboBox Grid.Row="6" Grid.Column="1" 
+                          ItemsSource="{Binding Categories}"
+                          SelectedValue="{Binding SelectedNodeCategoryId, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedValuePath="Id"
+                          DisplayMemberPath="CategoryName"
+                          Margin="0,5">
+                    <ComboBox.ItemContainerStyle>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
+                
+                <!-- ブロック番号 -->
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="ブロック番号:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding SelectedNodeBlockNumber, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- スキップモード -->
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="スキップモード:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding SelectedNodeSkipMode, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- ソート番号 -->
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="ソート番号:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding SelectedNodeSortNumber, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- ILStart -->
+                <TextBlock Grid.Row="10" Grid.Column="0" Text="ILStart:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding SelectedNodeILStart, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                
+                <!-- コメント -->
+                <TextBlock Grid.Row="11" Grid.Column="0" Text="コメント:" VerticalAlignment="Top" Margin="0,5"/>
+                <TextBox Grid.Row="11" Grid.Column="1" 
+                         Text="{Binding SelectedNodeComment, UpdateSourceTrigger=PropertyChanged}" 
+                         TextWrapping="Wrap" 
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"
+                         MinHeight="60"
+                         Margin="0,5"/>
+                
+                <!-- ID (読み取り専用) -->
+                <TextBlock Grid.Row="12" Grid.Column="0" Text="ID:" VerticalAlignment="Center" Margin="0,5"/>
+                <TextBox Grid.Row="12" Grid.Column="1" 
+                         Text="{Binding SelectedNodeId}" 
+                         IsReadOnly="True" 
+                         Background="LightGray"
+                         Margin="0,5"/>
+            </Grid>
+        </ScrollViewer>
+        
+        <!-- ボタンエリア -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+            <Button Content="更新" Command="{Binding UpdateSelectedNodePropertiesCommand}" 
+                    Width="80" Height="30" Margin="5"/>
+            <Button Content="閉じる" Click="CloseButton_Click" 
+                    Width="80" Height="30" Margin="5"/>
+        </StackPanel>
+        
+        <!-- 選択なしメッセージ -->
+        <Border Grid.Row="1" 
+                Background="White" 
+                Visibility="Collapsed">
+            <TextBlock Text="工程フロー編集画面でノードを選択してください" 
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Center"
+                       FontSize="14"
+                       Foreground="Gray"/>
+        </Border>
+    </Grid>
+</Window>

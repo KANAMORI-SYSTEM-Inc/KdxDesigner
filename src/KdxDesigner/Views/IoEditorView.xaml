@@ -1,0 +1,244 @@
+﻿<Window x:Class="KdxDesigner.Views.IoEditorView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:KdxDesigner.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:IoEditorViewModel}"
+        Title="IOテーブル管理" Height="1100" Width="1800"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="250"/>
+            <RowDefinition Height="250"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="全文検索:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
+            <TextBox Width="400" Text="{Binding FullTextSearch, UpdateSourceTrigger=PropertyChanged}"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="1" Margin="5"
+                  ItemsSource="{Binding IoRecordsView}"
+                  IsReadOnly="False" CanUserAddRows="False"
+                  AutoGenerateColumns="False"
+                  HorizontalScrollBarVisibility="Visible"
+                  VerticalScrollBarVisibility="Visible">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="PlcId" Binding="{Binding PlcId}" IsReadOnly="True" />
+                <DataGridTextColumn Header="Address" Binding="{Binding Address}" />
+                <DataGridTextColumn Header="LinkDevice" Binding="{Binding LinkDevice}" />
+                <DataGridTextColumn Header="IOName" Binding="{Binding IOName}" Width="*"/>
+                <DataGridTextColumn Header="IOText" Binding="{Binding IOText}" Width="*"/>
+                <DataGridTextColumn Header="IOExplanation" Binding="{Binding IOExplanation}" Width="*"/>
+                <DataGridTextColumn Header="XComment" Binding="{Binding XComment}" Width="*"/>
+                <DataGridTextColumn Header="YComment" Binding="{Binding YComment}" Width="*"/>
+                <DataGridTextColumn Header="FComment" Binding="{Binding FComment}" Width="*"/>
+                <DataGridTextColumn Header="IOSpot" Binding="{Binding IOSpot}" />
+                <DataGridTextColumn Header="UnitName" Binding="{Binding UnitName}" />
+                <DataGridTextColumn Header="System" Binding="{Binding System}" />
+                <DataGridTextColumn Header="StationNumber" Binding="{Binding StationNumber}" />
+                <DataGridTextColumn Header="IONameNaked" Binding="{Binding IONameNaked}" Width="*"/>
+                <DataGridTextColumn Header="LinkDevice" Binding="{Binding LinkDevice}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        
+        <!-- CY関連付けセクション -->
+        <GroupBox Grid.Row="2" Header="CY関連付け" Margin="5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- 左側：CYリスト -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="CYリスト" FontWeight="Bold" Margin="0,0,0,5"/>
+                    
+                    <!-- CYフィルタ -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="フィルタ:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Width="150" Text="{Binding CyFilterText, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                    
+                    <DataGrid Grid.Row="2" 
+                              ItemsSource="{Binding CyListView}"
+                              SelectedItem="{Binding SelectedCylinder}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="CY番号" Binding="{Binding CYNum}" Width="80"/>
+                            <DataGridTextColumn Header="PUCO" Binding="{Binding PUCO}" Width="*"/>
+                            <DataGridTextColumn Header="手動ボタン" Binding="{Binding ManualButton}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+                
+                <!-- 中央：関連付けボタン -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10">
+                    <ComboBox x:Name="ioTypeCombo" Width="120" Margin="0,5">
+                        <ComboBoxItem Content="Goセンサー" Tag="GoSensor"/>
+                        <ComboBoxItem Content="Backセンサー" Tag="BackSensor"/>
+                        <ComboBoxItem Content="Goバルブ" Tag="GoValve"/>
+                        <ComboBoxItem Content="Backバルブ" Tag="BackValve"/>
+                        <ComboBoxItem Content="手動ボタン" Tag="ManualButton"/>
+                        <ComboBoxItem Content="その他" Tag="Other"/>
+                    </ComboBox>
+                    <Button Content="関連付け →" 
+                            Width="100" Height="30" Margin="0,5"
+                            Command="{Binding AssociateCyIoCommand}"
+                            CommandParameter="{Binding ElementName=ioTypeCombo, Path=SelectedItem.Tag}"/>
+                    <Button Content="← 関連解除" 
+                            Width="100" Height="30" Margin="0,5"
+                            Command="{Binding DisassociateCyIoCommand}"/>
+                </StackPanel>
+                
+                <!-- 右側：関連付け済みIOリスト -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="関連付け済みIO" FontWeight="Bold" Margin="0,0,0,5"/>
+                    
+                    <!-- 関連付け済みIOフィルタ -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="フィルタ:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Width="150" Text="{Binding AssociatedIoFilterText, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                    
+                    <DataGrid Grid.Row="2" 
+                              ItemsSource="{Binding AssociatedIoListView}"
+                              SelectedItem="{Binding SelectedAssociatedIo}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="タイプ" Binding="{Binding IOType}" Width="80"/>
+                            <DataGridTextColumn Header="アドレス" Binding="{Binding IOAddress}" Width="80"/>
+                            <DataGridTextColumn Header="IO名" Binding="{Binding IOName}" Width="*"/>
+                            <DataGridTextColumn Header="説明" Binding="{Binding IOExplanation}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Grid>
+        </GroupBox>
+        
+        <!-- Operation関連付けセクション -->
+        <GroupBox Grid.Row="3" Header="Operation関連付け" Margin="5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- 左側：Operationリスト -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="Operationリスト" FontWeight="Bold" Margin="0,0,0,5"/>
+                    
+                    <!-- Operationフィルタ -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="フィルタ:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Width="150" Text="{Binding OperationFilterText, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                    
+                    <DataGrid Grid.Row="2" 
+                              ItemsSource="{Binding OperationListView}"
+                              SelectedItem="{Binding SelectedOperation}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="40"/>
+                            <DataGridTextColumn Header="Operation名" Binding="{Binding OperationName}" Width="*"/>
+                            <DataGridTextColumn Header="CY" Binding="{Binding CYId}" Width="50"/>
+                            <DataGridTextColumn Header="カテゴリ" Binding="{Binding CategoryId}" Width="60"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+                
+                <!-- 中央：関連付けボタン -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10">
+                    <ComboBox x:Name="ioUsageCombo" Width="120" Margin="0,5">
+                        <ComboBoxItem Content="入力" Tag="Input"/>
+                        <ComboBoxItem Content="出力" Tag="Output"/>
+                        <ComboBoxItem Content="条件" Tag="Condition"/>
+                        <ComboBoxItem Content="インターロック" Tag="Interlock"/>
+                        <ComboBoxItem Content="センサー" Tag="Sensor"/>
+                        <ComboBoxItem Content="バルブ" Tag="Valve"/>
+                        <ComboBoxItem Content="その他" Tag="Other"/>
+                    </ComboBox>
+                    <Button Content="関連付け →" 
+                            Width="100" Height="30" Margin="0,5"
+                            Command="{Binding AssociateOperationIoCommand}"
+                            CommandParameter="{Binding ElementName=ioUsageCombo, Path=SelectedItem.Tag}"/>
+                    <Button Content="← 関連解除" 
+                            Width="100" Height="30" Margin="0,5"
+                            Command="{Binding DisassociateOperationIoCommand}"/>
+                </StackPanel>
+                
+                <!-- 右側：関連付け済みIOリスト -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="関連付け済みIO" FontWeight="Bold" Margin="0,0,0,5"/>
+                    
+                    <!-- 関連付け済みIOフィルタ -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="フィルタ:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Width="150" Text="{Binding OperationAssociatedIoFilterText, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                    
+                    <DataGrid Grid.Row="2" 
+                              ItemsSource="{Binding OperationAssociatedIoListView}"
+                              SelectedItem="{Binding SelectedOperationAssociatedIo}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="用途" Binding="{Binding IOUsage}" Width="80"/>
+                            <DataGridTextColumn Header="アドレス" Binding="{Binding IOAddress}" Width="80"/>
+                            <DataGridTextColumn Header="IO名" Binding="{Binding IOName}" Width="*"/>
+                            <DataGridTextColumn Header="説明" Binding="{Binding IOExplanation}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Grid>
+        </GroupBox>
+        
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Left">
+            <Button Content="CSV出力" HorizontalAlignment="Left" 
+            Width="100" Height="25" Margin="0,0,10,0" Command="{Binding ExportLinkDeviceCsvCommand}"/>
+            <Button Content="ラダー出力" HorizontalAlignment="Left" 
+            Width="100" Height="25" Margin="0,0,10,0" Command="{Binding ExportLinkDeviceLadderCommand}"/>
+            <Button Content="リンク実行"
+            Width="100" Height="25" Margin="5" Command="{Binding ExecuteLinkCommand}"/>
+        </StackPanel>
+        
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+            <Button Content="変更を保存" Width="100" Height="25" Margin="0,0,10,0" Command="{Binding SaveChangesCommand}"/>
+            <Button Content="閉じる" Width="100" Height="25" Click="CloseButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,166 @@
+<Window x:Class="KdxDesigner.Views.ProcessPropertiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="工程プロパティ" Height="500" Width="600"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="工程プロパティ" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- ID (読み取り専用) -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="ID:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Id}" IsReadOnly="True" Background="#F0F0F0"/>
+                </Grid>
+
+                <!-- 工程名 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="工程名:"/>
+                    <TextBox Grid.Column="1" Text="{Binding ProcessName}"/>
+                </Grid>
+
+                <!-- カテゴリ -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="カテゴリ:"/>
+                    <ComboBox Grid.Column="1" 
+                              ItemsSource="{Binding ProcessCategories}"
+                              SelectedValue="{Binding ProcessCategoryId}"
+                              SelectedValuePath="Id"
+                              DisplayMemberPath="ProcessCategoryName"/>
+                </Grid>
+
+                <!-- サイクルID -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="サイクルID:"/>
+                    <TextBox Grid.Column="1" Text="{Binding CycleId}"/>
+                </Grid>
+
+                <!-- ソート番号 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="ソート番号:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SortNumber}"/>
+                </Grid>
+
+                <!-- テスト開始条件 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="テスト開始条件:"/>
+                    <TextBox Grid.Column="1" Text="{Binding TestStart}"/>
+                </Grid>
+
+                <!-- テスト条件 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="テスト条件:"/>
+                    <TextBox Grid.Column="1" Text="{Binding TestCondition}"/>
+                </Grid>
+
+                <!-- テストモード -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="テストモード:"/>
+                    <TextBox Grid.Column="1" Text="{Binding TestMode}"/>
+                </Grid>
+
+                <!-- 自動モード -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="自動モード:"/>
+                    <TextBox Grid.Column="1" Text="{Binding AutoMode}"/>
+                </Grid>
+
+                <!-- 自動開始条件 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="自動開始条件:"/>
+                    <TextBox Grid.Column="1" Text="{Binding AutoStart}"/>
+                </Grid>
+
+                <!-- IL開始条件 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="IL開始条件:"/>
+                    <TextBox Grid.Column="1" Text="{Binding ILStart}"/>
+                </Grid>
+
+                <!-- コメント1 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="コメント1:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Comment1}" 
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto" MinHeight="60"/>
+                </Grid>
+
+                <!-- コメント2 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="コメント2:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Comment2}" 
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto" MinHeight="60"/>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ボタン -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="保存" Width="80" Margin="5" Command="{Binding SaveCommand}"/>
+            <Button Content="キャンセル" Width="80" Margin="5" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>

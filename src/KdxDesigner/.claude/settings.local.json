@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(dotnet build)",
+      "Bash(git checkout:*)",
+      "Bash(grep:*)",
+      "Bash(findstr:*)",
+      "Bash(mv:*)",
+      "Bash(dotnet build:*)",
+      "Bash(findstr:*)",
+      "Bash(find:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(powershell:*)",
+      "Bash(mkdir:*)",
+      "Bash(git pull:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add package:*)"
+    ],
+    "deny": []
+  }
+}

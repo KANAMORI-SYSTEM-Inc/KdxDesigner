@@ -1,0 +1,112 @@
+<Window x:Class="KdxDesigner.Views.RecordIdsEditorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="RecordIds編集" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner">
+    
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- タイトル -->
+        <TextBlock Grid.Row="0" FontSize="14" FontWeight="Bold" Margin="0,0,0,10">
+            <TextBlock.Text>
+                <MultiBinding StringFormat="タイマー: {0} (MnemonicType: {1})">
+                    <Binding Path="TimerName"/>
+                    <Binding Path="MnemonicTypeName"/>
+                </MultiBinding>
+            </TextBlock.Text>
+        </TextBlock>
+
+        <!-- 説明 -->
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,10">
+            設定したいレコードを選択してください。複数選択可能です。
+        </TextBlock>
+
+        <!-- レコード選択エリア -->
+        <GroupBox Grid.Row="2" Header="選択可能なレコード">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- フィルター入力 -->
+                <Grid Grid.Row="0" Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="フィルター:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBox Grid.Column="1" x:Name="FilterTextBox" 
+                             Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Content="クリア" Width="50" Height="22" Margin="5,0,0,0"
+                            Click="ClearFilterButton_Click"/>
+                </Grid>
+                
+                <!-- 全選択/全解除ボタン -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+                    <Button Content="表示中を全選択" Width="100" Height="22" Margin="0,0,5,0"
+                            Click="SelectAllButton_Click"/>
+                    <Button Content="表示中を全解除" Width="100" Height="22"
+                            Click="UnselectAllButton_Click"/>
+                    <TextBlock Text="{Binding FilteredRecords.Count, StringFormat='表示数: {0}'}" 
+                               VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    <TextBlock Text="{Binding SelectedRecordIds.Count, StringFormat='選択数: {0}'}" 
+                               VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+                
+                <!-- レコードリスト -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding FilteredRecords}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="5,3">
+                                    <CheckBox IsChecked="{Binding IsSelected}" 
+                                              Checked="RecordCheckBox_Checked"
+                                              Unchecked="RecordCheckBox_Unchecked">
+                                        <CheckBox.Content>
+                                            <TextBlock Text="{Binding Name}" />
+                                        </CheckBox.Content>
+                                    </CheckBox>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </GroupBox>
+
+        <!-- 選択されたRecordIds表示 -->
+        <GroupBox Grid.Row="3" Header="選択されたRecordIds" Margin="0,10,0,0">
+            <TextBox Text="{Binding SelectedRecordIdsDisplay, Mode=OneWay}" 
+                     IsReadOnly="True" Height="60" TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" Background="LightYellow"/>
+        </GroupBox>
+
+        <!-- ボタン -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" 
+                    HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="OK" Width="80" Height="25" Margin="0,0,10,0"
+                    Click="OkButton_Click" IsDefault="True"/>
+            <Button Content="キャンセル" Width="80" Height="25" 
+                    Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
