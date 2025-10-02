@@ -1,6 +1,10 @@
 param(
     [Parameter(Mandatory=$true)]
-    [string]$NewVersion  # 例: "1.0.1"
+    [string]$NewVersion,  # 例: "1.0.1"
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("Local", "GitHub", "Auto")]
+    [string]$Source = "Auto"  # パッケージソース選択
 )
 
 $kdxDesignerRoot = $PSScriptRoot
@@ -35,9 +39,28 @@ Write-Host "`nClearing NuGet cache..." -ForegroundColor Yellow
 dotnet nuget locals all --clear
 Write-Host "✓ Cache cleared" -ForegroundColor Cyan
 
-# 4. パッケージ復元
-Write-Host "`nRestoring packages..." -ForegroundColor Yellow
-dotnet restore
+# 4. パッケージ復元（ソース選択）
+Write-Host "`nRestoring packages from $Source source..." -ForegroundColor Yellow
+
+switch ($Source) {
+    "Local" {
+        Write-Host "Using Local NuGet feed only..." -ForegroundColor Cyan
+        dotnet restore --source "C:\NuGetLocal" --source "https://api.nuget.org/v3/index.json"
+    }
+    "GitHub" {
+        Write-Host "Using GitHub Packages..." -ForegroundColor Cyan
+        # GitHub認証トークンを確認
+        $githubToken = $env:GITHUB_PACKAGES_TOKEN
+        if (-not $githubToken) {
+            Write-Host "⚠ GITHUB_PACKAGES_TOKEN not set. Trying without authentication..." -ForegroundColor Yellow
+        }
+        dotnet restore --source "https://nuget.pkg.github.com/KANAMORI-SYSTEM-Inc/index.json" --source "https://api.nuget.org/v3/index.json"
+    }
+    "Auto" {
+        Write-Host "Using nuget.config (Auto)..." -ForegroundColor Cyan
+        dotnet restore
+    }
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "✗ Restore failed!" -ForegroundColor Red
@@ -72,6 +95,24 @@ $csprojContent | Select-String 'PackageReference Include="Kdx\.' | ForEach-Objec
 }
 
 Write-Host "`n✓ KdxDesigner updated to use KdxProjects $NewVersion successfully!" -ForegroundColor Green
+
+# パッケージソースの情報を表示
+Write-Host "`n📦 Package source used: $Source" -ForegroundColor Cyan
+switch ($Source) {
+    "Local" {
+        Write-Host "  Packages loaded from: C:\NuGetLocal" -ForegroundColor White
+    }
+    "GitHub" {
+        Write-Host "  Packages loaded from: GitHub Packages" -ForegroundColor White
+    }
+    "Auto" {
+        Write-Host "  Packages loaded from: nuget.config priority order" -ForegroundColor White
+        Write-Host "    1. C:\NuGetLocal (Local)" -ForegroundColor White
+        Write-Host "    2. GitHub Packages (Remote)" -ForegroundColor White
+        Write-Host "    3. NuGet.org (External)" -ForegroundColor White
+    }
+}
+
 Write-Host "`n📝 Next steps:" -ForegroundColor Yellow
 Write-Host "  1. Test the application thoroughly"
 Write-Host "  2. If there are breaking changes, update your code accordingly"
