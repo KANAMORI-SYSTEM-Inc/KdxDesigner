@@ -65,11 +65,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kdx.Contracts" Version="1.0.0" />
-    <PackageReference Include="Kdx.Contracts.ViewModels" Version="1.0.0" />
-    <PackageReference Include="Kdx.Core" Version="1.0.0" />
-    <PackageReference Include="Kdx.Infrastructure" Version="1.0.0" />
-    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="1.0.0" />
+    <PackageReference Include="Kdx.Contracts" Version="1.0.9" />
+    <PackageReference Include="Kdx.Contracts.ViewModels" Version="1.0.9" />
+    <PackageReference Include="Kdx.Core" Version="1.0.9" />
+    <PackageReference Include="Kdx.Infrastructure" Version="1.0.9" />
+    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="1.0.9" />
   </ItemGroup>
 
   <ItemGroup>
