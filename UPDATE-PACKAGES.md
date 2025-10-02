@@ -43,22 +43,46 @@ dotnet build -c Release
 
 ## 📋 前提条件
 
-KdxProjectsの新しいバージョンがローカルNuGetフィードに配置されている必要があります。
+### GitHub Packagesからの取得（本番・推奨）
 
+KdxProjectsの新しいバージョンがGitHub Packagesに公開されている必要があります。
+
+**確認方法:**
+```
+https://github.com/orgs/KANAMORI-SYSTEM-Inc/packages
+```
+
+**認証設定:**
 ```powershell
-# ローカルフィードのパッケージを確認
+# 環境変数GITHUB_PACKAGES_TOKENを設定（初回のみ）
+[System.Environment]::SetEnvironmentVariable('GITHUB_PACKAGES_TOKEN', 'your-github-pat', 'User')
+```
+
+GitHub Personal Access Token (PAT)の作成:
+- GitHub → Settings → Developer settings → Personal access tokens
+- Scopes: `read:packages`
+
+### ローカルフィードからの取得（開発・テスト用）
+
+ローカル開発時は、nuget.configでローカルフィードをコメント解除してください。
+
+```xml
+<!-- nuget.config -->
+<packageSources>
+  <clear />
+  <add key="KdxGitHub" value="https://nuget.pkg.github.com/KANAMORI-SYSTEM-Inc/index.json" />
+  <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  <!-- ローカル開発時のみコメント解除 -->
+  <add key="KdxLocal" value="C:\NuGetLocal" />
+</packageSources>
+```
+
+ローカルフィードのパッケージを確認:
+```powershell
 dir C:\NuGetLocal\*.nupkg
 ```
 
-以下のファイルが存在することを確認：
-- Kdx.Contracts.1.0.1.nupkg
-- Kdx.Core.1.0.1.nupkg
-- Kdx.Infrastructure.1.0.1.nupkg
-- Kdx.Infrastructure.Supabase.1.0.1.nupkg
-- Kdx.Contracts.ViewModels.1.0.1.nupkg
-
-存在しない場合は、まずKdxProjectsで更新を実行してください：
-
+KdxProjectsで更新を実行:
 ```powershell
 cd C:\Users\amdet\source\repos\KANAMORI-SYSTEM-Inc\KdxProjects
 .\update-kdxprojects.ps1 -NewVersion "1.0.1"
@@ -94,7 +118,18 @@ cd C:\Users\amdet\source\repos\KANAMORI-SYSTEM-Inc\KdxProjects
 ### エラー: パッケージが見つからない
 
 ```powershell
-# 原因: ローカルフィードにパッケージが存在しない
+# 原因1: GitHub Packagesに未公開
+# 解決策: KdxProjectsでタグをpushしてリリース
+cd C:\Users\amdet\source\repos\KANAMORI-SYSTEM-Inc\KdxProjects
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
+# GitHub Actionsが自動公開（2-3分待つ）
+
+# 原因2: 認証エラー
+# 解決策: GITHUB_PACKAGES_TOKENを設定
+$env:GITHUB_PACKAGES_TOKEN = "your-github-pat"
+
+# 原因3: ローカルフィードにパッケージが存在しない（ローカル開発時）
 # 解決策:
 cd C:\Users\amdet\source\repos\KANAMORI-SYSTEM-Inc\KdxProjects
 .\update-kdxprojects.ps1 -NewVersion "1.0.1"
