@@ -224,3 +224,4 @@ coverage/
 /nul
 /KdxDesigner/sppsettings.Development.json
 /KdxDesigner/appsettings.json
+/src/KdxDesigner/appsettings.json
