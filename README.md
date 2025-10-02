@@ -62,6 +62,14 @@ KdxDesignerは以下のNuGetパッケージを使用しています：
 - Kdx.Infrastructure.Supabase v1.0.0
 - Kdx.Contracts.ViewModels v1.0.0
 
+**📦 パッケージ更新:**
+KdxProjectsライブラリが更新された場合は [UPDATE-PACKAGES.md](UPDATE-PACKAGES.md) を参照してください。
+
+```powershell
+# クイック更新
+.\update-kdxdesigner.ps1 -NewVersion "1.0.1"
+```
+
 ### 外部パッケージ
 - CommunityToolkit.Mvvm v8.4.0 - MVVM support
 - ClosedXML v0.105.0 - Excel file operations
