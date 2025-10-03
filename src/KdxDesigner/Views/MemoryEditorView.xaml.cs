@@ -1,6 +1,6 @@
 ﻿using KdxDesigner.Models;
 using KdxDesigner.ViewModels;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ namespace KdxDesigner.Views
     /// </summary>
     public partial class MemoryEditorView : Window
     {
-        public MemoryEditorView(int plcId, IAccessRepository repository)
+        public MemoryEditorView(int plcId, ISupabaseRepository repository)
         {
             InitializeComponent();
             DataContext = new MemoryEditorViewModel(plcId, repository);

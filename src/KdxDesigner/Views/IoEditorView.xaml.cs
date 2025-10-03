@@ -1,4 +1,4 @@
-﻿using Kdx.Contracts.Interfaces;
+﻿using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 
 using System.Windows;
@@ -7,7 +7,7 @@ namespace KdxDesigner.Views
 {
     public partial class IoEditorView : Window
     {
-        public IoEditorView(IAccessRepository repository, MainViewModel mainViewModel)
+        public IoEditorView(ISupabaseRepository repository, MainViewModel mainViewModel)
         {
             InitializeComponent();
             DataContext = new IoEditorViewModel(repository, mainViewModel);

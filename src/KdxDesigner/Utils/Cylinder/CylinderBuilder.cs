@@ -1,5 +1,6 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 using MnemonicSpeedDevice = Kdx.Contracts.DTOs.MnemonicSpeedDevice;
 
@@ -10,10 +11,10 @@ namespace KdxDesigner.Utils.Cylinder
         private readonly MainViewModel _mainViewModel;
         private readonly IErrorAggregator _errorAggregator;
         private readonly IIOAddressService _ioService;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
 
-        public CylinderBuilder(MainViewModel mainViewModel, IErrorAggregator errorAggregator, IIOAddressService ioService, IAccessRepository repository)
+        public CylinderBuilder(MainViewModel mainViewModel, IErrorAggregator errorAggregator, IIOAddressService ioService, ISupabaseRepository repository)
         {
             _mainViewModel = mainViewModel;
             _errorAggregator = errorAggregator;
@@ -21,7 +22,7 @@ namespace KdxDesigner.Utils.Cylinder
             _repository = repository;
         }
 
-        public List<LadderCsvRow> GenerateLadder(
+        public async Task<List<LadderCsvRow>> GenerateLadder(
             List<MnemonicDeviceWithProcessDetail> details,
             List<MnemonicDeviceWithOperation> operations,
             List<MnemonicDeviceWithCylinder> cylinders,
@@ -45,7 +46,7 @@ namespace KdxDesigner.Utils.Cylinder
                     case 1:
                     case 4:
                     case 10:
-                        result.AddRange(builder.Valve1(
+                        result.AddRange(await builder.Valve1(
                             cylinder,
                             details,
                             operations,
@@ -56,7 +57,7 @@ namespace KdxDesigner.Utils.Cylinder
                             ioList));
                         break;
                     case 15:
-                        result.AddRange(builder.Motor(
+                        result.AddRange(await builder.Motor(
                             cylinder,
                             details,
                             operations,

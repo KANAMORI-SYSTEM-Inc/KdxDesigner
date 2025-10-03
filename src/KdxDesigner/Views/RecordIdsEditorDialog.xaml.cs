@@ -1,6 +1,6 @@
 using Kdx.Contracts.DTOs;
 using KdxDesigner.Models;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -30,20 +30,26 @@ namespace KdxDesigner.Views
             }
             
             public event PropertyChangedEventHandler? PropertyChanged;
-            protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
         
         private readonly TimerViewModel _timer;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private ObservableCollection<RecordItem> _availableRecords;
         private ObservableCollection<int> _selectedRecordIds;
         private string _filterText = string.Empty;
         private ICollectionView _filteredRecords;
 
-        public RecordIdsEditorDialog(TimerViewModel timer, IAccessRepository repository)
+        public RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository)
+            : this(timer, repository, true)
+        {
+        }
+
+        // 非同期初期化用のコンストラクタ
+        private RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository, bool asyncInit)
         {
             InitializeComponent();
             DataContext = this;
@@ -51,7 +57,7 @@ namespace KdxDesigner.Views
             _repository = repository;
             _availableRecords = new ObservableCollection<RecordItem>();
             _selectedRecordIds = new ObservableCollection<int>();
-            
+
             // フィルタリング用のCollectionViewを設定
             _filteredRecords = CollectionViewSource.GetDefaultView(_availableRecords);
             _filteredRecords.Filter = FilterRecords;
@@ -60,12 +66,21 @@ namespace KdxDesigner.Views
             TimerName = _timer.TimerName ?? "";
             MnemonicTypeName = _timer.MnemonicTypeName ?? "";
             MnemonicId = _timer.MnemonicId;
-            
+
+            // 非同期初期化を呼び出し
+            if (asyncInit)
+            {
+                Loaded += async (s, e) => await InitializeAsync();
+            }
+        }
+
+        private async Task InitializeAsync()
+        {
             // MnemonicTypeに応じて選択可能なレコードを読み込む
-            LoadAvailableRecords();
-            
+            await LoadAvailableRecords();
+
             // 既存のRecordIdsを読み込んで選択状態に設定
-            var existingIds = _repository.GetTimerRecordIds(_timer.ID);
+            var existingIds = await _repository.GetTimerRecordIdsAsync(_timer.ID);
             foreach (var record in _availableRecords)
             {
                 if (existingIds.Contains(record.Id))
@@ -132,7 +147,7 @@ namespace KdxDesigner.Views
                    record.Id.ToString().Contains(searchText);
         }
 
-        private void LoadAvailableRecords()
+        private async Task LoadAvailableRecords()
         {
             _availableRecords.Clear();
             
@@ -142,7 +157,7 @@ namespace KdxDesigner.Views
             switch (MnemonicId.Value)
             {
                 case 1: // Process
-                    var processes = _repository.GetProcesses();
+                    var processes = await _repository.GetProcessesAsync();
                     foreach (var process in processes)
                     {
                         _availableRecords.Add(new RecordItem 
@@ -155,7 +170,7 @@ namespace KdxDesigner.Views
                     break;
                     
                 case 2: // ProcessDetail
-                    var details = _repository.GetProcessDetails();
+                    var details = await _repository.GetProcessDetailsAsync();
                     foreach (var detail in details)
                     {
                         _availableRecords.Add(new RecordItem 
@@ -168,7 +183,7 @@ namespace KdxDesigner.Views
                     break;
                     
                 case 3: // Operation
-                    var operations = _repository.GetOperations();
+                    var operations = await _repository.GetOperationsAsync();
                     foreach (var operation in operations)
                     {
                         _availableRecords.Add(new RecordItem 
@@ -181,7 +196,7 @@ namespace KdxDesigner.Views
                     break;
                     
                 case 4: // CY
-                    var cylinders = _repository.GetCYs();
+                    var cylinders = await _repository.GetCYsAsync();
                     foreach (var cy in cylinders)
                     {
                         _availableRecords.Add(new RecordItem 
@@ -220,17 +235,17 @@ namespace KdxDesigner.Views
             }
         }
 
-        private void OkButton_Click(object sender, RoutedEventArgs e)
+        private async void OkButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // 既存のRecordIdsをすべて削除
-                _repository.DeleteAllTimerRecordIds(_timer.ID);
+                await _repository.DeleteAllTimerRecordIdsAsync(_timer.ID);
 
                 // 新しいRecordIdsを追加
                 foreach (var recordId in _selectedRecordIds)
                 {
-                    _repository.AddTimerRecordId(_timer.ID, recordId);
+                    await _repository.AddTimerRecordIdAsync(_timer.ID, recordId);
                 }
 
                 // ViewModelを更新

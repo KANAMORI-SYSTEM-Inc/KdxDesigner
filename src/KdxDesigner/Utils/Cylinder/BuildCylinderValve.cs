@@ -1,8 +1,8 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
-
 using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 
 namespace KdxDesigner.Utils.Cylinder
@@ -12,12 +12,12 @@ namespace KdxDesigner.Utils.Cylinder
         private readonly MainViewModel _mainViewModel;
         private readonly IErrorAggregator _errorAggregator;
         private readonly IIOAddressService _ioAddressService;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         public BuildCylinderValve(
             MainViewModel mainViewModel,
             IErrorAggregator errorAggregator,
             IIOAddressService ioAddressService,
-            IAccessRepository accessRepository)
+            ISupabaseRepository accessRepository)
         {
             _mainViewModel = mainViewModel;
             _errorAggregator = errorAggregator;
@@ -25,7 +25,7 @@ namespace KdxDesigner.Utils.Cylinder
             _repository = accessRepository;
         }
 
-        public List<LadderCsvRow> Valve1(
+        public async Task<List<LadderCsvRow>> Valve1(
                 MnemonicDeviceWithCylinder cylinder,
                 List<MnemonicDeviceWithProcessDetail> details,
                 List<MnemonicDeviceWithOperation> operations,
@@ -121,7 +121,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 保持出力
             if (cylinder.Cylinder.MachineNameId == null || cylinder.Cylinder.DriveSubId == null) return result;
 
-            Machine? machine = _repository.GetMachineById(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
+            Machine? machine = await _repository.GetMachineByIdAsync(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
 
             if (machine == null) return result;
 
@@ -273,7 +273,7 @@ namespace KdxDesigner.Utils.Cylinder
 
         }
 
-        public List<LadderCsvRow> Motor(
+        public async Task<List<LadderCsvRow>> Motor(
                 MnemonicDeviceWithCylinder cylinder,
                 List<MnemonicDeviceWithProcessDetail> details,
                 List<MnemonicDeviceWithOperation> operations,
@@ -371,7 +371,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 保持出力
             if (cylinder.Cylinder.MachineNameId == null || cylinder.Cylinder.DriveSubId == null) return result;
 
-            Machine? machine = _repository.GetMachineById(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
+            Machine? machine = await _repository.GetMachineByIdAsync(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
 
             if (machine == null) return result;
 

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Kdx.Contracts.DTOs;
-using KdxDesigner.Models;
 using Kdx.Contracts.Interfaces;
+using KdxDesigner.Models;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Services.MnemonicDevice;
 
 namespace KdxDesigner.Services.MnemonicSpeedDevice
@@ -18,7 +19,7 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
         private bool _useMemoryStoreOnly = true;
         
         public MnemonicSpeedDeviceMemoryAdapter(
-            IAccessRepository repository,
+            ISupabaseRepository repository,
             IMnemonicDeviceMemoryStore memoryStore = null!)
         {
             _memoryStore = memoryStore ?? new MnemonicDeviceMemoryStore();

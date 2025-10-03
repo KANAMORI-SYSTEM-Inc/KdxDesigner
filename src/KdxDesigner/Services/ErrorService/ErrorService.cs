@@ -1,6 +1,6 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 namespace KdxDesigner.Services.ErrorService
 {
@@ -9,25 +9,25 @@ namespace KdxDesigner.Services.ErrorService
     /// </summary>
     internal class ErrorService : IErrorService
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
-        public ErrorService(IAccessRepository repository)
+        public ErrorService(ISupabaseRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
-        public void DeleteErrorTable()
+        public async Task DeleteErrorTable()
         {
-            _repository.DeleteErrorTable();
+            await _repository.DeleteErrorTableAsync();
         }
 
-        public List<Kdx.Contracts.DTOs.ProcessError> GetErrors(int plcId, int cycleId, int mnemonicId)
+        public async Task<List<Kdx.Contracts.DTOs.ProcessError>> GetErrors(int plcId, int cycleId, int mnemonicId)
         {
-            return _repository.GetErrors(plcId, cycleId, mnemonicId);
+            return await _repository.GetErrorsAsync(plcId, cycleId, mnemonicId);
         }
 
         // Operationのリストを受け取り、Errorテーブルに保存する
-        public void SaveMnemonicDeviceOperation(
+        public async Task SaveMnemonicDeviceOperation(
             List<Operation> operations,
             List<IO> iOs,
             int startNum,
@@ -36,8 +36,8 @@ namespace KdxDesigner.Services.ErrorService
             int cycleId)
         {
             // MnemonicDeviceテーブルの既存データを取得
-            var allExisting = GetErrors(plcId, cycleId, (int)MnemonicType.Operation);
-            var messages = _repository.GetErrorMessages((int)MnemonicType.Operation);
+            var allExisting = await GetErrors(plcId, cycleId, (int)MnemonicType.Operation);
+            var messages = await _repository.GetErrorMessagesAsync((int)MnemonicType.Operation);
 
             int alarmCount = 0;
             foreach (Operation operation in operations)
@@ -172,10 +172,10 @@ namespace KdxDesigner.Services.ErrorService
                     alarmCount++;
                 }
 
-                _repository.SaveErrors(insertErrors);
-                _repository.SaveOrUpdateMemoriesBatch(insertMemoriesM);
-                _repository.SaveOrUpdateMemoriesBatch(insertMemoriesT);
-                _repository.UpdateErrors(updateErrors);
+                await _repository.SaveErrorsAsync(insertErrors);
+                await _repository.SaveOrUpdateMemoriesBatchAsync(insertMemoriesM);
+                await _repository.SaveOrUpdateMemoriesBatchAsync(insertMemoriesT);
+                await _repository.UpdateErrorsAsync(updateErrors);
             }
         }
     }

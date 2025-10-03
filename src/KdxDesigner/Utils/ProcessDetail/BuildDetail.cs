@@ -1,8 +1,7 @@
-using KdxDesigner.Models;
-using KdxDesigner.Models.Define;
-using KdxDesigner.ViewModels;
-using Kdx.Contracts.Interfaces;
 using Kdx.Contracts.DTOs;
+using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.ViewModels;
 
 
 namespace KdxDesigner.Utils.ProcessDetail
@@ -15,7 +14,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         protected readonly MainViewModel _mainViewModel;
         protected readonly IErrorAggregator _errorAggregator;
         protected readonly IIOAddressService _ioAddressService;
-        protected readonly IAccessRepository _repository;
+        protected readonly ISupabaseRepository _repository;
         protected readonly List<MnemonicDeviceWithProcess> _processes;
         protected readonly List<MnemonicDeviceWithProcessDetail> _details;
         protected readonly List<MnemonicDeviceWithOperation> _operations;
@@ -38,7 +37,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             MainViewModel mainViewModel,
             IIOAddressService ioAddressService,
             IErrorAggregator errorAggregator,
-            IAccessRepository repository,
+            ISupabaseRepository repository,
             List<MnemonicDeviceWithProcess> processes,
             List<MnemonicDeviceWithProcessDetail> details,
             List<MnemonicDeviceWithOperation> operations,
@@ -61,13 +60,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Normal(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> Normal(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                 detail, _details, _processes, _operations, _cylinders, _ioList,
                 _mainViewModel, _ioAddressService, _errorAggregator, _repository
             );
-            return builder.BuildNormal();
+            return await builder.BuildNormal();
         }
 
         /// <summary>
@@ -75,13 +74,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Summarize(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> Summarize(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                 detail, _details, _processes, _operations, _cylinders, _ioList,
                 _mainViewModel, _ioAddressService, _errorAggregator, _repository
             );
-            return builder.BuildSummarize();
+            return await builder.BuildSummarize();
         }
 
         /// <summary>
@@ -89,13 +88,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> SensorON(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> SensorON(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                 detail, _details, _processes, _operations, _cylinders, _ioList,
                 _mainViewModel, _ioAddressService, _errorAggregator, _repository
             );
-            return builder.BuildSensorON();
+            return await builder.BuildSensorON();
 
         }
 
@@ -104,13 +103,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> SensorOFF(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> SensorOFF(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildSensorOFF();
+            return await builder.BuildSensorOFF();
 
         }
 
@@ -119,13 +118,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Branch(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> Branch(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildBranch();
+            return await builder.BuildBranch();
         }
 
         /// <summary>
@@ -133,13 +132,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Merge(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> Merge(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildMerge();
+            return await builder.BuildMerge();
 
         }
 
@@ -148,13 +147,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> ILWait(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> ILWait(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildILWait();
+            return await builder.BuildILWait();
         }
 
         /// <summary>
@@ -162,13 +161,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> ProcessOFF(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> ProcessOFF(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildDetailProcessOFF();
+            return await builder.BuildDetailProcessOFF();
 
         }
 
@@ -177,13 +176,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Season(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> Season(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildSeason();
+            return await builder.BuildSeason();
 
         }
 
@@ -193,13 +192,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <param name="detailTimers">タイマの詳細リスト</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> TimerProcess(MnemonicDeviceWithProcessDetail detail, List<MnemonicTimerDeviceWithDetail> detailTimers)
+        public async Task<List<LadderCsvRow>> TimerProcess(MnemonicDeviceWithProcessDetail detail, List<MnemonicTimerDeviceWithDetail> detailTimers)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildTimerProcess(detailTimers);
+            return await builder.BuildTimerProcess(detailTimers);
 
         }
 
@@ -209,13 +208,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <param name="detailTimers">タイマの詳細リスト</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Timer(MnemonicDeviceWithProcessDetail detail, List<MnemonicTimerDeviceWithDetail> detailTimers)
+        public async Task<List<LadderCsvRow>> Timer(MnemonicDeviceWithProcessDetail detail, List<MnemonicTimerDeviceWithDetail> detailTimers)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildTimer(detailTimers);
+            return await builder.BuildTimer(detailTimers);
         }
 
         /// <summary>
@@ -224,13 +223,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// <param name="detail">出力するProcessDetailのレコード</param>
         /// <param name="detailTimers">タイマの詳細リスト</param>
         /// <returns>工程詳細のニモニックリスト</returns>
-        public List<LadderCsvRow> Module(MnemonicDeviceWithProcessDetail detail)
+        public async Task<List<LadderCsvRow>> Module(MnemonicDeviceWithProcessDetail detail)
         {
             var builder = new DetailUnitBuilder(
                  detail, _details, _processes, _operations, _cylinders, _ioList,
                  _mainViewModel, _ioAddressService, _errorAggregator, _repository
              );
-            return builder.BuildModule();
+            return await builder.BuildModule();
         }
     }
 }

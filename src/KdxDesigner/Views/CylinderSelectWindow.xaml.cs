@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 namespace KdxDesigner.Views
 {
@@ -13,12 +13,13 @@ namespace KdxDesigner.Views
         public Cylinder? SelectedCylinder { get; private set; }
         private List<Cylinder> _cylinders;
 
-        public CylinderSelectWindow(IAccessRepository repository, int plcId)
+        public CylinderSelectWindow(ISupabaseRepository repository, int plcId)
         {
             InitializeComponent();
 
             // Load cylinders
-            _cylinders = repository.GetCyList(plcId).ToList();
+            var cylinder = repository.GetCyListAsync(plcId).Result;
+            _cylinders = cylinder.ToList();
             CylinderDataGrid.ItemsSource = _cylinders;
         }
 

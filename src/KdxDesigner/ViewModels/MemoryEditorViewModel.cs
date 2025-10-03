@@ -2,9 +2,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Models;
 using Kdx.Contracts.DTOs;
+using Kdx.Contracts.Interfaces;
+
 
 using Microsoft.Win32;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,10 +20,10 @@ namespace KdxDesigner.ViewModels
 {
     public partial class MemoryEditorViewModel : ObservableObject
     {
-        private readonly IAccessRepository _repository = null!; // コンストラクタで初期化される
+        private readonly ISupabaseRepository _repository = null!; // コンストラクタで初期化される
         public int _plcId;
 
-        public MemoryEditorViewModel(IAccessRepository repository)
+        public MemoryEditorViewModel(ISupabaseRepository repository)
         {
             _repository = repository;
         }
@@ -43,7 +45,7 @@ namespace KdxDesigner.ViewModels
         private string _saveStatusMessage = string.Empty;
 
         // 初期化メソッド
-        public MemoryEditorViewModel(int plcId, IAccessRepository repository)
+        public MemoryEditorViewModel(int plcId, ISupabaseRepository repository)
         {
             _plcId = plcId;
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));

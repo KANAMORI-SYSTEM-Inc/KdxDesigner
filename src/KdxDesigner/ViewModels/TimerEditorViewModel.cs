@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using Kdx.Contracts.DTOs;
 using KdxDesigner.Models;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Services.MemonicTimerDevice;
 using KdxDesigner.Views;
 
@@ -17,7 +17,7 @@ namespace KdxDesigner.ViewModels
 {
     public partial class TimerEditorViewModel : ObservableObject
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private readonly MainViewModel _mainViewModel;
         private readonly MnemonicTimerDeviceService _timerDeviceService;
         private readonly List<TimerViewModel> _allTimers;
@@ -60,27 +60,27 @@ namespace KdxDesigner.ViewModels
 
         public ICollectionView FilteredTimers { get; }
 
-        public TimerEditorViewModel(IAccessRepository repository, MainViewModel mainViewModel)
+        public TimerEditorViewModel(ISupabaseRepository repository, MainViewModel mainViewModel)
         {
             _repository = repository;
             _mainViewModel = mainViewModel;
             _timerDeviceService = new MnemonicTimerDeviceService(repository, mainViewModel);
             _allTimers = new List<TimerViewModel>();
-            
+
             // MnemonicTypesの初期化
             _mnemonicTypes = new ObservableCollection<MnemonicTypeInfo>(MnemonicTypeInfo.GetAll());
-            
+
             // タイマーカテゴリとサイクルの初期化
-            _timerCategories = new ObservableCollection<TimerCategory>(_repository.GetTimerCategory());
-            _cycles = new ObservableCollection<Cycle>(_repository.GetCycles());
-            
+            _timerCategories = new ObservableCollection<TimerCategory>(Task.Run(async () => await _repository.GetTimerCategoryAsync()).GetAwaiter().GetResult());
+            _cycles = new ObservableCollection<Cycle>(Task.Run(async () => await _repository.GetCyclesAsync()).GetAwaiter().GetResult());
+
             // nullを含むカテゴリリストを作成
             UpdateTimerCategoriesWithNull();
-            
+
             // フィルタリング用のCollectionView
             FilteredTimers = CollectionViewSource.GetDefaultView(_allTimers);
             FilteredTimers.Filter = FilterTimers;
-            
+
             LoadTimers();
         }
 
@@ -129,14 +129,14 @@ namespace KdxDesigner.ViewModels
         private async void LoadTimers()
         {
             IsLoading = true;
-            
+
             await Task.Run(() =>
             {
                 Thread.Sleep(100); // UIの更新を確実にするための短い遅延
             });
-            
+
             _allTimers.Clear();
-            
+
             if (_mainViewModel.SelectedPlc == null)
             {
                 IsLoading = false;
@@ -144,49 +144,49 @@ namespace KdxDesigner.ViewModels
             }
 
             // Timerを取得
-            var timers = _repository.GetTimers();
-            var cycles = _repository.GetCycles();
-            var timerCategories = _repository.GetTimerCategory();
+            var timers = await _repository.GetTimersAsync();
+            var cycles = await _repository.GetCyclesAsync();
+            var timerCategories = await _repository.GetTimerCategoryAsync();
 
             foreach (var timer in timers)
             {
                 var vm = new TimerViewModel(timer);
                 vm.LoadFromModel();
-                
+
                 // カテゴリ名を設定
                 if (timer.TimerCategoryId.HasValue)
                 {
                     var category = timerCategories.FirstOrDefault(c => c.Id == timer.TimerCategoryId.Value);
                     vm.CategoryName = category?.CategoryName ?? $"ID: {timer.TimerCategoryId}";
                 }
-                
+
                 // サイクル名を設定
                 if (timer.CycleId.HasValue)
                 {
                     var cycle = cycles.FirstOrDefault(c => c.Id == timer.CycleId.Value);
                     vm.CycleName = cycle?.CycleName ?? $"ID: {timer.CycleId}";
                 }
-                
+
                 // MnemonicType名を設定
                 if (timer.MnemonicId.HasValue)
                 {
                     var mnemonicType = MnemonicTypes.FirstOrDefault(m => m.Id == timer.MnemonicId.Value);
                     vm.MnemonicTypeName = mnemonicType?.TableName ?? $"ID: {timer.MnemonicId}";
                 }
-                
+
                 // 中間テーブルからRecordIdsを読み込む
-                var recordIds = _repository.GetTimerRecordIds(timer.ID);
+                var recordIds = await _repository.GetTimerRecordIdsAsync(timer.ID);
                 vm.RecordIds = recordIds;
-                
+
                 // PropertyChangedイベントを監視
                 vm.PropertyChanged += OnTimerPropertyChanged;
-                
+
                 // MnemonicType変更イベントを監視
                 vm.OnMnemonicTypeChanged += OnTimerMnemonicTypeChanged;
-                
+
                 _allTimers.Add(vm);
             }
-            
+
             FilteredTimers.Refresh();
             IsLoading = false;
         }
@@ -199,7 +199,7 @@ namespace KdxDesigner.ViewModels
             }
         }
         
-        private void OnTimerMnemonicTypeChanged(object? sender, EventArgs e)
+        private async void OnTimerMnemonicTypeChanged(object? sender, EventArgs e)
         {
             if (sender is TimerViewModel timer)
             {
@@ -208,11 +208,11 @@ namespace KdxDesigner.ViewModels
                     "確認",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
-                    
+
                 if (result == MessageBoxResult.Yes)
                 {
                     // RecordIdsをクリア
-                    _repository.DeleteAllTimerRecordIds(timer.ID);
+                    await _repository.DeleteAllTimerRecordIdsAsync(timer.ID);
                     timer.RecordIds = new List<int>();
                 }
             }
@@ -235,91 +235,91 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void AddTimer()
+        private async Task AddTimer()
         {
             // 新しいタイマーを作成
             var newTimer = new Timer
             {
-                ID = GetNextTimerId(),
+                ID = await GetNextTimerIdAsync(),
                 CycleId = _mainViewModel.SelectedCycle?.Id,
                 TimerName = "新規タイマー"
             };
-            
-            _repository.AddTimer(newTimer);
-            
+
+            await _repository.AddTimerAsync(newTimer);
+
             // RecordIdsプロパティは削除されたため、中間テーブルへの同期は不要
-            
+
             LoadTimers();
         }
 
-        private int GetNextTimerId()
+        private async Task<int> GetNextTimerIdAsync()
         {
             // データベースから直接最大IDを取得
-            var timers = _repository.GetTimers();
+            var timers = await _repository.GetTimersAsync();
             var maxId = timers.Any() ? timers.Max(t => t.ID) : 0;
             return maxId + 1;
         }
 
-        private void SyncRecordIdsToTable(int timerId, string recordIdsText)
+        private async Task SyncRecordIdsToTableAsync(int timerId, string recordIdsText)
         {
             // 既存のRecordIdsを削除
-            _repository.DeleteAllTimerRecordIds(timerId);
-            
+            await _repository.DeleteAllTimerRecordIdsAsync(timerId);
+
             // RecordIdsをパースして中間テーブルに追加
             var idStrings = recordIdsText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var idStr in idStrings)
             {
                 if (int.TryParse(idStr.Trim(), out int recordId))
                 {
-                    _repository.AddTimerRecordId(timerId, recordId);
+                    await _repository.AddTimerRecordIdAsync(timerId, recordId);
                 }
             }
         }
 
         [RelayCommand]
-        private void DeleteTimer()
+        private async Task DeleteTimer()
         {
             if (SelectedTimer == null)
                 return;
-                
+
             var result = MessageBox.Show(
                 $"タイマーを削除しますか？\n\nタイマー名: {SelectedTimer.TimerName}",
                 "確認",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
-                
+
             if (result == MessageBoxResult.Yes)
             {
                 // RecordIdsを先に削除
-                _repository.DeleteAllTimerRecordIds(SelectedTimer.ID);
-                
+                await _repository.DeleteAllTimerRecordIdsAsync(SelectedTimer.ID);
+
                 // タイマー本体を削除
-                _repository.DeleteTimer(SelectedTimer.ID);
-                
+                await _repository.DeleteTimerAsync(SelectedTimer.ID);
+
                 LoadTimers();
             }
         }
 
         [RelayCommand]
-        private void SaveSelectedTimer()
+        private async Task SaveSelectedTimer()
         {
             if (SelectedTimer == null || !SelectedTimer.IsDirty)
                 return;
-                
+
             try
             {
                 var timer = SelectedTimer.GetModel();
-                
+
                 // タイマー本体を保存
-                _repository.UpdateTimer(timer);
-                
+                await _repository.UpdateTimerAsync(timer);
+
                 // RecordIdsを中間テーブルに保存（既存のデータを削除してから追加）
-                _repository.DeleteAllTimerRecordIds(SelectedTimer.ID);
+                await _repository.DeleteAllTimerRecordIdsAsync(SelectedTimer.ID);
                 foreach (var recordId in SelectedTimer.RecordIds)
                 {
-                    _repository.AddTimerRecordId(SelectedTimer.ID, recordId);
+                    await _repository.AddTimerRecordIdAsync(SelectedTimer.ID, recordId);
                 }
-                
+
                 // カテゴリ名を更新
                 if (SelectedTimer.TimerCategoryId.HasValue)
                 {
@@ -330,25 +330,25 @@ namespace KdxDesigner.ViewModels
                 {
                     SelectedTimer.CategoryName = null;
                 }
-                
+
                 // サイクル名を更新
                 if (SelectedTimer.CycleId.HasValue)
                 {
                     var cycle = Cycles.FirstOrDefault(c => c.Id == SelectedTimer.CycleId.Value);
                     SelectedTimer.CycleName = cycle?.CycleName ?? $"ID: {SelectedTimer.CycleId}";
                 }
-                
+
                 // MnemonicType名を更新
                 if (SelectedTimer.MnemonicId.HasValue)
                 {
                     var mnemonicType = MnemonicTypes.FirstOrDefault(m => m.Id == SelectedTimer.MnemonicId.Value);
                     SelectedTimer.MnemonicTypeName = mnemonicType?.TableName ?? $"ID: {SelectedTimer.MnemonicId}";
                 }
-                
+
                 SelectedTimer.ResetDirty();
                 UpdateCanSave();
                 FilteredTimers.Refresh(); // グリッドを更新（再読み込みではなく表示のみ更新）
-                
+
                 MessageBox.Show("保存しました。", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -358,7 +358,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void GenerateMnemonicTimerDevices()
+        private async Task GenerateMnemonicTimerDevices()
         {
             if (_mainViewModel.SelectedPlc == null)
             {
@@ -371,27 +371,27 @@ namespace KdxDesigner.ViewModels
                 "確認",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
-                
+
             if (result == MessageBoxResult.Yes)
             {
                 try
                 {
                     // 既存のMnemonicTimerDeviceを削除
-                    _repository.DeleteAllMnemonicTimerDevices();
+                    await _repository.DeleteAllMnemonicTimerDeviceAsync();
                     // 必要なデータを取得
-                    var timers = _repository.GetTimers();
-                    var details = _repository.GetProcessDetails();
-                    var operations = _repository.GetOperations();
-                    var cylinders = _repository.GetCYs();
-                    
+                    var timers = await _repository.GetTimersAsync();
+                    var details = await _repository.GetProcessDetailsAsync();
+                    var operations = await _repository.GetOperationsAsync();
+                    var cylinders = await _repository.GetCYsAsync();
+
                     int timerCount = 0;
                     int deviceStartT = 0; // TODO: 実際の値を取得する必要がある
-                    
+
                     // MnemonicTimerDeviceを生成
-                    _timerDeviceService.SaveWithDetail(timers, details, deviceStartT, _mainViewModel.SelectedPlc.Id, ref timerCount);
-                    _timerDeviceService.SaveWithOperation(timers, operations, deviceStartT, _mainViewModel.SelectedPlc.Id, ref timerCount);
-                    _timerDeviceService.SaveWithCY(timers, cylinders, deviceStartT, _mainViewModel.SelectedPlc.Id, ref timerCount);
-                    
+                    timerCount = await _timerDeviceService.SaveWithDetail(timers, details, deviceStartT, _mainViewModel.SelectedPlc.Id, timerCount);
+                    timerCount = await _timerDeviceService.SaveWithOperation(timers, operations, deviceStartT, _mainViewModel.SelectedPlc.Id, timerCount);
+                    timerCount = await _timerDeviceService.SaveWithCY(timers, cylinders, deviceStartT, _mainViewModel.SelectedPlc.Id, timerCount);
+
                     MessageBox.Show($"MnemonicTimerDeviceを生成しました。\n生成数: {timerCount}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
@@ -430,7 +430,7 @@ namespace KdxDesigner.ViewModels
         }
         
         [RelayCommand]
-        private void SaveAllTimers()
+        private async Task SaveAllTimers()
         {
             var dirtyTimers = _allTimers.Where(t => t.IsDirty).ToList();
             if (!dirtyTimers.Any())
@@ -438,21 +438,21 @@ namespace KdxDesigner.ViewModels
                 MessageBox.Show("変更されたタイマーはありません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            
+
             try
             {
                 foreach (var timer in dirtyTimers)
                 {
                     var timerModel = timer.GetModel();
-                    _repository.UpdateTimer(timerModel);
-                    
+                    await _repository.UpdateTimerAsync(timerModel);
+
                     // RecordIdsを中間テーブルに保存（RecordIdsが変更された場合のみ）
-                    _repository.DeleteAllTimerRecordIds(timer.ID);
+                    await _repository.DeleteAllTimerRecordIdsAsync(timer.ID);
                     foreach (var recordId in timer.RecordIds)
                     {
-                        _repository.AddTimerRecordId(timer.ID, recordId);
+                        await _repository.AddTimerRecordIdAsync(timer.ID, recordId);
                     }
-                    
+
                     // カテゴリ名を更新
                     if (timer.TimerCategoryId.HasValue)
                     {
@@ -463,24 +463,24 @@ namespace KdxDesigner.ViewModels
                     {
                         timer.CategoryName = null;
                     }
-                    
+
                     // サイクル名を更新
                     if (timer.CycleId.HasValue)
                     {
                         var cycle = Cycles.FirstOrDefault(c => c.Id == timer.CycleId.Value);
                         timer.CycleName = cycle?.CycleName ?? $"ID: {timer.CycleId}";
                     }
-                    
+
                     // MnemonicType名を更新
                     if (timer.MnemonicId.HasValue)
                     {
                         var mnemonicType = MnemonicTypes.FirstOrDefault(m => m.Id == timer.MnemonicId.Value);
                         timer.MnemonicTypeName = mnemonicType?.TableName ?? $"ID: {timer.MnemonicId}";
                     }
-                    
+
                     timer.ResetDirty();
                 }
-                
+
                 UpdateCanSave();
                 FilteredTimers.Refresh(); // グリッドを更新（再読み込みではなく表示のみ更新）
                 MessageBox.Show($"{dirtyTimers.Count}件のタイマーを保存しました。", "成功", MessageBoxButton.OK, MessageBoxImage.Information);

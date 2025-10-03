@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using Kdx.Contracts.DTOs;
 using KdxDesigner.Models;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Services.LinkDevice;
 
 using System.Collections.ObjectModel;
@@ -14,7 +14,7 @@ namespace KdxDesigner.ViewModels
 {
     public partial class LinkDeviceViewModel : ObservableObject
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private readonly LinkDeviceService _linkDeviceService;
 
         /// <summary>
@@ -34,13 +34,13 @@ namespace KdxDesigner.ViewModels
         /// </summary>
         public ObservableCollection<PlcLinkSettingViewModel> PlcLinkSettings { get; } = new();
 
-        public LinkDeviceViewModel(IAccessRepository repository)
+        public LinkDeviceViewModel(ISupabaseRepository repository)
         {
             _repository = repository;
             _linkDeviceService = new LinkDeviceService(_repository);
 
             // データベースから利用可能なPLCをすべて読み込む
-            AvailablePlcs = new ObservableCollection<PLC>(_repository.GetPLCs());
+            AvailablePlcs = new ObservableCollection<PLC>(Task.Run(async () => await _repository.GetPLCsAsync()).GetAwaiter().GetResult());
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void ExecuteLink()
+        private async Task ExecuteLink()
         {
             // 1. 入力検証
             if (SelectedMainPlc == null)
@@ -88,7 +88,7 @@ namespace KdxDesigner.ViewModels
             // 2. LinkDeviceServiceに処理を委譲
             try
             {
-                bool success = _linkDeviceService.CreateLinkDeviceRecords(SelectedMainPlc, selectedSettings);
+                bool success = await _linkDeviceService.CreateLinkDeviceRecords(SelectedMainPlc, selectedSettings);
                 if (success)
                 {
                     MessageBox.Show("リンクデバイスの登録が完了しました。", "成功", MessageBoxButton.OK, MessageBoxImage.Information);

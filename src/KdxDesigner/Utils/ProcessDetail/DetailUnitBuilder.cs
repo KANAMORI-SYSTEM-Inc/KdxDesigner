@@ -1,10 +1,9 @@
-using KdxDesigner.Models;
-using KdxDesigner.Models.Define;
-using KdxDesigner.ViewModels;
-using Kdx.Contracts.Interfaces;
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
 using Kdx.Contracts.Enums;
+using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.ViewModels;
 
 
 namespace KdxDesigner.Utils.ProcessDetail
@@ -20,7 +19,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         private readonly MainViewModel _mainViewModel;
         private readonly IIOAddressService _ioAddressService;
         private readonly IErrorAggregator _errorAggregator;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
         // --- データセットのフィールド ---
         private readonly MnemonicDeviceWithProcessDetail _detail;
@@ -50,7 +49,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             MainViewModel mainViewModel,
             IIOAddressService ioAddressService,
             IErrorAggregator errorAggregator,
-            IAccessRepository repository)
+            ISupabaseRepository repository)
         {
             // --- サービス ---
             _mainViewModel = mainViewModel;
@@ -85,16 +84,16 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// <summary>
         /// 通常工程のビルド
         /// </summary>
-        public List<LadderCsvRow> BuildNormal()
+        public async Task<List<LadderCsvRow>> BuildNormal()
         {
             var result = new List<LadderCsvRow>();
             result.Add(CreateStatement("通常工程"));
 
             var detailFunctions = CreateDetailFunctions();
-            var timer = GetTimerForOperation();
+            var timer = await GetTimerForOperation();
 
             // L0 工程開始
-            result.AddRange(detailFunctions.L0(timer));
+            result.AddRange(await detailFunctions.L0(timer));
 
             // L1 工程開始
             var operationFinish = _operations.FirstOrDefault(o => o.Mnemonic.RecordId == _detail.Detail.OperationId);
@@ -135,7 +134,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程まとめのビルド
         /// </summary>
         /// <returns></returns>
-        public List<LadderCsvRow> BuildSummarize()
+        public async Task<List<LadderCsvRow>> BuildSummarize()
         {
             var result = new List<LadderCsvRow>();
 
@@ -146,12 +145,12 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -172,25 +171,25 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// センサON確認のビルド
         /// </summary>
         /// <returns></returns>
-        public List<LadderCsvRow> BuildSensorON()
+        public async Task<List<LadderCsvRow>> BuildSensorON()
         {
             var result = new List<LadderCsvRow>();
 
             // 行間ステートメントを追加
             result.Add(CreateStatement("センサON確認"));
-            
+
             // L0 工程開始
             var detailFunctions = CreateDetailFunctions();
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -267,7 +266,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程詳細：センサOFFのビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildSensorOFF()
+        public async Task<List<LadderCsvRow>> BuildSensorOFF()
         {
             var result = new List<LadderCsvRow>();
 
@@ -275,16 +274,16 @@ namespace KdxDesigner.Utils.ProcessDetail
             result.Add(CreateStatement("センサOFF確認"));
             // L0 工程開始
             var detailFunctions = CreateDetailFunctions();
-                        // L0 工程開始
+            // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -363,7 +362,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程詳細：工程分岐のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildBranch()
+        public async Task<List<LadderCsvRow>> BuildBranch()
         {
             var result = new List<LadderCsvRow>();
 
@@ -374,13 +373,13 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -447,7 +446,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程詳細：工程合流のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildMerge()
+        public async Task<List<LadderCsvRow>> BuildMerge()
         {
             var result = new List<LadderCsvRow>();
             var detailFunctions = CreateDetailFunctions();
@@ -468,11 +467,11 @@ namespace KdxDesigner.Utils.ProcessDetail
 
             // ProcessDetailの開始条件を取得（中間テーブルから）
             var processDetailStartIds = new List<int>();
-            
+
             // 中間テーブルから取得
-            var connections = _repository.GetConnectionsByToId(_detail.Detail.Id);
+            var connections = await _repository.GetConnectionsByToIdAsync(_detail.Detail.Id);
             processDetailStartIds.AddRange(connections.Select(c => c.FromProcessDetailId));
-            
+
             var processDetailStartDevices = _details
                 .Where(d => processDetailStartIds.Contains(d.Mnemonic.RecordId))
                 .ToList();
@@ -516,7 +515,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程詳細：IL待ち工程のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildILWait()
+        public async Task<List<LadderCsvRow>> BuildILWait()
         {
             var result = new List<LadderCsvRow>();
 
@@ -527,13 +526,13 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -591,10 +590,10 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程詳細：工程OFF確認のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildDetailProcessOFF()
+        public async Task<List<LadderCsvRow>> BuildDetailProcessOFF()
         {
             var result = new List<LadderCsvRow>();
-            
+
             // 行間ステートメントを追加
             result.Add(CreateStatement("工程OFF確認"));
             // L0 工程開始
@@ -602,19 +601,19 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
             // L1 操作開始
             // ProcessDetailFinishテーブルから終了工程IDを取得
-            var finishes = _repository.GetFinishesByProcessDetailId(_detail.Detail.Id);
+            var finishes = await _repository.GetFinishesByProcessDetailIdAsync(_detail.Detail.Id);
             var detailOffIds = finishes.Select(f => f.FinishProcessDetailId).ToList();
 
             if (detailOffIds.Count != 1)
@@ -641,7 +640,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             }
             else
             {
-                result.Add(LadderRow.AddLD(detailOffDeviceMnemonic.Mnemonic.DeviceLabel 
+                result.Add(LadderRow.AddLD(detailOffDeviceMnemonic.Mnemonic.DeviceLabel
                     + detailOffDeviceMnemonic.Mnemonic.StartNum.ToString()));
 
                 // skipModeが設定されている場合は、スキップ処理を追加
@@ -665,8 +664,8 @@ namespace KdxDesigner.Utils.ProcessDetail
                 result.Add(LadderRow.AddAND(_label + (_outNum + 0).ToString()));
                 result.Add(LadderRow.AddOUT(_label + (_outNum + 1).ToString()));
 
-                
-                
+
+
             }
             result.Add(LadderRow.AddLD(_label + (_outNum + 1).ToString()));
             result.Add(LadderRow.AddAND(SettingsManager.Settings.PauseSignal));
@@ -684,7 +683,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 工程詳細：期間工程のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildSeason()
+        public async Task<List<LadderCsvRow>> BuildSeason()
         {
             var result = new List<LadderCsvRow>();
 
@@ -695,13 +694,13 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -748,7 +747,7 @@ namespace KdxDesigner.Utils.ProcessDetail
                 result.Add(LadderRow.AddLD(SettingsManager.Settings.PauseSignal));
             }
 
-            var processDetailFinishDevices = detailFunctions.FinishDevices();
+            var processDetailFinishDevices = await detailFunctions.FinishDevices();
             if (!string.IsNullOrEmpty(_detail.Detail.FinishSensor))
             {
                 // FinishSensorが設定されている場合
@@ -810,7 +809,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detailTimers">タイマの詳細リスト</param>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildTimerProcess(List<MnemonicTimerDeviceWithDetail> detailTimers)
+        public async Task<List<LadderCsvRow>> BuildTimerProcess(List<MnemonicTimerDeviceWithDetail> detailTimers)
         {
             var result = new List<LadderCsvRow>();
 
@@ -821,15 +820,15 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timersDetail = _repository.GetTimersByRecordId(_mainViewModel.SelectedCycle!.Id, 3, _detail.Detail.OperationId.Value);
+                var timersDetail = await _repository.GetTimersByRecordIdAsync(_mainViewModel.SelectedCycle!.Id, 3, _detail.Detail.OperationId.Value);
                 var timer = timersDetail.Where(t => t.TimerCategoryId == 15).FirstOrDefault();
 
-                result.AddRange(detailFunctions.L0(timer));
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -888,7 +887,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detailTimers">タイマの詳細リスト</param>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildTimer(List<MnemonicTimerDeviceWithDetail> detailTimers)
+        public async Task<List<LadderCsvRow>> BuildTimer(List<MnemonicTimerDeviceWithDetail> detailTimers)
         {
             var result = new List<LadderCsvRow>();
 
@@ -899,16 +898,16 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timersDetail = _repository.GetTimersByRecordId(_mainViewModel.SelectedCycle!.Id, 3, _detail.Detail.OperationId.Value);
+                var timersDetail = await _repository.GetTimersByRecordIdAsync(_mainViewModel.SelectedCycle!.Id, 3, _detail.Detail.OperationId.Value);
 
                 var timer = timersDetail.Where(t => t.TimerCategoryId == 15).FirstOrDefault();
 
-                result.AddRange(detailFunctions.L0(timer));
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -965,7 +964,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 複合工程のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildModule()
+        public async Task<List<LadderCsvRow>> BuildModule()
         {
             var result = new List<LadderCsvRow>();
 
@@ -976,13 +975,13 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -990,7 +989,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             result.Add(LadderRow.AddLD(_label + (_outNum + 0).ToString()));
             result.Add(LadderRow.AddOUT(_label + (_outNum + 1).ToString()));
 
-            var processDetailFinishDevices = detailFunctions.FinishDevices();
+            var processDetailFinishDevices = await detailFunctions.FinishDevices();
             if (processDetailFinishDevices.Count == 0)
             {
                 detailFunctions.DetailError("複数工程では終了工程が必須です");
@@ -1004,7 +1003,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             else
             {
                 var finishLabel = processDetailFinishDevices.First().Mnemonic.DeviceLabel ?? string.Empty;
-                var finishNum = processDetailFinishDevices.First().Mnemonic.StartNum;    
+                var finishNum = processDetailFinishDevices.First().Mnemonic.StartNum;
                 result.Add(LadderRow.AddLD(finishLabel + (finishNum + 4).ToString()));
                 result.Add(LadderRow.AddAND(SettingsManager.Settings.PauseSignal));
                 result.Add(LadderRow.AddOR(_label + (_outNum + 4).ToString()));
@@ -1023,7 +1022,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 複数工程のビルド
         /// </summary>
         /// <returns>ニモニックリスト</returns>
-        public List<LadderCsvRow> BuildReset()
+        public async Task<List<LadderCsvRow>> BuildReset()
         {
             var result = new List<LadderCsvRow>();
 
@@ -1034,13 +1033,13 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L0 工程開始
             if (_detail.Detail.OperationId != null)
             {
-                var timer = GetTimerForOperation();
-                result.AddRange(detailFunctions.L0(timer));
+                var timer = await GetTimerForOperation();
+                result.AddRange(await detailFunctions.L0(timer));
 
             }
             else
             {
-                result.AddRange(detailFunctions.L0(null));
+                result.AddRange(await detailFunctions.L0(null));
 
             }
 
@@ -1056,22 +1055,22 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// <summary>
         /// OperationIdに基づいて適切なTimerを取得
         /// </summary>
-        private MnemonicTimerDevice? GetTimerForOperation()
+        private async Task<MnemonicTimerDevice?> GetTimerForOperation()
         {
             // StartTimerIdが設定されている場合は、直接そのタイマーを使用
             if (_detail.Detail.StartTimerId.HasValue)
             {
                 // MnemonicTimerDeviceテーブルから、指定されたTimerIdを持つレコードを取得
-                var timerDevices = _repository.GetMnemonicTimerDevices();
-                var timerDevice = timerDevices.FirstOrDefault(t => 
+                var timerDevices = await _repository.GetMnemonicTimerDevicesAsync();
+                var timerDevice = timerDevices.FirstOrDefault(t =>
                     t.TimerId == _detail.Detail.StartTimerId.Value);
-                
+
                 if (timerDevice != null)
                 {
                     return timerDevice;
                 }
             }
-            
+
             return null; // タイマーが見つからない場合はnullを返す
         }
 

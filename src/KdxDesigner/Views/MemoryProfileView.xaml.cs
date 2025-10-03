@@ -4,13 +4,13 @@ using System.Windows;
 using System.Windows.Data;
 
 using KdxDesigner.ViewModels;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 namespace KdxDesigner.Views
 {
     public partial class MemoryProfileView : Window
     {
-        public MemoryProfileView(MainViewModel mainViewModel, IAccessRepository repository)
+        public MemoryProfileView(MainViewModel mainViewModel, ISupabaseRepository repository)
         {
             InitializeComponent();
             DataContext = new MemoryProfileViewModel(mainViewModel, repository);

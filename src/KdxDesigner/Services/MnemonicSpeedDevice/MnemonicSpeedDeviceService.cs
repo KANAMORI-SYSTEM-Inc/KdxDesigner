@@ -1,5 +1,5 @@
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 namespace KdxDesigner.Services.MnemonicSpeedDevice
 {
@@ -8,9 +8,9 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
     /// </summary>
     internal class MnemonicSpeedDeviceService : IMnemonicSpeedDeviceService
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
-        public MnemonicSpeedDeviceService(IAccessRepository repository)
+        public MnemonicSpeedDeviceService(ISupabaseRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
@@ -25,7 +25,7 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
         public List<Kdx.Contracts.DTOs.MnemonicSpeedDevice> GetMnemonicSpeedDevice(int plcId)
         {
             // TODO: Supabase対応実装
-            // IAccessRepositoryにGetMnemonicSpeedDevicesメソッドを追加する必要がある
+            // ISupabaseRepositoryにGetMnemonicSpeedDevicesメソッドを追加する必要がある
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
@@ -34,7 +34,7 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
             int startNum, int plcId)
         {
             // TODO: Supabase対応実装
-            // トランザクション処理をIAccessRepository経由で実装する必要がある
+            // トランザクション処理をISupabaseRepository経由で実装する必要がある
             throw new NotImplementedException("Supabase対応が必要です");
         }
     }

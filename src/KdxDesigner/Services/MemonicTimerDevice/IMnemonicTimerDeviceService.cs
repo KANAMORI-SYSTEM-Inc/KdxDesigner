@@ -1,7 +1,4 @@
 using Kdx.Contracts.DTOs;
-using KdxDesigner.Models;
-
-using System.Collections.Generic;
 using Timer = Kdx.Contracts.DTOs.Timer;
 
 namespace KdxDesigner.Services.MemonicTimerDevice
@@ -17,7 +14,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId">PLC ID</param>
         /// <param name="cycleId">サイクルID</param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        List<MnemonicTimerDevice> GetMnemonicTimerDevice(int plcId, int cycleId);
+        Task<List<MnemonicTimerDevice>> GetMnemonicTimerDevice(int plcId, int cycleId);
 
         /// <summary>
         /// MnemonicTimerDeviceをPlcId、CycleId、MnemonicIdで取得する
@@ -26,7 +23,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="cycleId">サイクルID</param>
         /// <param name="mnemonicId">ニーモニックID</param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        List<MnemonicTimerDevice> GetMnemonicTimerDeviceByCycle(int plcId, int cycleId, int mnemonicId);
+        Task<List<MnemonicTimerDevice>> GetMnemonicTimerDeviceByCycle(int plcId, int cycleId, int mnemonicId);
 
         /// <summary>
         /// MnemonicTimerDeviceをPlcIdとMnemonicIdで取得する
@@ -34,7 +31,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId">PLC ID</param>
         /// <param name="mnemonicId">ニーモニックID</param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        List<MnemonicTimerDevice> GetMnemonicTimerDeviceByMnemonic(int plcId, int mnemonicId);
+        Task<List<MnemonicTimerDevice>> GetMnemonicTimerDeviceByMnemonic(int plcId, int mnemonicId);
 
         /// <summary>
         /// MnemonicTimerDeviceをPlcIdとTimerIdで取得する
@@ -42,7 +39,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId">PLC ID</param>
         /// <param name="timerId">タイマーID</param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        List<MnemonicTimerDevice> GetMnemonicTimerDeviceByTimerId(int plcId, int timerId);
+        Task<List<MnemonicTimerDevice>> GetMnemonicTimerDeviceByTimerId(int plcId, int timerId);
 
         /// <summary>
         /// ProcessDetailのタイマーデバイスを保存する
@@ -51,8 +48,8 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="details">ProcessDetailのリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        /// <param name="count">カウント（参照渡し）</param>
-        void SaveWithDetail(List<Timer> timers, List<ProcessDetail> details, int startNum, int plcId, ref int count);
+        /// <returns>保存されたデバイス数</returns>
+        Task<int> SaveWithDetail(List<Timer> timers, List<ProcessDetail> details, int startNum, int plcId, int count);
 
         /// <summary>
         /// Operationのタイマーデバイスを保存する
@@ -61,8 +58,8 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="operations">Operationのリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        /// <param name="count">カウント（参照渡し）</param>
-        void SaveWithOperation(List<Timer> timers, List<Operation> operations, int startNum, int plcId, ref int count);
+        /// <returns>保存されたデバイス数</returns>
+        Task<int> SaveWithOperation(List<Timer> timers, List<Operation> operations, int startNum, int plcId, int count);
 
         /// <summary>
         /// CY（シリンダー）のタイマーデバイスを保存する
@@ -71,7 +68,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="cylinders">CYのリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        /// <param name="count">カウント（参照渡し）</param>
-        void SaveWithCY(List<Timer> timers, List<Cylinder> cylinders, int startNum, int plcId, ref int count);
+        /// <returns>保存されたデバイス数</returns>
+        Task<int> SaveWithCY(List<Timer> timers, List<Cylinder> cylinders, int startNum, int plcId, int count);
     }
 }

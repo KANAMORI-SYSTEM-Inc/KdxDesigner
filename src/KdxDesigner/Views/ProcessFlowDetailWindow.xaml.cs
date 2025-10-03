@@ -1,4 +1,4 @@
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 using System.Windows;
 using System.Windows.Input;
@@ -17,7 +17,7 @@ namespace KdxDesigner.Views
         private ProcessDetailPropertiesWindow? _propertiesWindow;
         private ConnectionInfoWindow? _connectionInfoWindow;
         
-        public ProcessFlowDetailWindow(IAccessRepository repository, int cycleId, string cycleName)
+        public ProcessFlowDetailWindow(ISupabaseRepository repository, int cycleId, string cycleName)
         {
             InitializeComponent();
             _viewModel = new ProcessFlowDetailViewModel(repository, cycleId, cycleName);

@@ -1,6 +1,6 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using System.Diagnostics;
 
 using KdxDesigner.ViewModels;
@@ -14,9 +14,8 @@ namespace KdxDesigner.Services.MemonicTimerDevice
     /// </summary>
     public class MnemonicTimerDeviceService : IMnemonicTimerDeviceService
     {
-        private readonly string _connectionString;
         private readonly MainViewModel _mainViewModel;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
         /// <summary>
         /// MnemonicTimerDeviceServiceのコンストラクタ
@@ -24,10 +23,9 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="repository"></param>
         /// <param name="mainViewModel"></param>
         public MnemonicTimerDeviceService(
-            IAccessRepository repository,
+            ISupabaseRepository repository,
             MainViewModel mainViewModel)
         {
-            _connectionString = repository.ConnectionString;
             _mainViewModel = mainViewModel;
             _repository = repository;
         }
@@ -38,9 +36,10 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId"></param>
         /// <param name="cycleId"></param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        public List<MnemonicTimerDevice> GetMnemonicTimerDevice(int plcId, int cycleId)
+        public async Task<List<MnemonicTimerDevice>> GetMnemonicTimerDevice(int plcId, int cycleId)
         {
-            var mnemonicTimerDevice = _repository.GetMnemonicTimerDevicesByCycleId(plcId, cycleId);
+            var mnemonicTimerDevice = await _repository.GetMnemonicTimerDevicesByClcleIdAsync(plcId, cycleId);
+
             return mnemonicTimerDevice;
         }
 
@@ -51,9 +50,9 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="cycleId">CycleId</param>
         /// <param name="mnemonicId">MnemonicId</param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        public List<MnemonicTimerDevice> GetMnemonicTimerDeviceByCycle(int plcId, int cycleId, int mnemonicId)
+        public async Task<List<MnemonicTimerDevice>> GetMnemonicTimerDeviceByCycle(int plcId, int cycleId, int mnemonicId)
         {
-            var mnemonicTimerDevice = _repository.GetMnemonicTimerDevicesByCycleAndMnemonicId(plcId, cycleId, mnemonicId);
+            var mnemonicTimerDevice = await _repository.GetMnemonicTimerDevicesByCycleAndMnemonicIdAsync(plcId, cycleId, mnemonicId);
             return mnemonicTimerDevice;
         }
 
@@ -63,10 +62,10 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId">PlcId</param>
         /// <param name="mnemonicId">MnemonicId</param>
         /// <returns>MnemonicTimerDeviceのリスト</returns>
-        public List<MnemonicTimerDevice> GetMnemonicTimerDeviceByMnemonic(int plcId, int mnemonicId)
+        public async Task<List<MnemonicTimerDevice>> GetMnemonicTimerDeviceByMnemonic(int plcId, int mnemonicId)
         {
             Debug.WriteLine($"[GetMnemonicTimerDeviceByMnemonic] 開始 - plcId: {plcId}, mnemonicId: {mnemonicId}");
-            var mnemonicTimerDevice = _repository.GetMnemonicTimerDevicesByMnemonicId(plcId, mnemonicId);
+            var mnemonicTimerDevice = await _repository.GetMnemonicTimerDevicesByMnemonicIdAsync(plcId, mnemonicId);
             Debug.WriteLine($"[GetMnemonicTimerDeviceByMnemonic] 取得完了 - {mnemonicTimerDevice.Count}件");
             return mnemonicTimerDevice;
         }
@@ -77,10 +76,10 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId">PlcId</param>
         /// <param name="timerId">TimerId</param>
         /// <returns>単一のMnemonicTimerDevice</returns>
-        public List<MnemonicTimerDevice> GetMnemonicTimerDeviceByTimerId(int plcId, int timerId)
+        public async Task<List<MnemonicTimerDevice>> GetMnemonicTimerDeviceByTimerId(int plcId, int timerId)
         {
 
-            var mnemonicTimerDevice = _repository.GetMnemonicTimerDevicesByTimerId(plcId, timerId);
+            var mnemonicTimerDevice = await _repository.GetMnemonicTimerDevicesByTimerIdAsync(plcId, timerId);
             return mnemonicTimerDevice;
         }
 
@@ -89,7 +88,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// </summary>
         /// <param name="deviceToSave"></param>
         /// <param name="existingRecord"></param>
-        private void UpsertMnemonicTimerDevice(
+        private async Task UpsertMnemonicTimerDevice(
             MnemonicTimerDevice deviceToSave,
             MnemonicTimerDevice? existingRecord)
         {
@@ -97,10 +96,10 @@ namespace KdxDesigner.Services.MemonicTimerDevice
             {
                 Debug.WriteLine($"[MnemonicTimerDeviceService.UpsertMnemonicTimerDevice] 開始");
                 Debug.WriteLine($"  保存対象: MnemonicId={deviceToSave.MnemonicId}, RecordId={deviceToSave.RecordId}, TimerId={deviceToSave.TimerId}");
-                
-                // IAccessRepository経由でUpsertを実行
-                _repository.UpsertMnemonicTimerDevice(deviceToSave);
-                
+
+                // ISupabaseRepository経由でUpsertを実行
+                await _repository.UpsertMnemonicTimerDeviceAsync(deviceToSave);
+
                 Debug.WriteLine($"[MnemonicTimerDeviceService.UpsertMnemonicTimerDevice] 完了");
             }
             catch (Exception ex)
@@ -119,17 +118,17 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId"></param>
         /// <param name="cycleId"></param>
         /// <param name="count"></param>
-        public void SaveWithDetail(
+        public async Task<int> SaveWithDetail(
             List<Timer> timers,
-            List<ProcessDetail> details, int startNum, int plcId, ref int count)
+            List<ProcessDetail> details, int startNum, int plcId, int count)
         {
             try
             {
                 Debug.WriteLine($"[SaveWithDetail] 開始 - details: {details.Count}件, timers: {timers.Count}件");
-                
+
                 // 1. 既存データを取得し、(MnemonicId, RecordId, TimerId)の複合キーを持つ辞書に変換
                 Debug.WriteLine($"[SaveWithDetail] GetMnemonicTimerDeviceByMnemonic呼び出し前");
-                var allExisting = GetMnemonicTimerDeviceByMnemonic(plcId, (int)MnemonicType.ProcessDetail);
+                var allExisting = await GetMnemonicTimerDeviceByMnemonic(plcId, (int)MnemonicType.ProcessDetail);
                 Debug.WriteLine($"[SaveWithDetail] 既存データ取得完了: {allExisting.Count}件");
                 var existingLookup = allExisting.ToDictionary(m => (m.MnemonicId, m.RecordId, m.TimerId), m => m);
                 Debug.WriteLine($"[SaveWithDetail] 辞書作成完了");
@@ -141,7 +140,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                 foreach (var timer in detailTimersSource)
                 {
                     // 中間テーブルからRecordIdを取得
-                    var recordIds = _repository.GetTimerRecordIds(timer.ID);
+                    var recordIds = await _repository.GetTimerRecordIdsAsync(timer.ID);
                     foreach (var recordId in recordIds)
                     {
                         if (!timersByRecordId.ContainsKey(recordId))
@@ -206,7 +205,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                                 Comment1 = timer.TimerName
                             };
 
-                            UpsertMnemonicTimerDevice(deviceToSave, existingRecord);
+                            await UpsertMnemonicTimerDevice(deviceToSave, existingRecord);
                             count++;
                         }
                     }
@@ -219,6 +218,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                 // Debug.WriteLine($"SaveWithOperation 失敗: {ex.Message}");
                 throw;
             }
+            return count;
         }
 
         /// <summary>
@@ -230,15 +230,17 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="plcId"></param>
         /// <param name="count"></param>
         /// issued by the user
-        public void SaveWithOperation(
+        public async Task<int> SaveWithOperation(
             List<Timer> timers,
             List<Operation> operations,
-            int startNum, int plcId, ref int count)
+            int startNum, 
+            int plcId,
+            int count)
         {
             try
             {
                 // 1. 既存データを取得し、(MnemonicId, RecordId, TimerId)の複合キーを持つ辞書に変換
-                var allExisting = GetMnemonicTimerDeviceByMnemonic(plcId, (int)MnemonicType.Operation);
+                var allExisting = await GetMnemonicTimerDeviceByMnemonic(plcId, (int)MnemonicType.Operation);
                 var existingLookup = allExisting.ToDictionary(m => (m.MnemonicId, m.RecordId, m.TimerId), m => m);
 
                 // 2. タイマーをRecordIdごとに整理した辞書を作成
@@ -248,7 +250,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                 foreach (var timer in operationTimersSource)
                 {
                     // 中間テーブルからRecordIdを取得
-                    var recordIds = _repository.GetTimerRecordIds(timer.ID);
+                    var recordIds = await _repository.GetTimerRecordIdsAsync(timer.ID);
                     foreach (var recordId in recordIds)
                     {
                         if (!timersByRecordId.ContainsKey(recordId))
@@ -310,7 +312,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                             };
 
                             // MnemonicTimerDeviceを挿入または更新
-                            UpsertMnemonicTimerDevice(deviceToSave, existingRecord);
+                            await UpsertMnemonicTimerDevice(deviceToSave, existingRecord);
                             count++;
                         }
                     }
@@ -323,6 +325,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                 // Debug.WriteLine($"SaveWithOperation 失敗: {ex.Message}");
                 throw;
             }
+            return count;
         }
 
         /// <summary>
@@ -333,15 +336,16 @@ namespace KdxDesigner.Services.MemonicTimerDevice
         /// <param name="startNum"></param>
         /// <param name="plcId"></param>
         /// <param name="count"></param>
-        public void SaveWithCY(
+        public async Task<int> SaveWithCY(
             List<Timer> timers,
             List<Cylinder> cylinders,
-            int startNum, int plcId, ref int count)
+            int startNum, int plcId,
+            int count)
         {
             try
             {
                 // 1. 既存データを取得し、(MnemonicId, RecordId, TimerId)の複合キーを持つ辞書に変換
-                var allExisting = GetMnemonicTimerDeviceByMnemonic(plcId, (int)MnemonicType.CY);
+                var allExisting = await GetMnemonicTimerDeviceByMnemonic(plcId, (int)MnemonicType.CY);
                 var existingLookup = allExisting.ToDictionary(m => (m.MnemonicId, m.RecordId, m.TimerId), m => m);
 
                 // 2. CYに関連するタイマーをRecordIdごとに整理した辞書を作成
@@ -351,7 +355,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                 foreach (var timer in cylinderTimersSource)
                 {
                     // 中間テーブルからRecordIdを取得
-                    var recordIds = _repository.GetTimerRecordIds(timer.ID);
+                    var recordIds = await _repository.GetTimerRecordIdsAsync(timer.ID);
                     foreach (var recordId in recordIds)
                     {
                         if (!timersByRecordId.ContainsKey(recordId))
@@ -415,7 +419,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                                 Comment1 = timer.TimerName
                             };
 
-                            UpsertMnemonicTimerDevice(deviceToSave, existingRecord);
+                            await UpsertMnemonicTimerDevice(deviceToSave, existingRecord);
                             count++;
                         }
                     }
@@ -427,6 +431,7 @@ namespace KdxDesigner.Services.MemonicTimerDevice
                 Console.WriteLine($"SaveWithCY 失敗: {ex.Message}");
                 throw;
             }
+            return count;
         }
     }
 }

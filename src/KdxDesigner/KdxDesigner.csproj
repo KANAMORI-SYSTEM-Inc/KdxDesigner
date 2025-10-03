@@ -49,7 +49,6 @@
     <Compile Include="Views\*.cs" />
     <Compile Include="ViewModels\*.cs" />
     <Compile Include="Models\*.cs" />
-    <Compile Include="Models\Define\*.cs" />
     <Compile Include="Services\**\*.cs" />
     <Compile Include="Utils\**\*.cs" />
   </ItemGroup>
@@ -65,11 +64,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kdx.Contracts" Version="1.0.9" />
-    <PackageReference Include="Kdx.Contracts.ViewModels" Version="1.0.9" />
-    <PackageReference Include="Kdx.Core" Version="1.0.9" />
-    <PackageReference Include="Kdx.Infrastructure" Version="1.0.9" />
-    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="1.0.9" />
+    <PackageReference Include="Kdx.Contracts" Version="2.0.1" />
+    <PackageReference Include="Kdx.Core" Version="2.0.1" />
+    <PackageReference Include="Kdx.Infrastructure" Version="2.0.1" />
+    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

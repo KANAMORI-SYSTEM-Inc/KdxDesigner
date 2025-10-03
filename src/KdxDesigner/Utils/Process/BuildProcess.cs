@@ -1,7 +1,6 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
-using Kdx.Contracts.Interfaces;
-using KdxDesigner.Models.Define;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 namespace KdxDesigner.Utils.Process
 {
@@ -14,12 +13,12 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// 開始条件を取得する（新しい中間テーブルを使用）
         /// </summary>
-        private static List<int> GetStartConditions(
-            IAccessRepository repository,
+        private static async Task<List<int>> GetStartConditions(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process)
         {
             // 新しい中間テーブルから開始条件を取得
-            var startConditions = repository.GetStartConditionsByProcessId(process.Process.Id);
+            var startConditions = await repository.GetStartConditionsByProcessIdAsync(process.Process.Id);
 
             return startConditions
                 .Select(sc => sc.StartProcessDetailId)
@@ -29,12 +28,12 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// 終了条件を取得する（新しい中間テーブルを使用）
         /// </summary>
-        private static List<int> GetFinishConditions(
-            IAccessRepository repository,
+        private static async Task<List<int>> GetFinishConditions(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process)
         {
             // 新しい中間テーブルから終了条件を取得
-            var finishConditions = repository.GetFinishConditionsByProcessId(process.Process.Id);
+            var finishConditions = await repository.GetFinishConditionsByProcessIdAsync(process.Process.Id);
 
             return finishConditions
                 .Select(fc => fc.FinishProcessDetailId)
@@ -44,8 +43,8 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// BuildNormalメソッド
         /// </summary>
-        public static List<LadderCsvRow> BuildNormal(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildNormal(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
@@ -63,7 +62,7 @@ namespace KdxDesigner.Utils.Process
             }
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {
@@ -151,7 +150,7 @@ namespace KdxDesigner.Utils.Process
 
             // OUT L4 完了
             // 終了条件を新しい方法で取得
-            List<int> finishConditions = GetFinishConditions(repository, process);
+            List<int> finishConditions = await GetFinishConditions(repository, process);
 
             if (finishConditions.Any())
             {
@@ -178,8 +177,8 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// BuildResetAfterメソッド
         /// </summary>
-        public static List<LadderCsvRow> BuildResetAfter(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildResetAfter(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
@@ -197,7 +196,7 @@ namespace KdxDesigner.Utils.Process
             }
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {
@@ -273,7 +272,7 @@ namespace KdxDesigner.Utils.Process
 
             // OUT L2 実行中
             // 終了条件を新しい方法で取得
-            List<int> finishConditions = GetFinishConditions(repository, process);
+            List<int> finishConditions = await GetFinishConditions(repository, process);
 
             if (finishConditions.Any())
             {
@@ -304,15 +303,15 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// BuildSubProcessメソッド
         /// </summary>
-        public static List<LadderCsvRow> BuildSubProcess(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildSubProcess(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
             var result = new List<LadderCsvRow>();
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {
@@ -358,15 +357,15 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// BuildConditionメソッド
         /// </summary>
-        public static List<LadderCsvRow> BuildCondition(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildCondition(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
             var result = new List<LadderCsvRow>();
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {
@@ -412,15 +411,15 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// BuildConditionStartメソッド
         /// </summary>
-        public static List<LadderCsvRow> BuildConditionStart(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildConditionStart(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
             var result = new List<LadderCsvRow>();
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {
@@ -461,8 +460,8 @@ namespace KdxDesigner.Utils.Process
         }
 
         // BuildIL
-        public static List<LadderCsvRow> BuildIL(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildIL(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
@@ -480,7 +479,7 @@ namespace KdxDesigner.Utils.Process
             }
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {
@@ -564,8 +563,8 @@ namespace KdxDesigner.Utils.Process
         }
 
         // BuildReset
-        public static List<LadderCsvRow> BuildReset(
-            IAccessRepository repository,
+        public static async Task<List<LadderCsvRow>> BuildReset(
+            ISupabaseRepository repository,
             MnemonicDeviceWithProcess process,
             List<MnemonicDeviceWithProcessDetail> detail)
         {
@@ -583,7 +582,7 @@ namespace KdxDesigner.Utils.Process
             }
 
             // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+            List<int> startCondition = await GetStartConditions(repository, process);
 
             if (startCondition.Count == 0)
             {

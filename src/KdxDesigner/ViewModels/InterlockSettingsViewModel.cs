@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Utils;
 using KdxDesigner.Views;
@@ -220,7 +219,7 @@ namespace KdxDesigner.ViewModels
     public class InterlockSettingsViewModel : INotifyPropertyChanged
     {
         private readonly SupabaseRepository _supabaseRepository;
-        private readonly IAccessRepository _accessRepository;
+        private readonly ISupabaseRepository _accessRepository;
         private readonly Window _window;
         private readonly int _plcId;
         private Cylinder? _selectedCylinder;
@@ -318,7 +317,7 @@ namespace KdxDesigner.ViewModels
         public ICommand CancelCommand { get; }
         public ICommand ClearCylinderSearchCommand { get; }
 
-        public InterlockSettingsViewModel(SupabaseRepository supabaseRepository, IAccessRepository accessRepository, int plcId, Window window)
+        public InterlockSettingsViewModel(SupabaseRepository supabaseRepository, ISupabaseRepository accessRepository, int plcId, Window window)
         {
             _supabaseRepository = supabaseRepository;
             _accessRepository = accessRepository;
@@ -370,9 +369,9 @@ namespace KdxDesigner.ViewModels
             _ = LoadConditionTypesAsync();
         }
 
-        private void LoadCylinders()
+        private async Task LoadCylinders()
         {
-            var cylinders = _accessRepository.GetCyList(_plcId);
+            var cylinders = await _accessRepository.GetCyListAsync(_plcId);
             _allCylinders.Clear();
             foreach (var cylinder in cylinders)
             {
@@ -495,7 +494,7 @@ namespace KdxDesigner.ViewModels
                     // PlcIdとIOAddressに対応するIONameを取得
                     if (!string.IsNullOrEmpty(io.IOAddress))
                     {
-                        var allIOs = _accessRepository.GetIoList();
+                        var allIOs = await _accessRepository.GetIoListAsync();
                         var ioData = allIOs.FirstOrDefault(i => i.Address == io.IOAddress && i.PlcId == io.PlcId);
                         if (ioData != null)
                         {

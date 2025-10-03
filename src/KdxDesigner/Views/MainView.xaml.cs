@@ -1,15 +1,10 @@
-using KdxDesigner.Models;
-using KdxDesigner.Models.Define;
-using KdxDesigner.ViewModels;
 using Kdx.Contracts.DTOs;
-
-using System.Collections.Generic;
-using System.Linq;
+using KdxDesigner.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KdxDesigner.Views
 {
@@ -27,7 +22,7 @@ namespace KdxDesigner.Views
             {
                 var selected = ProcessGrid.SelectedItems.Cast<Process>().ToList();
                 vm.UpdateSelectedProcesses(selected);
-                
+
                 // 単一選択用のSelectedProcessもセット
                 if (ProcessGrid.SelectedItem is Process selectedProcess)
                 {

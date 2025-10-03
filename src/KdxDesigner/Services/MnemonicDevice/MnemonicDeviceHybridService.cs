@@ -1,8 +1,9 @@
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
-using KdxDesigner.Models;
 using Kdx.Contracts.Interfaces;
+using KdxDesigner.Models;
+using Kdx.Infrastructure.Supabase.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,13 +20,13 @@ namespace KdxDesigner.Services.MnemonicDevice
         private readonly IMnemonicDeviceMemoryStore _memoryStore;
         private readonly MnemonicDeviceService _dbService;
         private readonly IMemoryService _memoryService;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
         // メモリストアのみを使用するかどうかのフラグ
         private bool _useMemoryStoreOnly = true;
         
         public MnemonicDeviceHybridService(
-            IAccessRepository repository,
+            ISupabaseRepository repository,
             IMemoryService memoryService,
             IMnemonicDeviceMemoryStore memoryStore)
         {
@@ -46,7 +47,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <summary>
         /// PlcIdに基づいてニーモニックデバイスのリストを取得
         /// </summary>
-        public List<Kdx.Contracts.DTOs.MnemonicDevice> GetMnemonicDevice(int plcId)
+        public async Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDevice(int plcId)
         {
             // まずメモリストアから取得を試みる
             var devices = _memoryStore.GetMnemonicDevices(plcId);
@@ -54,7 +55,7 @@ namespace KdxDesigner.Services.MnemonicDevice
             // メモリストアにデータがない場合、データベースから取得
             if (!devices.Any() && !_useMemoryStoreOnly)
             {
-                devices = _dbService.GetMnemonicDevice(plcId);
+                devices = await _dbService.GetMnemonicDevice(plcId);
                 
                 // データベースから取得したデータをメモリストアにキャッシュ
                 if (devices.Any())
@@ -69,7 +70,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <summary>
         /// PlcIdとMnemonicIdに基づいてニーモニックデバイスのリストを取得
         /// </summary>
-        public List<Kdx.Contracts.DTOs.MnemonicDevice> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId)
+        public async Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId)
         {
             // メモリストアから取得
             var devices = _memoryStore.GetMnemonicDevicesByMnemonic(plcId, mnemonicId);
@@ -77,7 +78,7 @@ namespace KdxDesigner.Services.MnemonicDevice
             // メモリストアにデータがない場合、データベースから取得
             if (!devices.Any() && !_useMemoryStoreOnly)
             {
-                devices = _dbService.GetMnemonicDeviceByMnemonic(plcId, mnemonicId);
+                devices = await _dbService.GetMnemonicDeviceByMnemonic(plcId, mnemonicId);
                 
                 // データベースから取得したデータをメモリストアに追加
                 foreach (var device in devices)
@@ -92,7 +93,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <summary>
         /// すべてのニーモニックデバイスを削除
         /// </summary>
-        public void DeleteAllMnemonicDevices()
+        public async Task DeleteAllMnemonicDevices()
         {
             // メモリストアをクリア
             _memoryStore.ClearAll();
@@ -100,20 +101,20 @@ namespace KdxDesigner.Services.MnemonicDevice
             // データベースもクリア（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                _dbService.DeleteAllMnemonicDevices();
+                await _dbService.DeleteAllMnemonicDevices();
             }
         }
         
         /// <summary>
         /// 特定のニーモニックデバイスを削除
         /// </summary>
-        public void DeleteMnemonicDevice(int mnemonicId, int recordId)
+        public async Task DeleteMnemonicDevice(int mnemonicId, int recordId)
         {
             // TODO: メモリストアから特定のデバイスを削除する実装
             // 現在は未実装のため、データベースサービスに委譲
             if (!_useMemoryStoreOnly)
             {
-                _dbService.DeleteMnemonicDevice(mnemonicId, recordId);
+                await _dbService.DeleteMnemonicDevice(mnemonicId, recordId);
             }
         }
         
@@ -166,7 +167,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <summary>
         /// ProcessDetail用のニーモニックデバイスを保存
         /// </summary>
-        public void SaveMnemonicDeviceProcessDetail(List<ProcessDetail> details, int startNum, int plcId)
+        public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> details, int startNum, int plcId)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
@@ -181,7 +182,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                 if (detail.OperationId.HasValue)
                 {
                     // ★ パフォーマンス改善: new せずに、フィールドの _repository を使う
-                    operation = _repository.GetOperationById(detail.OperationId.Value);
+                    operation = await _repository.GetOperationByIdAsync(detail.OperationId.Value);
                 }
 
                 // 結果を保持する変数を先に宣言し、デフォルト値を設定
@@ -192,7 +193,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                 if (detail.CategoryId.HasValue)
                 {
                     // 3. CategoryId がある場合のみ、カテゴリ情報を取得
-                    var category = _repository.GetProcessDetailCategoryById(detail.CategoryId.Value);
+                    var category = await _repository.GetProcessDetailCategoryByIdAsync(detail.CategoryId.Value);
                     if (category != null)
                     {
                         shortName = category.ShortName ?? "";
@@ -203,12 +204,12 @@ namespace KdxDesigner.Services.MnemonicDevice
                 if (operation != null)
                 {
                     // 2. IDを使ってCYオブジェクトを取得
-                    Cylinder? cY = _repository.GetCYById(operation.CYId!.Value);
+                    Cylinder? cY = await _repository.GetCYByIdAsync(operation.CYId!.Value);
 
                     // 3. CYオブジェクトが取得でき、かつその中にMachineIdが存在するかチェック
                     if (cY != null && cY.MachineNameId.HasValue)
                     {
-                        MachineName? machineName = _repository.GetMachineNameById(cY.MachineNameId!.Value);
+                        MachineName? machineName = await _repository.GetMachineNameByIdAsync(cY.MachineNameId!.Value);
 
                         // 5. Machineオブジェクトが取得できたことを確認してから、コメントを生成
                         if (machineName != null)
@@ -323,7 +324,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <summary>
         /// CY用のニーモニックデバイスを保存
         /// </summary>
-        public void SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId)
+        public async Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
@@ -340,7 +341,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                 if (cylinder.MachineNameId != null)
                 {
                     // MachineIdがnullの場合はスキップ
-                    var machineName = _repository.GetMachineNameById((int)cylinder.MachineNameId);
+                    var machineName = await _repository.GetMachineNameByIdAsync((int)cylinder.MachineNameId);
                     comment2 = machineName?.ShortName ?? "未設定";
                 }
 
@@ -380,7 +381,7 @@ namespace KdxDesigner.Services.MnemonicDevice
             // データベースにも保存（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                _dbService.SaveMnemonicDeviceCY(cylinders, startNum, plcId);
+                await _dbService.SaveMnemonicDeviceCY(cylinders, startNum, plcId);
 
             }
         }

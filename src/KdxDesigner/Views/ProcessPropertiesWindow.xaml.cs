@@ -1,6 +1,6 @@
 using System.Windows;
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 using Process = Kdx.Contracts.DTOs.Process;
 
@@ -10,7 +10,7 @@ namespace KdxDesigner.Views
     {
         private readonly ProcessPropertiesViewModel _viewModel;
 
-        public ProcessPropertiesWindow(IAccessRepository repository, Process process)
+        public ProcessPropertiesWindow(ISupabaseRepository repository, Process process)
         {
             InitializeComponent();
             _viewModel = new ProcessPropertiesViewModel(repository, process);

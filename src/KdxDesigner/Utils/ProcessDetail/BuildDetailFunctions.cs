@@ -1,10 +1,9 @@
-using KdxDesigner.Models;
-using KdxDesigner.Models.Define;
-using KdxDesigner.ViewModels;
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
 using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.ViewModels;
 
 
 namespace KdxDesigner.Utils.ProcessDetail
@@ -46,7 +45,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             MainViewModel mainViewModel,
             IIOAddressService ioAddressService,
             IErrorAggregator errorAggregator,
-            IAccessRepository repository,
+            ISupabaseRepository repository,
             List<MnemonicDeviceWithProcess> processes,
             List<MnemonicDeviceWithProcessDetail> details,
             List<MnemonicDeviceWithOperation> operations,
@@ -176,7 +175,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             return manualButton;
         }
 
-        public List<ControlBox>? GetControlBoxesByCylinderId()
+        public async Task<List<ControlBox>?> GetControlBoxesByCylinderId()
         {
             // ① OperationId が null なら終了
             if (_detail?.Detail?.OperationId is not int opId) return null;
@@ -193,15 +192,12 @@ namespace KdxDesigner.Utils.ProcessDetail
             if (plcId == 0) return null;
 
             // ④ 中間テーブル（対象Cylinderのみ）
-            var maps = _repository
-                .GetCylinderControlBoxesByPlcId(plcId)
-                .Where(m => m.CylinderId == cylinder.Cylinder.Id)
-                .ToList();
+            var mapsAll = await _repository.GetCylinderControlBoxesByPlcIdAsync(plcId);
+            var maps = mapsAll.Where(m => m.CylinderId == cylinder.Cylinder.Id).ToList();
             if (maps.Count == 0) return null;
 
             // ⑤ ControlBox を辞書化（BoxNumber→ControlBox）
-            var cbByNumber = _repository
-                .GetControlBoxesByPlcId(plcId)
+            var cbByNumber = (await _repository.GetControlBoxesByPlcIdAsync(plcId))
                 .GroupBy(cb => cb.BoxNumber)
                 .ToDictionary(g => g.Key, g => g.First());
 
@@ -241,7 +237,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// L0 工程開始のLadderCsvRowを生成します。
         /// </summary>
         /// <returns></returns>
-        public List<LadderCsvRow> L0(MnemonicTimerDevice? timer)
+        public async Task<List<LadderCsvRow>> L0(MnemonicTimerDevice? timer)
         {
             List<LadderCsvRow> result = new();
 
@@ -249,7 +245,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             var processDetailStartIds = new List<int>();
 
             // 中間テーブルから取得
-            var connections = _repository.GetConnectionsByToId(_detail.Detail.Id);
+            var connections = await _repository.GetConnectionsByToIdAsync(_detail.Detail.Id);
             processDetailStartIds.AddRange(connections.Select(c => c.FromProcessDetailId));
 
             var processDetailStartDevices = _details
@@ -263,7 +259,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             string? manualButton = ManualButtonBulider();
             string? manualReset = ManualResetBulider();
             string? manualOperate = ManualOperateBulider();
-            List<ControlBox>? manualOperateGo = GetControlBoxesByCylinderId();
+            List<ControlBox>? manualOperateGo = await GetControlBoxesByCylinderId();
 
             // 各個操作モードがOFFの際はリセットする
             if (manualOperateGo is not null
@@ -440,13 +436,13 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// 
         /// </summary>
         /// <returns></returns>
-        public List<MnemonicDeviceWithProcessDetail> StartDevices()
+        public async Task<List<MnemonicDeviceWithProcessDetail>> StartDevices()
         {
             // ProcessDetailの開始条件を取得（中間テーブルから）
             var processDetailStartIds = new List<int>();
 
             // 中間テーブルから取得
-            var connections = _repository.GetConnectionsByToId(_detail.Detail.Id);
+            var connections = await _repository.GetConnectionsByToIdAsync(_detail.Detail.Id);
             processDetailStartIds.AddRange(connections.Select(c => c.FromProcessDetailId));
 
             var processDetailStartDevices = _details
@@ -459,9 +455,9 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// ProcessDetailFinishテーブルからこのインスタンスの終了工程IDを取得
         /// </summary>
         /// <returns>List<MnemonicDeviceWithProcessDetail>終了工程ID</returns>
-        public List<MnemonicDeviceWithProcessDetail> FinishDevices()
+        public async Task<List<MnemonicDeviceWithProcessDetail>> FinishDevices()
         {
-            var finishes = _repository.GetFinishesByProcessDetailId(_detail.Detail.Id);
+            var finishes = await _repository.GetFinishesByProcessDetailIdAsync(_detail.Detail.Id);
             var processDetailFinishIds = finishes.Select(f => f.FinishProcessDetailId).ToList();
 
             var processDetailFinishDevices = _details

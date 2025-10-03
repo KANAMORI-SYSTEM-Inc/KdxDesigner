@@ -5,21 +5,21 @@ using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Input;
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Utils;
 
 namespace KdxDesigner.ViewModels
 {
     public class IOSearchViewModel : INotifyPropertyChanged
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private readonly int _plcId;
         private string? _searchText;
         private IO? _selectedIO;
         private readonly ObservableCollection<IO> _allIOs;
         private readonly ICollectionView _filteredIOs;
 
-        public IOSearchViewModel(IAccessRepository repository, int plcId, string? initialSearchText = null)
+        public IOSearchViewModel(ISupabaseRepository repository, int plcId, string? initialSearchText = null)
         {
             _repository = repository;
             _plcId = plcId;
@@ -63,10 +63,10 @@ namespace KdxDesigner.ViewModels
 
         public ICommand ClearSearchCommand { get; }
 
-        private void LoadIOs()
+        private async void LoadIOs()
         {
             // Load all IOs from all PLCs to allow cross-PLC linking
-            var ios = _repository.GetIoList();
+            var ios = await _repository.GetIoListAsync();
             _allIOs.Clear();
             foreach (var io in ios)
             {

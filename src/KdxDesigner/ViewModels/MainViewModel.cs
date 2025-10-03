@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using Kdx.Core.Application;
 using KdxDesigner.Models;
 using KdxDesigner.Services;
@@ -31,7 +32,7 @@ namespace KdxDesigner.ViewModels
 
     public partial class MainViewModel : ObservableObject
     {
-        protected private readonly IAccessRepository _repository = null!; // コンストラクタで初期化される
+        protected private readonly ISupabaseRepository _repository = null!; // コンストラクタで初期化される
         protected private IMnemonicDeviceService? _mnemonicService;
         protected private IMnemonicTimerDeviceService? _timerService;
         protected private IProsTimeDeviceService? _prosTimeService;
@@ -110,52 +111,55 @@ namespace KdxDesigner.ViewModels
         public List<CylinderControlBox> _selectedCylinderControlBoxes = new(); // 選択されたコントロールボックスのリスト
 
 
-        // DIコンストラクタ
-        public MainViewModel(IAccessRepository repository, IAuthenticationService authService, SupabaseConnectionHelper? supabaseHelper = null)
+        private readonly IAuthenticationService _authService = null!;
+        private readonly SupabaseConnectionHelper? _supabaseHelper;
+
+        /// <summary>
+        /// DIコンテナ用コンストラクタ（推奨）
+        /// </summary>
+        public MainViewModel(ISupabaseRepository repository, IAuthenticationService authService, SupabaseConnectionHelper? supabaseHelper = null)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _supabaseHelper = supabaseHelper;
-            InitializeServices();
-            LoadInitialData();
 
-            // Supabase接続を非同期で初期化
-            if (_supabaseHelper != null)
-            {
-                _ = InitializeSupabaseAsync();
-            }
+            Initialize();
         }
 
-        private readonly IAuthenticationService _authService = null!; // コンストラクタで初期化される
-        private readonly SupabaseConnectionHelper? _supabaseHelper;
-
-        // パラメータなしコンストラクタ（削除または例外をスロー）
-        // XAML デザイナーやその他の場所でパラメータなしコンストラクタが必要な場合のみ
+        /// <summary>
+        /// パラメータなしコンストラクタ（デザイナー/レガシーサポート用）
+        /// </summary>
         public MainViewModel()
         {
-            // DIコンテナからの取得を試みる
-            var repository = App.Services?.GetService<IAccessRepository>();
+            var repository = App.Services?.GetService<ISupabaseRepository>();
             var authService = App.Services?.GetService<IAuthenticationService>();
             var supabaseHelper = App.Services?.GetService<SupabaseConnectionHelper>();
 
-            if (repository != null && authService != null)
+            if (repository == null || authService == null)
             {
-                _repository = repository;
-                _authService = authService;
-                _supabaseHelper = supabaseHelper;
-                InitializeServices();
-                LoadInitialData();
-
-                // Supabase接続を非同期で初期化
-                if (_supabaseHelper != null)
-                {
-                    _ = InitializeSupabaseAsync();
-                }
+                throw new InvalidOperationException(
+                    "MainViewModelはDIコンテナから取得してください。" +
+                    "App.Services.GetRequiredService<MainViewModel>()を使用してください。");
             }
-            else
+
+            _repository = repository;
+            _authService = authService;
+            _supabaseHelper = supabaseHelper;
+
+            Initialize();
+        }
+
+        /// <summary>
+        /// 共通初期化処理
+        /// </summary>
+        private void Initialize()
+        {
+            InitializeServices();
+            _ = LoadInitialDataAsync();
+
+            if (_supabaseHelper != null)
             {
-                // デザイナーモードか、DIコンテナが設定されていない
-                throw new InvalidOperationException("MainViewModelはDIコンテナから取得してください。App.Services.GetRequiredService<MainViewModel>()を使用してください。");
+                _ = InitializeSupabaseAsync();
             }
         }
 
@@ -186,9 +190,12 @@ namespace KdxDesigner.ViewModels
             }
         }
 
+        /// <summary>
+        /// サービスの初期化
+        /// </summary>
         private void InitializeServices()
         {
-            // サービスの初期化
+            // 基本サービスの初期化
             _prosTimeService = App.Services?.GetService<IProsTimeDeviceService>()
                 ?? new Kdx.Infrastructure.Services.ProsTimeDeviceService(_repository);
             _memoryService = App.Services?.GetService<IMemoryService>()
@@ -196,24 +203,33 @@ namespace KdxDesigner.ViewModels
             _ioSelectorService = new WpfIOSelectorService();
             _errorService = new ErrorService(_repository);
 
-            // メモリストアを取得（App.xaml.csで登録済み）
+            // メモリストアの取得/作成
             var memoryStore = App.Services?.GetService<IMnemonicDeviceMemoryStore>()
                 ?? new MnemonicDeviceMemoryStore();
             _mnemonicMemoryStore = memoryStore;
 
-            // ハイブリッドサービスを作成（メモリオンリーモード）
+            // メモリオンリーモードのサービス初期化
+            InitializeMemoryOnlyServices(memoryStore);
+        }
+
+        /// <summary>
+        /// メモリオンリーモードのサービスを初期化
+        /// </summary>
+        private void InitializeMemoryOnlyServices(IMnemonicDeviceMemoryStore memoryStore)
+        {
+            // MnemonicDeviceハイブリッドサービス
             var hybridService = new MnemonicDeviceHybridService(_repository, _memoryService, memoryStore);
-            hybridService.SetMemoryOnlyMode(true); // データベースアクセスを無効化
+            hybridService.SetMemoryOnlyMode(true);
             _mnemonicService = hybridService;
 
-            // タイマーサービスもメモリストアを使用
+            // TimerDeviceアダプター
             var timerAdapter = new MnemonicTimerDeviceMemoryAdapter(_repository, this, memoryStore, _memoryService);
-            timerAdapter.SetMemoryOnlyMode(true); // データベースアクセスを無効化
+            timerAdapter.SetMemoryOnlyMode(true);
             _timerService = timerAdapter;
 
-            // スピードサービスもメモリストアを使用
+            // SpeedDeviceアダプター
             var speedAdapter = new MnemonicSpeedDeviceMemoryAdapter(_repository, memoryStore);
-            speedAdapter.SetMemoryOnlyMode(true); // データベースアクセスを無効化
+            speedAdapter.SetMemoryOnlyMode(true);
             _speedService = speedAdapter;
         }
 
@@ -227,74 +243,109 @@ namespace KdxDesigner.ViewModels
             return true;
         }
 
-        // データの更新
-        #region Properties for Selected Operations
-        private void LoadInitialData()
+        /// <summary>
+        /// 初期データの読み込み
+        /// </summary>
+        private async Task LoadInitialDataAsync()
         {
-            if (_repository == null || _ioSelectorService == null)
+            if (!CanExecute() || _ioSelectorService == null)
             {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
+                Debug.WriteLine("システムの初期化が不完全なため、初期データの読み込みをスキップします。");
                 return;
             }
 
-            // 現在のユーザー情報を設定
-            if (_authService?.CurrentSession != null)
+            try
             {
-                CurrentUserEmail = _authService.CurrentSession.User?.Email ?? "Unknown User";
-            }
+                // 現在のユーザー情報を設定
+                if (_authService?.CurrentSession != null)
+                {
+                    CurrentUserEmail = _authService.CurrentSession.User?.Email ?? "Unknown User";
+                }
 
-            Companies = new ObservableCollection<Company>(_repository.GetCompanies());
-            _allProcesses = _repository.GetProcesses();
-            _allDetails = _repository.GetProcessDetails();
+                // 初期データの読み込み
+                await LoadMasterDataAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"初期データの読み込み中にエラーが発生しました: {ex.Message}");
+                MessageBox.Show($"データの読み込みに失敗しました: {ex.Message}", "エラー");
+            }
+        }
+
+        /// <summary>
+        /// マスターデータの読み込み
+        /// </summary>
+        private async Task LoadMasterDataAsync()
+        {
+            // マスターデータの読み込み
+            Companies = new ObservableCollection<Company>(await _repository.GetCompaniesAsync());
+            _allProcesses = await _repository.GetProcessesAsync();
+            _allDetails = await _repository.GetProcessDetailsAsync();
 
             // カテゴリデータの読み込み
-            ProcessCategories = new ObservableCollection<ProcessCategory>(_repository.GetProcessCategories());
-            ProcessDetailCategories = new ObservableCollection<ProcessDetailCategory>(_repository.GetProcessDetailCategories());
-            OperationCategories = new ObservableCollection<OperationCategory>(_repository.GetOperationCategories());
+            ProcessCategories = new ObservableCollection<ProcessCategory>(await _repository.GetProcessCategoriesAsync());
+            ProcessDetailCategories = new ObservableCollection<ProcessDetailCategory>(await _repository.GetProcessDetailCategoriesAsync());
+            OperationCategories = new ObservableCollection<OperationCategory>(await _repository.GetOperationCategoriesAsync());
 
-            // 設定ファイルを読み込む
+            // 設定とプロファイルの読み込み
+            LoadSettings();
+
+            // 前回の選択状態を復元
+            RestoreLastSelection();
+        }
+
+        /// <summary>
+        /// 設定とプロファイルの読み込み
+        /// </summary>
+        private void LoadSettings()
+        {
             SettingsManager.Load();
-
-            // メモリプロファイルを読み込む
             LoadMemoryProfile();
+        }
 
-            // 前回の選択を復元
-            if (SettingsManager.Settings.LastSelectedCompanyId.HasValue)
+        /// <summary>
+        /// 前回の選択状態を復元
+        /// </summary>
+        private void RestoreLastSelection()
+        {
+            if (!SettingsManager.Settings.LastSelectedCompanyId.HasValue)
+                return;
+
+            var savedCompany = Companies.FirstOrDefault(c => c.Id == SettingsManager.Settings.LastSelectedCompanyId.Value);
+            if (savedCompany == null)
+                return;
+
+            SelectedCompany = savedCompany;
+
+            // モデルの復元
+            if (SettingsManager.Settings.LastSelectedModelId.HasValue)
             {
-                var savedCompany = Companies.FirstOrDefault(c => c.Id == SettingsManager.Settings.LastSelectedCompanyId.Value);
-                if (savedCompany != null)
+                var savedModel = Models.FirstOrDefault(m => m.Id == SettingsManager.Settings.LastSelectedModelId.Value);
+                if (savedModel != null)
                 {
-                    SelectedCompany = savedCompany;
+                    SelectedModel = savedModel;
 
-                    // モデルも復元
-                    if (SettingsManager.Settings.LastSelectedModelId.HasValue)
+                    // サイクルの復元
+                    if (SettingsManager.Settings.LastSelectedCycleId.HasValue)
                     {
-                        var savedModel = Models.FirstOrDefault(m => m.Id == SettingsManager.Settings.LastSelectedModelId.Value);
-                        if (savedModel != null)
+                        var savedCycle = Cycles.FirstOrDefault(c => c.Id == SettingsManager.Settings.LastSelectedCycleId.Value);
+                        if (savedCycle != null)
                         {
-                            SelectedModel = savedModel;
-
-                            // サイクルも復元
-                            if (SettingsManager.Settings.LastSelectedCycleId.HasValue)
-                            {
-                                var savedCycle = Cycles.FirstOrDefault(c => c.Id == SettingsManager.Settings.LastSelectedCycleId.Value);
-                                if (savedCycle != null)
-                                {
-                                    SelectedCycle = savedCycle;
-                                }
-                            }
+                            SelectedCycle = savedCycle;
                         }
                     }
                 }
             }
         }
 
-        partial void OnSelectedCompanyChanged(Company? value)
+        #region Properties for Selected Operations
+
+        async partial void OnSelectedCompanyChanged(Company? value)
         {
             if (!CanExecute()) return;
 
             if (value == null) return;
-            Models = new ObservableCollection<Model>(_repository!.GetModels().Where(m => m.CompanyId == value.Id));
+            Models = new ObservableCollection<Model>((await _repository!.GetModelsAsync()).Where(m => m.CompanyId == value.Id));
             SelectedModel = null;
 
             // 選択した会社IDを保存
@@ -302,12 +353,12 @@ namespace KdxDesigner.ViewModels
             SettingsManager.Save();
         }
 
-        partial void OnSelectedModelChanged(Model? value)
+        async partial void OnSelectedModelChanged(Model? value)
         {
             if (!CanExecute()) return;
 
             if (value == null) return;
-            Plcs = new ObservableCollection<PLC>(_repository!.GetPLCs().Where(p => p.ModelId == value.Id));
+            Plcs = new ObservableCollection<PLC>((await _repository!.GetPLCsAsync()).Where(p => p.ModelId == value.Id));
             SelectedPlc = null;
 
             // 選択したモデルIDを保存
@@ -315,19 +366,19 @@ namespace KdxDesigner.ViewModels
             SettingsManager.Save();
         }
 
-        partial void OnSelectedPlcChanged(PLC? value)
+        async partial void OnSelectedPlcChanged(PLC? value)
         {
             if (!CanExecute()) return;
 
             if (value == null) return;
-            Cycles = new ObservableCollection<Cycle>(_repository!.GetCycles().Where(c => c.PlcId == value.Id));
+            Cycles = new ObservableCollection<Cycle>((await _repository!.GetCyclesAsync()).Where(c => c.PlcId == value.Id));
             SelectedCycle = null;
 
             // PLCが変更されたらメモリ設定状態を更新
             UpdateMemoryConfigurationStatus();
         }
 
-        partial void OnSelectedCycleChanged(Cycle? value)
+        async partial void OnSelectedCycleChanged(Cycle? value)
         {
             if (!CanExecute()) return;
 
@@ -338,7 +389,7 @@ namespace KdxDesigner.ViewModels
                 _allProcesses.Where(p => p.CycleId == value.Id).OrderBy(p => p.SortNumber));
 
             // 選択されたCycleのOperationを読み込み
-            var operations = _repository!.GetOperationsByCycleId(value.Id);
+            var operations = await _repository!.GetOperationsByCycleIdAsync(value.Id);
             SelectedOperations = new ObservableCollection<Operation>(operations.OrderBy(o => o.SortNumber));
 
             // 選択したサイクルIDを保存
@@ -410,7 +461,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void AddNewProcess()
+        private async Task AddNewProcess()
         {
             if (!CanExecute() || SelectedCycle == null)
             {
@@ -429,7 +480,7 @@ namespace KdxDesigner.ViewModels
                 };
 
                 // データベースに追加
-                int newId = _repository!.AddProcess(newProcess);
+                int newId = await _repository!.AddProcessAsync(newProcess);
                 newProcess.Id = newId;
 
                 // コレクションとローカルリストに追加
@@ -445,7 +496,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void AddNewProcessDetail()
+        private async Task AddNewProcessDetail()
         {
             if (!CanExecute() || SelectedProcess == null)
             {
@@ -465,7 +516,7 @@ namespace KdxDesigner.ViewModels
                 };
 
                 // データベースに追加
-                int newId = _repository!.AddProcessDetail(newDetail);
+                int newId = await _repository!.AddProcessDetailAsync(newDetail);
                 newDetail.Id = newId;
 
                 // コレクションとローカルリストに追加
@@ -481,7 +532,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void AddNewOperation()
+        private async Task AddNewOperation()
         {
             if (!CanExecute() || SelectedCycle == null)
             {
@@ -500,7 +551,7 @@ namespace KdxDesigner.ViewModels
                 };
 
                 // データベースに追加
-                int newId = _repository!.AddOperation(newOperation);
+                int newId = await _repository!.AddOperationAsync(newOperation);
                 newOperation.Id = newId;
 
                 // コレクションに追加
@@ -524,19 +575,19 @@ namespace KdxDesigner.ViewModels
                 // Processの保存
                 foreach (var process in Processes)
                 {
-                    _repository!.UpdateProcess(process);
+                    _repository!.UpdateProcessAsync(process);
                 }
 
                 // ProcessDetailの保存
                 foreach (var detail in ProcessDetails)
                 {
-                    _repository!.UpdateProcessDetail(detail);
+                    _repository!.UpdateProcessDetailAsync(detail);
                 }
 
                 // Operationの保存
                 foreach (var operation in SelectedOperations)
                 {
-                    _repository!.UpdateOperation(operation);
+                    _repository!.UpdateOperationAsync(operation);
                 }
 
                 MessageBox.Show("すべての変更を保存しました。", "保存完了", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -548,7 +599,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void DeleteSelectedProcess()
+        private async Task DeleteSelectedProcess()
         {
             if (SelectedProcess == null) return;
 
@@ -559,7 +610,7 @@ namespace KdxDesigner.ViewModels
             {
                 try
                 {
-                    _repository!.DeleteProcess(SelectedProcess.Id);
+                    await _repository!.DeleteProcessAsync(SelectedProcess.Id);
                     Processes.Remove(SelectedProcess);
                     _allProcesses.Remove(SelectedProcess);
 
@@ -582,7 +633,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void DeleteSelectedProcessDetail()
+        private async Task DeleteSelectedProcessDetail()
         {
             if (SelectedProcessDetail == null) return;
 
@@ -593,7 +644,7 @@ namespace KdxDesigner.ViewModels
             {
                 try
                 {
-                    _repository!.DeleteProcessDetail(SelectedProcessDetail.Id);
+                    await _repository!.DeleteProcessDetailAsync(SelectedProcessDetail.Id);
                     ProcessDetails.Remove(SelectedProcessDetail);
                     _allDetails.Remove(SelectedProcessDetail);
                     SelectedProcessDetail = null;
@@ -607,7 +658,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void DeleteSelectedOperation()
+        private async Task DeleteSelectedOperation()
         {
             if (SelectedOperations.Count == 0) return;
 
@@ -621,7 +672,7 @@ namespace KdxDesigner.ViewModels
             {
                 try
                 {
-                    _repository!.DeleteOperation(operation.Id);
+                    await _repository!.DeleteOperationAsync(operation.Id);
                     SelectedOperations.Remove(operation);
                     MessageBox.Show("操作を削除しました。", "削除完了", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -639,7 +690,7 @@ namespace KdxDesigner.ViewModels
 
             foreach (var op in SelectedOperations)
             {
-                _repository!.UpdateOperation(op);
+                _repository!.UpdateOperationAsync(op);
             }
             MessageBox.Show("保存しました。");
         }
@@ -843,7 +894,7 @@ namespace KdxDesigner.ViewModels
         // 出力処理
         #region ProcessOutput
         [RelayCommand]
-        private void ProcessOutput()
+        private async Task ProcessOutput()
         {
             var errorMessages = ValidateProcessOutput();
 
@@ -860,30 +911,31 @@ namespace KdxDesigner.ViewModels
                 var allOutputRows = new List<LadderCsvRow>();
 
                 // --- 1. データ準備 ---
-                var (data, prepErrors) = PrepareDataForOutput();
+                var (data, prepErrors) = await PrepareDataForOutput();
                 allGeneratedErrors.AddRange(prepErrors);
 
                 // --- 2. 各ビルダーによるラダー生成 ---
 
                 // ProcessBuilder (out パラメータ方式を維持、または新しい方式に修正)
-                var processRows = ProcessBuilder.GenerateAllLadderCsvRows(
+                var pErrorAggregator = new ErrorAggregator((int)MnemonicType.Process);
+
+                var processRows = await ProcessBuilder.GenerateAllLadderCsvRows(
                     SelectedCycle!,
                     ProcessDeviceStartL,
                     DetailDeviceStartL,
                     data.JoinedProcessList,
                     data.JoinedProcessDetailList,
                     data.IoList,
-                    _repository!,
-                    out var processErrors);
+                    _repository!);
                 allOutputRows.AddRange(processRows);
-                allGeneratedErrors.AddRange(processErrors);
+                allGeneratedErrors.AddRange(pErrorAggregator.GetAllErrors());
 
                 // ProcessDetailBuilder
                 var pdErrorAggregator = new ErrorAggregator((int)MnemonicType.ProcessDetail);
 
                 var pdIoAddressService = new IOAddressService(pdErrorAggregator, _repository, SelectedPlc.Id, _ioSelectorService);
                 var detailBuilder = new ProcessDetailBuilder(this, pdErrorAggregator, pdIoAddressService, _repository);
-                var detailRows = detailBuilder.GenerateAllLadderCsvRows(
+                var detailRows = await detailBuilder.GenerateAllLadderCsvRows(
                     data.JoinedProcessList,
                     data.JoinedProcessDetailList,
                     data.JoinedOperationList,
@@ -912,7 +964,7 @@ namespace KdxDesigner.ViewModels
                 var cyErrorAggregator = new ErrorAggregator((int)MnemonicType.CY);
                 var cyIoAddressService = new IOAddressService(cyErrorAggregator, _repository, SelectedPlc.Id, _ioSelectorService);
                 var cylinderBuilder = new CylinderBuilder(this, cyErrorAggregator, cyIoAddressService, _repository);
-                var cylinderRows = cylinderBuilder.GenerateLadder(
+                var cylinderRows = await cylinderBuilder.GenerateLadder(
                     data.JoinedProcessDetailList,
                     data.JoinedOperationList,
                     data.JoinedCylinderList,
@@ -987,7 +1039,7 @@ namespace KdxDesigner.ViewModels
             return errors;
         }
 
-        private ((List<MnemonicDeviceWithProcess> JoinedProcessList,
+        private async Task<((List<MnemonicDeviceWithProcess> JoinedProcessList,
                   List<MnemonicDeviceWithProcessDetail> JoinedProcessDetailList,
                   List<MnemonicTimerDeviceWithDetail> JoinedProcessDetailWithTimerList,
                   List<MnemonicDeviceWithOperation> JoinedOperationList,
@@ -997,7 +1049,7 @@ namespace KdxDesigner.ViewModels
                   List<MnemonicSpeedDevice> SpeedDevice,
                   List<ProcessError> MnemonicErrors,
                   List<ProsTime> ProsTime,
-                  List<IO> IoList) Data, List<OutputError> Errors) PrepareDataForOutput()
+                  List<IO> IoList) Data, List<OutputError> Errors)> PrepareDataForOutput()
         {
 
             if (_repository == null || SelectedPlc == null || _ioSelectorService == null)
@@ -1022,12 +1074,12 @@ namespace KdxDesigner.ViewModels
             var plcId = SelectedPlc!.Id;
             var cycleId = SelectedCycle!.Id;
             var devices = _mnemonicMemoryStore.GetMnemonicDevices(plcId);
-            var operations = _repository.GetOperations();
+            var operations = await _repository.GetOperationsAsync();
 
             // mainViewModelのフィールドを使用
-            _selectedCylinderCycles = _repository.GetCylinderCyclesByPlcId(plcId);
-            _selectedControlBoxes = _repository.GetControlBoxesByPlcId(plcId);
-            _selectedCylinderControlBoxes = _repository.GetCylinderControlBoxesByPlcId(plcId);
+            _selectedCylinderCycles = await _repository.GetCylinderCyclesByPlcIdAsync(plcId);
+            _selectedControlBoxes = await _repository.GetControlBoxesByPlcIdAsync(plcId);
+            _selectedCylinderControlBoxes = await _repository.GetCylinderControlBoxesByPlcIdAsync(plcId);
 
 
             if (_selectedCylinderCycles == null || _selectedCylinderCycles.Count == 0)
@@ -1049,7 +1101,7 @@ namespace KdxDesigner.ViewModels
                 );
             }
 
-            var cylindersForPlc = _repository.GetCYs().Where(c => c.PlcId == plcId).OrderBy(c => c.SortNumber);
+            var cylindersForPlc = (await _repository.GetCYsAsync()).Where(c => c.PlcId == plcId).OrderBy(c => c.SortNumber);
             var cylinders = cylindersForPlc.Join(
                 _selectedCylinderCycles,
                 c => c.Id,
@@ -1057,16 +1109,16 @@ namespace KdxDesigner.ViewModels
                 (c, cc) => new { Cylinder = c, CylinderCycle = cc }
             ).Where(cc => cc.CylinderCycle.CycleId == cycleId).Select(cc => cc.Cylinder);
 
-            var details = _repository.GetProcessDetails().Where(d => d.CycleId == cycleId).ToList();
-            var ioList = _repository.GetIoList();
-            _selectedServo = _repository.GetServos(null, null);
+            var details = (await _repository.GetProcessDetailsAsync()).Where(d => d.CycleId == cycleId).ToList();
+            var ioList = await _repository.GetIoListAsync();
+            _selectedServo = await _repository.GetServosAsync(null, null);
 
             var devicesP = devices.Where(m => m.MnemonicId == (int)MnemonicType.Process).ToList().OrderBy(p => p.StartNum);
             var devicesD = devices.Where(m => m.MnemonicId == (int)MnemonicType.ProcessDetail).ToList().OrderBy(d => d.StartNum);
             var devicesO = devices.Where(m => m.MnemonicId == (int)MnemonicType.Operation).ToList().OrderBy(o => o.StartNum);
             var devicesC = devices.Where(m => m.MnemonicId == (int)MnemonicType.CY).ToList().OrderBy(c => c.StartNum);
 
-            var timerDevices = _timerService!.GetMnemonicTimerDevice(plcId, cycleId);
+            var timerDevices = await _timerService!.GetMnemonicTimerDevice(plcId, cycleId);
             var prosTime = _prosTimeService!.GetProsTimeByMnemonicId(plcId, (int)MnemonicType.Operation);
 
             var speedDeviceModels = _speedService!.GetMnemonicSpeedDevice(plcId);
@@ -1078,7 +1130,7 @@ namespace KdxDesigner.ViewModels
                 Device = s.Device,
                 PlcId = s.PlcId
             }).ToList();
-            var mnemonicErrors = _errorService!.GetErrors(plcId, cycleId, (int)MnemonicType.Operation);
+            var mnemonicErrors = await _errorService!.GetErrors(plcId, cycleId, (int)MnemonicType.Operation);
 
             // JOIN処理
             var joinedProcessList = devicesP
@@ -1165,7 +1217,7 @@ namespace KdxDesigner.ViewModels
 
                     // 3. データ準備
                     progressViewModel.UpdateStatus("データを準備しています...");
-                    var prepData = await Application.Current.Dispatcher.InvokeAsync(() => PrepareDataForMemorySetting());
+                    var prepData = await PrepareDataForMemorySetting();
 
                     // 4. Mnemonic/Timerテーブルへの事前保存
                     if (prepData == null)
@@ -1177,7 +1229,7 @@ namespace KdxDesigner.ViewModels
                         return;
                     }
 
-                    await Application.Current.Dispatcher.InvokeAsync(() => SaveMnemonicAndTimerDevices(prepData.Value, progressViewModel));
+                    await SaveMnemonicAndTimerDevices(prepData.Value, progressViewModel);
                     await SaveMemoriesToMemoryTableAsync(prepData.Value, progressViewModel);
 
                     progressViewModel.MarkCompleted();
@@ -1206,12 +1258,12 @@ namespace KdxDesigner.ViewModels
         }
 
         // MemorySettingに必要なデータを準備するヘルパー
-        private (
+        private async Task<(
             List<ProcessDetail> details,
             List<Cylinder> cylinders,
             List<Operation> operations,
             List<IO> ioList,
-            List<Timer> timers)? PrepareDataForMemorySetting()
+            List<Timer> timers)?> PrepareDataForMemorySetting()
         {
             if (SelectedCycle == null || _repository == null || SelectedPlc == null || _ioSelectorService == null)
             {
@@ -1219,12 +1271,12 @@ namespace KdxDesigner.ViewModels
                 return null;
             }
 
-            List<ProcessDetail> details = _repository
-                .GetProcessDetails()
+            List<ProcessDetail> details = (await _repository
+                .GetProcessDetailsAsync())
                 .Where(d => d.CycleId == SelectedCycle.Id).OrderBy(d => d.SortNumber).ToList();
-            List<Cylinder> cylinders = _repository.GetCYs()
+            List<Cylinder> cylinders = (await _repository.GetCYsAsync())
                 .Where(o => o.PlcId == SelectedPlc.Id).OrderBy(c => c.SortNumber).ToList();
-            _selectedCylinderCycles = _repository.GetCylinderCyclesByPlcId(SelectedPlc.Id);
+            _selectedCylinderCycles = await _repository.GetCylinderCyclesByPlcIdAsync(SelectedPlc.Id);
 
             List<Cylinder> filteredCylinders = new List<Cylinder>();
 
@@ -1243,19 +1295,19 @@ namespace KdxDesigner.ViewModels
             }
 
             var operationIds = details.Select(c => c.OperationId).ToHashSet();
-            List<Operation> operations = _repository.GetOperations().ToList();
+            List<Operation> operations = (await _repository.GetOperationsAsync()).ToList();
 
             var op = operations
                 .Where(o => o.CycleId == SelectedCycle.Id)
                 .OrderBy(o => o.SortNumber).ToList();
-            var ioList = _repository.GetIoList();
-            var timers = _repository.GetTimersByCycleId(SelectedCycle.Id);
+            var ioList = await _repository.GetIoListAsync();
+            var timers = await _repository.GetTimersByCycleIdAsync(SelectedCycle.Id);
 
             return (details, filteredCylinders, op, ioList, timers);
         }
 
         // Mnemonic* と Timer* テーブルへのデータ保存をまとめたヘルパー
-        private void SaveMnemonicAndTimerDevices(
+        private async Task SaveMnemonicAndTimerDevices(
             (List<ProcessDetail> details,
             List<Cylinder> cylinders,
             List<Operation> operations, List<IO> ioList, List<Timer> timers) prepData,
@@ -1281,10 +1333,10 @@ namespace KdxDesigner.ViewModels
                 MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
                 return;
             }
-            var timer = _repository.GetTimers();
-            var details = _repository.GetProcessDetails();
-            var operations = _repository.GetOperations();
-            var cylinders = _repository.GetCYs();
+            var timer = await _repository.GetTimersAsync();
+            var details = await _repository.GetProcessDetailsAsync();
+            var operations = await _repository.GetOperationsAsync();
+            var cylinders = await _repository.GetCYsAsync();
 
             int timerCount = 0;
 
@@ -1296,22 +1348,22 @@ namespace KdxDesigner.ViewModels
             }
 
             progressViewModel?.UpdateStatus("既存のタイマーデバイスを削除中...");
-            _repository.DeleteAllMnemonicTimerDevices();
+            await _repository.DeleteAllMnemonicTimerDeviceAsync();
 
             progressViewModel?.UpdateStatus("工程詳細のタイマーを保存中...");
-            _timerService.SaveWithDetail(timer, details, DeviceStartT, SelectedPlc!.Id, ref timerCount);
+            timerCount += await _timerService.SaveWithDetail(timer, details, DeviceStartT, SelectedPlc!.Id, timerCount);
 
             progressViewModel?.UpdateStatus("操作のタイマーを保存中...");
-            _timerService.SaveWithOperation(timer, operations, DeviceStartT, SelectedPlc!.Id, ref timerCount);
+            timerCount += await _timerService.SaveWithOperation(timer, operations, DeviceStartT, SelectedPlc!.Id, timerCount);
 
             progressViewModel?.UpdateStatus("シリンダーのタイマーを保存中...");
-            _timerService.SaveWithCY(timer, cylinders, DeviceStartT, SelectedPlc!.Id, ref timerCount);
+            timerCount += await _timerService.SaveWithCY(timer, cylinders, DeviceStartT, SelectedPlc!.Id, timerCount);
             progressViewModel?.AddLog($"タイマーデバイス保存完了 (合計: {timerCount}件)");
 
             // Errorテーブルの保存
             progressViewModel?.UpdateStatus("エラーテーブルを保存中...");
-            _errorService!.DeleteErrorTable();
-            _errorService!.SaveMnemonicDeviceOperation(prepData.operations, prepData.ioList, ErrorDeviceStartM, ErrorDeviceStartT, SelectedPlc!.Id, SelectedCycle!.Id);
+            await _errorService!.DeleteErrorTable();
+            await _errorService!.SaveMnemonicDeviceOperation(prepData.operations, prepData.ioList, ErrorDeviceStartM, ErrorDeviceStartT, SelectedPlc!.Id, SelectedCycle!.Id);
             progressViewModel?.AddLog("エラーテーブル保存完了");
 
             // ProsTimeテーブルの保存
@@ -1341,8 +1393,8 @@ namespace KdxDesigner.ViewModels
             }
 
             progressViewModel?.UpdateStatus("デバイス情報を取得中...");
-            var devices = _mnemonicService!.GetMnemonicDevice(SelectedPlc!.Id);
-            var timerDevices = _timerService!.GetMnemonicTimerDevice(SelectedPlc!.Id, SelectedCycle!.Id);
+            var devices = await _mnemonicService!.GetMnemonicDevice(SelectedPlc!.Id);
+            var timerDevices = await _timerService!.GetMnemonicTimerDevice(SelectedPlc!.Id, SelectedCycle!.Id);
 
             var devicesP = devices.Where(m => m.MnemonicId == (int)MnemonicType.Process).ToList();
             var devicesD = devices.Where(m => m.MnemonicId == (int)MnemonicType.ProcessDetail).ToList();
@@ -1360,7 +1412,7 @@ namespace KdxDesigner.ViewModels
 
             progressViewModel?.SetProgressMax(totalProgress);
 
-            if (!await ProcessAndSaveMemoryAsync(IsErrorMemory, devicesC, device => _memoryService.SaveMnemonicMemories(_repository, device), "エラー", progressViewModel)) return;
+            if (!await ProcessAndSaveMemoryAsync(IsErrorMemory, devicesC, async device => await _memoryService.SaveMnemonicMemories(_repository, device), "エラー", progressViewModel)) return;
             //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesT, "Timer (T)", progressViewModel)) return;
             //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesZR, "Timer (ZR)", progressViewModel)) return;
 
@@ -1373,7 +1425,7 @@ namespace KdxDesigner.ViewModels
         }
 
         // Memory保存の繰り返し処理を共通化するヘルパー
-        private async Task<bool> ProcessAndSaveMemoryAsync<T>(bool shouldProcess, IEnumerable<T> devices, Func<T, bool> saveAction, string categoryName, MemoryProgressViewModel? progressViewModel = null)
+        private async Task<bool> ProcessAndSaveMemoryAsync<T>(bool shouldProcess, IEnumerable<T> devices, Func<T, Task<bool>> saveAction, string categoryName, MemoryProgressViewModel? progressViewModel = null)
         {
             if (!shouldProcess)
             {
@@ -1391,7 +1443,7 @@ namespace KdxDesigner.ViewModels
                 index++;
                 progressViewModel?.UpdateStatus($"{categoryName}情報を保存中... ({index}/{deviceList.Count})");
 
-                bool result = await Task.Run(() => saveAction(device));
+                bool result = await saveAction(device);
                 if (!result)
                 {
                     progressViewModel?.MarkError($"{categoryName}情報の保存に失敗 (デバイス {index}/{deviceList.Count})");
@@ -1412,7 +1464,7 @@ namespace KdxDesigner.ViewModels
         /// <summary>
         /// メモリ設定状態を更新する
         /// </summary>
-        private void UpdateMemoryConfigurationStatus()
+        private async Task UpdateMemoryConfigurationStatus()
         {
             if (SelectedPlc == null || SelectedCycle == null)
             {
@@ -1425,8 +1477,8 @@ namespace KdxDesigner.ViewModels
             try
             {
                 // メモリに保存されたデバイスの数をカウント
-                var devices = _mnemonicService?.GetMnemonicDevice(SelectedPlc.Id) ?? new List<Kdx.Contracts.DTOs.MnemonicDevice>();
-                var timerDevices = _timerService?.GetMnemonicTimerDevice(SelectedPlc.Id, SelectedCycle.Id) ?? new List<MnemonicTimerDevice>();
+                var devices = await _mnemonicService?.GetMnemonicDevice(SelectedPlc.Id) ?? new List<Kdx.Contracts.DTOs.MnemonicDevice>();
+                var timerDevices = await _timerService?.GetMnemonicTimerDevice(SelectedPlc.Id, SelectedCycle.Id) ?? new List<MnemonicTimerDevice>();
                 var speedDevices = _speedService?.GetMnemonicSpeedDevice(SelectedPlc.Id) ?? new List<Kdx.Contracts.DTOs.MnemonicSpeedDevice>();
 
                 int totalCount = devices.Count + timerDevices.Count + speedDevices.Count;

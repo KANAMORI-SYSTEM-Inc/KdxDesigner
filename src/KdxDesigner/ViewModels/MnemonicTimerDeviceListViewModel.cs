@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Kdx.Contracts.DTOs;
 using KdxDesigner.Models;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Data;
@@ -10,7 +10,7 @@ namespace KdxDesigner.ViewModels
 {
     public partial class MnemonicTimerDeviceListViewModel : ObservableObject
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private readonly MainViewModel _mainViewModel;
         private readonly List<MnemonicTimerDeviceViewModel> _allTimerDevices;
 
@@ -25,7 +25,7 @@ namespace KdxDesigner.ViewModels
 
         public ICollectionView FilteredTimerDevices { get; }
 
-        public MnemonicTimerDeviceListViewModel(IAccessRepository repository, MainViewModel mainViewModel)
+        public MnemonicTimerDeviceListViewModel(ISupabaseRepository repository, MainViewModel mainViewModel)
         {
             _repository = repository;
             _mainViewModel = mainViewModel;
@@ -75,23 +75,23 @@ namespace KdxDesigner.ViewModels
             return true;
         }
 
-        private void LoadTimerDevices()
+        private async void LoadTimerDevices()
         {
             _allTimerDevices.Clear();
-            
+
             if (_mainViewModel.SelectedPlc == null)
                 return;
 
             // MnemonicTimerDeviceを取得
-            var timerDevices = _repository.GetMnemonicTimerDevices();
-            var timers = _repository.GetTimers();
-            var timerCategories = _repository.GetTimerCategory();
-            
+            var timerDevices = await _repository.GetMnemonicTimerDevicesAsync();
+            var timers = await _repository.GetTimersAsync();
+            var timerCategories = await _repository.GetTimerCategoryAsync();
+
             // MnemonicIdごとにレコード情報を取得
-            var processes = _repository.GetProcesses();
-            var processDetails = _repository.GetProcessDetails();
-            var operations = _repository.GetOperations();
-            var cylinders = _repository.GetCyList(_mainViewModel.SelectedPlc.Id);
+            var processes = await _repository.GetProcessesAsync();
+            var processDetails = await _repository.GetProcessDetailsAsync();
+            var operations = await _repository.GetOperationsAsync();
+            var cylinders = await _repository.GetCyListAsync(_mainViewModel.SelectedPlc.Id);
 
             foreach (var device in timerDevices.Where(d => d.PlcId == _mainViewModel.SelectedPlc.Id))
             {
