@@ -1,4 +1,5 @@
 using Kdx.Infrastructure.Supabase.Repositories;
+using Kdx.Contracts.DTOs;
 using KdxDesigner.ViewModels;
 using System.Windows;
 using System.Windows.Input;
@@ -16,17 +17,30 @@ namespace KdxDesigner.Views
         private Point _panStartScrollOffset;
         private ProcessDetailPropertiesWindow? _propertiesWindow;
         private ConnectionInfoWindow? _connectionInfoWindow;
-        
+
+        // 既存のコンストラクタ（後方互換性のため）
         public ProcessFlowDetailWindow(ISupabaseRepository repository, int cycleId, string cycleName)
+            : this(repository, cycleId, cycleName, null, null, null)
+        {
+        }
+
+        // MainViewModelから既存データを受け取る最適化されたコンストラクタ
+        public ProcessFlowDetailWindow(
+            ISupabaseRepository repository,
+            int cycleId,
+            string cycleName,
+            List<Process>? allProcesses,
+            List<ProcessDetail>? allProcessDetails,
+            List<ProcessDetailCategory>? categories)
         {
             InitializeComponent();
-            _viewModel = new ProcessFlowDetailViewModel(repository, cycleId, cycleName);
+            _viewModel = new ProcessFlowDetailViewModel(repository, cycleId, cycleName, allProcesses, allProcessDetails, categories);
             DataContext = _viewModel;
             _viewModel.LoadNodesAsync();
-            
+
             // RequestCloseイベントをサブスクライブ
             _viewModel.RequestClose += () => Close();
-            
+
             // Loadedイベントでコントロールを取得
             Loaded += OnLoaded;
         }

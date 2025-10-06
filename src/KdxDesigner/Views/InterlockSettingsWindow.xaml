@@ -25,6 +25,7 @@
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
+                <TextBlock FontSize="14" Margin="0,5,0,0" Text="{Binding SelectedInterlock.CylinderNum, StringFormat='選択中のインターロック: {0}'}"/>
             </StackPanel>
         </Border>
 
@@ -105,12 +106,12 @@
                               CanUserAddRows="False"
                               Margin="0,5">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50" IsReadOnly="True"/>
                             <DataGridTextColumn Header="ソート" Binding="{Binding SortId}" Width="50"/>
                             <DataGridTextColumn Header="条件CY ID" Binding="{Binding ConditionCylinderId}" Width="70"/>
                             <DataGridTextColumn Header="CY番号" Binding="{Binding ConditionCylinderNum}" Width="80" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="前提条件1" Binding="{Binding PreConditionID1}" Width="70" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="前提条件2" Binding="{Binding PreConditionID2}" Width="*" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="前提条件1" Binding="{Binding PreConditionID1}" Width="70" IsReadOnly="False"/>
+                            <DataGridTextColumn Header="前提条件2" Binding="{Binding PreConditionID2}" Width="*" IsReadOnly="False"/>
+                            <DataGridTextColumn Header="行きor帰り" Binding="{Binding GoOrBack}" Width="*" IsReadOnly="False"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -138,7 +139,6 @@
                               CanUserAddRows="False"
                               Margin="0,5">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50" IsReadOnly="True"/>
                             <DataGridTextColumn Header="条件番号" Binding="{Binding ConditionNumber}" Width="70"/>
                             <DataGridTemplateColumn Header="条件タイプ" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
@@ -192,9 +192,8 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="PLC ID" Binding="{Binding PlcId}" Width="60" IsReadOnly="True"/>
                             <DataGridTextColumn Header="IOアドレス" Binding="{Binding IOAddress}" Width="100" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="IO名称" Binding="{Binding IOName}" Width="120" IsReadOnly="True"/>
-                            <DataGridCheckBoxColumn Header="ON条件" Binding="{Binding IsOnCondition}" Width="60"/>
-                            <DataGridTextColumn Header="ユニークキー" Binding="{Binding ConditionUniqueKey}" Width="60"/>
+                            <DataGridTextColumn Header="IO名称" Binding="{Binding IOName}" Width="*" IsReadOnly="True"/>
+                            <DataGridCheckBoxColumn Header="ON条件" Binding="{Binding IsOnCondition}" Width="80"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

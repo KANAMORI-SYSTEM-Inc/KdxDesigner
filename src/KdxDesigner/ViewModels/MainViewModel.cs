@@ -19,6 +19,7 @@ using KdxDesigner.Utils.Cylinder;
 using KdxDesigner.Utils.Operation;
 using KdxDesigner.Utils.ProcessDetail;
 using KdxDesigner.Views;
+using KdxDesigner.ViewModels.Managers;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -29,90 +30,279 @@ using Timer = Kdx.Contracts.DTOs.Timer;
 
 namespace KdxDesigner.ViewModels
 {
-
     public partial class MainViewModel : ObservableObject
     {
-        protected private readonly ISupabaseRepository _repository = null!; // コンストラクタで初期化される
-        protected private IMnemonicDeviceService? _mnemonicService;
-        protected private IMnemonicTimerDeviceService? _timerService;
-        protected private IProsTimeDeviceService? _prosTimeService;
-        protected private IMnemonicSpeedDeviceService? _speedService;
-        protected private IMemoryService? _memoryService;
-        protected private IMnemonicDeviceMemoryStore _mnemonicMemoryStore = null!;
-        protected private ErrorService? _errorService;
-        protected private WpfIOSelectorService? _ioSelectorService;
+        // リポジトリと認証サービス
+        protected private readonly ISupabaseRepository _repository = null!;
+        private readonly IAuthenticationService _authService = null!;
+        private readonly SupabaseConnectionHelper? _supabaseHelper;
+
+        // マネージャークラス
+        private SelectionStateManager _selectionManager = null!;
+        private DeviceConfigurationManager _deviceConfig = null!;
+        private MemoryConfigurationManager _memoryConfig = null!;
+        private ServiceInitializer _serviceInitializer = null!;
 
         // 開いているProcessFlowDetailWindowのリスト
         private readonly List<Window> _openProcessFlowWindows = new();
 
-        [ObservableProperty] private ObservableCollection<Company> _companies = new();
-        [ObservableProperty] private ObservableCollection<Model> _models = new();
-        [ObservableProperty] private ObservableCollection<PLC> _plcs = new();
-        [ObservableProperty] private ObservableCollection<Cycle> _cycles = new();
-        [ObservableProperty] private ObservableCollection<Process> _processes = new();
-        [ObservableProperty] private ObservableCollection<ProcessDetail> _processDetails = new();
-        [ObservableProperty] private ObservableCollection<Operation> _selectedOperations = new();
+        // その他の選択リスト
+        public List<Servo> _selectedServo = new();
+        public List<CylinderCycle>? _selectedCylinderCycles = new();
+        public List<ControlBox> _selectedControlBoxes = new();
+        public List<CylinderControlBox> _selectedCylinderControlBoxes = new();
 
-        [ObservableProperty] private ObservableCollection<ProcessCategory> _processCategories = new();
-        [ObservableProperty] private ObservableCollection<ProcessDetailCategory> _processDetailCategories = new();
-        [ObservableProperty] private ObservableCollection<OperationCategory> _operationCategories = new();
-
-        [ObservableProperty] private Company? _selectedCompany;
-        [ObservableProperty] private Model? _selectedModel;
-        [ObservableProperty] private PLC? _selectedPlc;
-        [ObservableProperty] private Cycle? _selectedCycle;
-        [ObservableProperty] private Process? _selectedProcess;
-        [ObservableProperty] private ProcessDetail? _selectedProcessDetail;
-
-        [ObservableProperty] private int _processDeviceStartL = 14000;
-        [ObservableProperty] private int _detailDeviceStartL = 15000;
-        [ObservableProperty] private int _operationDeviceStartM = 20000;
-        [ObservableProperty] private int _cylinderDeviceStartM = 30000;
-        [ObservableProperty] private int _cylinderDeviceStartD = 5000;
-        [ObservableProperty] private int _errorDeviceStartM = 120000;
-        [ObservableProperty] private int _errorDeviceStartT = 2000;
-        [ObservableProperty] private int _deviceStartT = 0;
-        [ObservableProperty] private int _timerStartZR = 3000;
-        [ObservableProperty] private int _prosTimeStartZR = 12000;
-        [ObservableProperty] private int _prosTimePreviousStartZR = 24000;
-        [ObservableProperty] private int _cyTimeStartZR = 30000;
-
-        [ObservableProperty] private bool _isProcessMemory = false;
-        [ObservableProperty] private bool _isDetailMemory = false;
-        [ObservableProperty] private bool _isOperationMemory = false;
-        [ObservableProperty] private bool _isCylinderMemory = false;
-        [ObservableProperty] private bool _isErrorMemory = false;
-        [ObservableProperty] private bool _isTimerMemory = false;
-        [ObservableProperty] private bool _isProsTimeMemory = false;
-        [ObservableProperty] private bool _isCyTimeMemory = false;
-
-        [ObservableProperty] private bool _isProcessOutput = false;
-        [ObservableProperty] private bool _isDetailOutput = false;
-        [ObservableProperty] private bool _isOperationOutput = false;
-        [ObservableProperty] private bool _isCylinderOutput = false;
-        [ObservableProperty] private bool _isDebug = false;
-
+        // 出力エラー
         [ObservableProperty] private List<OutputError> _outputErrors = new();
-
-        // メモリ設定状態の表示用プロパティ
-        [ObservableProperty] private int _totalMemoryDeviceCount = 0;
-        [ObservableProperty] private string _memoryConfigurationStatus = "未設定";
-        [ObservableProperty] private bool _isMemoryConfigured = false;
-        [ObservableProperty] private string _lastMemoryConfigTime = string.Empty;
 
         // 認証関連
         [ObservableProperty] private string _currentUserEmail = string.Empty;
 
-        private List<ProcessDetail> _allDetails = new();
-        private List<Process> _allProcesses = new();
-        public List<Servo> _selectedServo = new(); // 選択されたサーボのリスト
-        public List<CylinderCycle>? _selectedCylinderCycles = new(); // 選択されたシリンダーサイクルのリスト
-        public List<ControlBox> _selectedControlBoxes = new(); // 選択されたコントロールボックスのリスト
-        public List<CylinderControlBox> _selectedCylinderControlBoxes = new(); // 選択されたコントロールボックスのリスト
+        // マネージャーからのプロパティ公開（バインディング用）
+        public ObservableCollection<Company> Companies
+        {
+            get => _selectionManager?.Companies ?? new();
+            set { if (_selectionManager != null) _selectionManager.Companies = value; }
+        }
+        public ObservableCollection<Model> Models
+        {
+            get => _selectionManager?.Models ?? new();
+            set { if (_selectionManager != null) _selectionManager.Models = value; }
+        }
+        public ObservableCollection<PLC> Plcs
+        {
+            get => _selectionManager?.Plcs ?? new();
+            set { if (_selectionManager != null) _selectionManager.Plcs = value; }
+        }
+        public ObservableCollection<Cycle> Cycles
+        {
+            get => _selectionManager?.Cycles ?? new();
+            set { if (_selectionManager != null) _selectionManager.Cycles = value; }
+        }
+        public ObservableCollection<Process> Processes
+        {
+            get => _selectionManager?.Processes ?? new();
+            set { if (_selectionManager != null) _selectionManager.Processes = value; }
+        }
+        public ObservableCollection<ProcessDetail> ProcessDetails
+        {
+            get => _selectionManager?.ProcessDetails ?? new();
+            set { if (_selectionManager != null) _selectionManager.ProcessDetails = value; }
+        }
+        public ObservableCollection<Operation> SelectedOperations
+        {
+            get => _selectionManager?.SelectedOperations ?? new();
+            set { if (_selectionManager != null) _selectionManager.SelectedOperations = value; }
+        }
 
+        public ObservableCollection<ProcessCategory> ProcessCategories
+        {
+            get => _selectionManager?.ProcessCategories ?? new();
+            set { if (_selectionManager != null) _selectionManager.ProcessCategories = value; }
+        }
+        public ObservableCollection<ProcessDetailCategory> ProcessDetailCategories
+        {
+            get => _selectionManager?.ProcessDetailCategories ?? new();
+            set { if (_selectionManager != null) _selectionManager.ProcessDetailCategories = value; }
+        }
+        public ObservableCollection<OperationCategory> OperationCategories
+        {
+            get => _selectionManager?.OperationCategories ?? new();
+            set { if (_selectionManager != null) _selectionManager.OperationCategories = value; }
+        }
 
-        private readonly IAuthenticationService _authService = null!;
-        private readonly SupabaseConnectionHelper? _supabaseHelper;
+        public Company? SelectedCompany
+        {
+            get => _selectionManager?.SelectedCompany;
+            set { if (_selectionManager != null) _selectionManager.SelectedCompany = value; }
+        }
+        public Model? SelectedModel
+        {
+            get => _selectionManager?.SelectedModel;
+            set { if (_selectionManager != null) _selectionManager.SelectedModel = value; }
+        }
+        public PLC? SelectedPlc
+        {
+            get => _selectionManager?.SelectedPlc;
+            set { if (_selectionManager != null) _selectionManager.SelectedPlc = value; }
+        }
+        public Cycle? SelectedCycle
+        {
+            get => _selectionManager?.SelectedCycle;
+            set { if (_selectionManager != null) _selectionManager.SelectedCycle = value; }
+        }
+        public Process? SelectedProcess
+        {
+            get => _selectionManager?.SelectedProcess;
+            set { if (_selectionManager != null) _selectionManager.SelectedProcess = value; }
+        }
+        public ProcessDetail? SelectedProcessDetail
+        {
+            get => _selectionManager?.SelectedProcessDetail;
+            set { if (_selectionManager != null) _selectionManager.SelectedProcessDetail = value; }
+        }
+
+        // デバイス設定プロパティ（DeviceConfigurationManagerから公開）
+        public int ProcessDeviceStartL
+        {
+            get => _deviceConfig?.ProcessDeviceStartL ?? 14000;
+            set { if (_deviceConfig != null) _deviceConfig.ProcessDeviceStartL = value; }
+        }
+        public int DetailDeviceStartL
+        {
+            get => _deviceConfig?.DetailDeviceStartL ?? 15000;
+            set { if (_deviceConfig != null) _deviceConfig.DetailDeviceStartL = value; }
+        }
+        public int OperationDeviceStartM
+        {
+            get => _deviceConfig?.OperationDeviceStartM ?? 20000;
+            set { if (_deviceConfig != null) _deviceConfig.OperationDeviceStartM = value; }
+        }
+        public int CylinderDeviceStartM
+        {
+            get => _deviceConfig?.CylinderDeviceStartM ?? 30000;
+            set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartM = value; }
+        }
+        public int CylinderDeviceStartD
+        {
+            get => _deviceConfig?.CylinderDeviceStartD ?? 5000;
+            set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartD = value; }
+        }
+        public int ErrorDeviceStartM
+        {
+            get => _deviceConfig?.ErrorDeviceStartM ?? 120000;
+            set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartM = value; }
+        }
+        public int ErrorDeviceStartT
+        {
+            get => _deviceConfig?.ErrorDeviceStartT ?? 2000;
+            set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartT = value; }
+        }
+        public int DeviceStartT
+        {
+            get => _deviceConfig?.DeviceStartT ?? 0;
+            set { if (_deviceConfig != null) _deviceConfig.DeviceStartT = value; }
+        }
+        public int TimerStartZR
+        {
+            get => _deviceConfig?.TimerStartZR ?? 3000;
+            set { if (_deviceConfig != null) _deviceConfig.TimerStartZR = value; }
+        }
+        public int ProsTimeStartZR
+        {
+            get => _deviceConfig?.ProsTimeStartZR ?? 12000;
+            set { if (_deviceConfig != null) _deviceConfig.ProsTimeStartZR = value; }
+        }
+        public int ProsTimePreviousStartZR
+        {
+            get => _deviceConfig?.ProsTimePreviousStartZR ?? 24000;
+            set { if (_deviceConfig != null) _deviceConfig.ProsTimePreviousStartZR = value; }
+        }
+        public int CyTimeStartZR
+        {
+            get => _deviceConfig?.CyTimeStartZR ?? 30000;
+            set { if (_deviceConfig != null) _deviceConfig.CyTimeStartZR = value; }
+        }
+
+        // メモリ/出力フラグ
+        public bool IsProcessMemory
+        {
+            get => _deviceConfig?.IsProcessMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsProcessMemory = value; }
+        }
+        public bool IsDetailMemory
+        {
+            get => _deviceConfig?.IsDetailMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsDetailMemory = value; }
+        }
+        public bool IsOperationMemory
+        {
+            get => _deviceConfig?.IsOperationMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsOperationMemory = value; }
+        }
+        public bool IsCylinderMemory
+        {
+            get => _deviceConfig?.IsCylinderMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsCylinderMemory = value; }
+        }
+        public bool IsErrorMemory
+        {
+            get => _deviceConfig?.IsErrorMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsErrorMemory = value; }
+        }
+        public bool IsTimerMemory
+        {
+            get => _deviceConfig?.IsTimerMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsTimerMemory = value; }
+        }
+        public bool IsProsTimeMemory
+        {
+            get => _deviceConfig?.IsProsTimeMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsProsTimeMemory = value; }
+        }
+        public bool IsCyTimeMemory
+        {
+            get => _deviceConfig?.IsCyTimeMemory ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsCyTimeMemory = value; }
+        }
+
+        public bool IsProcessOutput
+        {
+            get => _deviceConfig?.IsProcessOutput ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsProcessOutput = value; }
+        }
+        public bool IsDetailOutput
+        {
+            get => _deviceConfig?.IsDetailOutput ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsDetailOutput = value; }
+        }
+        public bool IsOperationOutput
+        {
+            get => _deviceConfig?.IsOperationOutput ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsOperationOutput = value; }
+        }
+        public bool IsCylinderOutput
+        {
+            get => _deviceConfig?.IsCylinderOutput ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsCylinderOutput = value; }
+        }
+        public bool IsDebug
+        {
+            get => _deviceConfig?.IsDebug ?? false;
+            set { if (_deviceConfig != null) _deviceConfig.IsDebug = value; }
+        }
+
+        // メモリ設定状態プロパティ
+        public int TotalMemoryDeviceCount
+        {
+            get => _memoryConfig?.TotalMemoryDeviceCount ?? 0;
+            set { if (_memoryConfig != null) _memoryConfig.TotalMemoryDeviceCount = value; }
+        }
+        public string MemoryConfigurationStatus
+        {
+            get => _memoryConfig?.MemoryConfigurationStatus ?? "未設定";
+            set { if (_memoryConfig != null) _memoryConfig.MemoryConfigurationStatus = value; }
+        }
+        public bool IsMemoryConfigured
+        {
+            get => _memoryConfig?.IsMemoryConfigured ?? false;
+            set { if (_memoryConfig != null) _memoryConfig.IsMemoryConfigured = value; }
+        }
+        public string LastMemoryConfigTime
+        {
+            get => _memoryConfig?.LastMemoryConfigTime ?? string.Empty;
+            set { if (_memoryConfig != null) _memoryConfig.LastMemoryConfigTime = value; }
+        }
+
+        // サービスへのアクセス（後方互換性のため）
+        protected private IMnemonicDeviceService? _mnemonicService => _serviceInitializer?.MnemonicService;
+        protected private IMnemonicTimerDeviceService? _timerService => _serviceInitializer?.TimerService;
+        protected private IProsTimeDeviceService? _prosTimeService => _serviceInitializer?.ProsTimeService;
+        protected private IMnemonicSpeedDeviceService? _speedService => _serviceInitializer?.SpeedService;
+        protected private IMemoryService? _memoryService => _serviceInitializer?.MemoryService;
+        protected private IMnemonicDeviceMemoryStore? _mnemonicMemoryStore => _serviceInitializer?.MemoryStore;
+        protected private ErrorService? _errorService => _serviceInitializer?.ErrorService;
+        protected private WpfIOSelectorService? _ioSelectorService => _serviceInitializer?.IOSelectorService;
 
         /// <summary>
         /// DIコンテナ用コンストラクタ（推奨）
@@ -154,12 +344,95 @@ namespace KdxDesigner.ViewModels
         /// </summary>
         private void Initialize()
         {
-            InitializeServices();
+            InitializeManagers();
             _ = LoadInitialDataAsync();
 
             if (_supabaseHelper != null)
             {
                 _ = InitializeSupabaseAsync();
+            }
+        }
+
+        /// <summary>
+        /// マネージャークラスの初期化
+        /// </summary>
+        private void InitializeManagers()
+        {
+            // SelectionStateManager の初期化
+            _selectionManager = new SelectionStateManager(_repository);
+
+            // SelectionStateManagerのプロパティ変更をMainViewModelに転送
+            _selectionManager.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName != null)
+                {
+                    OnPropertyChanged(e.PropertyName);
+
+                    // 特定のプロパティ変更時に追加処理を実行
+                    switch (e.PropertyName)
+                    {
+                        case nameof(SelectedCompany):
+                            if (_selectionManager.SelectedCompany != null)
+                            {
+                                SettingsManager.Settings.LastSelectedCompanyId = _selectionManager.SelectedCompany.Id;
+                                SettingsManager.Save();
+                            }
+                            break;
+                        case nameof(SelectedModel):
+                            if (_selectionManager.SelectedModel != null)
+                            {
+                                SettingsManager.Settings.LastSelectedModelId = _selectionManager.SelectedModel.Id;
+                                SettingsManager.Save();
+                            }
+                            break;
+                        case nameof(SelectedPlc):
+                            UpdateMemoryConfigurationStatus();
+                            break;
+                        case nameof(SelectedCycle):
+                            if (_selectionManager.SelectedCycle != null)
+                            {
+                                SettingsManager.Settings.LastSelectedCycleId = _selectionManager.SelectedCycle.Id;
+                                SettingsManager.Save();
+                            }
+                            UpdateMemoryConfigurationStatus();
+                            break;
+                    }
+                }
+            };
+
+            // ServiceInitializer の初期化とサービス生成
+            _serviceInitializer = new ServiceInitializer(_repository, this);
+            _serviceInitializer.InitializeAll();
+
+            // DeviceConfigurationManager の初期化
+            _deviceConfig = new DeviceConfigurationManager();
+
+            // DeviceConfigurationManagerのプロパティ変更をMainViewModelに転送
+            _deviceConfig.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName != null)
+                {
+                    OnPropertyChanged(e.PropertyName);
+                }
+            };
+
+            // MemoryConfigurationManager の初期化
+            if (_serviceInitializer.MemoryStore != null)
+            {
+                _memoryConfig = new MemoryConfigurationManager(_serviceInitializer.MemoryStore);
+
+                // MemoryConfigurationManagerのプロパティ変更をMainViewModelに転送
+                _memoryConfig.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName != null)
+                    {
+                        OnPropertyChanged(e.PropertyName);
+                    }
+                };
+            }
+            else
+            {
+                throw new InvalidOperationException("MemoryStore が初期化されていません");
             }
         }
 
@@ -190,48 +463,6 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        /// <summary>
-        /// サービスの初期化
-        /// </summary>
-        private void InitializeServices()
-        {
-            // 基本サービスの初期化
-            _prosTimeService = App.Services?.GetService<IProsTimeDeviceService>()
-                ?? new Kdx.Infrastructure.Services.ProsTimeDeviceService(_repository);
-            _memoryService = App.Services?.GetService<IMemoryService>()
-                ?? new Kdx.Infrastructure.Services.MemoryService(_repository);
-            _ioSelectorService = new WpfIOSelectorService();
-            _errorService = new ErrorService(_repository);
-
-            // メモリストアの取得/作成
-            var memoryStore = App.Services?.GetService<IMnemonicDeviceMemoryStore>()
-                ?? new MnemonicDeviceMemoryStore();
-            _mnemonicMemoryStore = memoryStore;
-
-            // メモリオンリーモードのサービス初期化
-            InitializeMemoryOnlyServices(memoryStore);
-        }
-
-        /// <summary>
-        /// メモリオンリーモードのサービスを初期化
-        /// </summary>
-        private void InitializeMemoryOnlyServices(IMnemonicDeviceMemoryStore memoryStore)
-        {
-            // MnemonicDeviceハイブリッドサービス
-            var hybridService = new MnemonicDeviceHybridService(_repository, _memoryService, memoryStore);
-            hybridService.SetMemoryOnlyMode(true);
-            _mnemonicService = hybridService;
-
-            // TimerDeviceアダプター
-            var timerAdapter = new MnemonicTimerDeviceMemoryAdapter(_repository, this, memoryStore, _memoryService);
-            timerAdapter.SetMemoryOnlyMode(true);
-            _timerService = timerAdapter;
-
-            // SpeedDeviceアダプター
-            var speedAdapter = new MnemonicSpeedDeviceMemoryAdapter(_repository, memoryStore);
-            speedAdapter.SetMemoryOnlyMode(true);
-            _speedService = speedAdapter;
-        }
 
         private bool CanExecute()
         {
@@ -277,15 +508,8 @@ namespace KdxDesigner.ViewModels
         /// </summary>
         private async Task LoadMasterDataAsync()
         {
-            // マスターデータの読み込み
-            Companies = new ObservableCollection<Company>(await _repository.GetCompaniesAsync());
-            _allProcesses = await _repository.GetProcessesAsync();
-            _allDetails = await _repository.GetProcessDetailsAsync();
-
-            // カテゴリデータの読み込み
-            ProcessCategories = new ObservableCollection<ProcessCategory>(await _repository.GetProcessCategoriesAsync());
-            ProcessDetailCategories = new ObservableCollection<ProcessDetailCategory>(await _repository.GetProcessDetailCategoriesAsync());
-            OperationCategories = new ObservableCollection<OperationCategory>(await _repository.GetOperationCategoriesAsync());
+            // SelectionStateManagerを使ってマスターデータを読み込む
+            await _selectionManager.LoadMasterDataAsync();
 
             // 設定とプロファイルの読み込み
             LoadSettings();
@@ -308,96 +532,52 @@ namespace KdxDesigner.ViewModels
         /// </summary>
         private void RestoreLastSelection()
         {
-            if (!SettingsManager.Settings.LastSelectedCompanyId.HasValue)
-                return;
-
-            var savedCompany = Companies.FirstOrDefault(c => c.Id == SettingsManager.Settings.LastSelectedCompanyId.Value);
-            if (savedCompany == null)
-                return;
-
-            SelectedCompany = savedCompany;
-
-            // モデルの復元
-            if (SettingsManager.Settings.LastSelectedModelId.HasValue)
-            {
-                var savedModel = Models.FirstOrDefault(m => m.Id == SettingsManager.Settings.LastSelectedModelId.Value);
-                if (savedModel != null)
-                {
-                    SelectedModel = savedModel;
-
-                    // サイクルの復元
-                    if (SettingsManager.Settings.LastSelectedCycleId.HasValue)
-                    {
-                        var savedCycle = Cycles.FirstOrDefault(c => c.Id == SettingsManager.Settings.LastSelectedCycleId.Value);
-                        if (savedCycle != null)
-                        {
-                            SelectedCycle = savedCycle;
-                        }
-                    }
-                }
-            }
+            _selectionManager.RestoreSelection(
+                SettingsManager.Settings.LastSelectedCompanyId,
+                SettingsManager.Settings.LastSelectedModelId,
+                SettingsManager.Settings.LastSelectedCycleId);
         }
 
-        #region Properties for Selected Operations
+        #region Selection Change Handlers
 
-        async partial void OnSelectedCompanyChanged(Company? value)
+        /// <summary>
+        /// 会社が選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
+        /// </summary>
+        public async Task OnCompanyChangedAsync(Company? value)
         {
-            if (!CanExecute()) return;
-
-            if (value == null) return;
-            Models = new ObservableCollection<Model>((await _repository!.GetModelsAsync()).Where(m => m.CompanyId == value.Id));
-            SelectedModel = null;
-
-            // 選択した会社IDを保存
-            SettingsManager.Settings.LastSelectedCompanyId = value.Id;
-            SettingsManager.Save();
+            if (!CanExecute() || value == null) return;
+            SelectedCompany = value;
+            await Task.CompletedTask;
         }
 
-        async partial void OnSelectedModelChanged(Model? value)
+        /// <summary>
+        /// モデルが選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
+        /// </summary>
+        public async Task OnModelChangedAsync(Model? value)
         {
-            if (!CanExecute()) return;
-
-            if (value == null) return;
-            Plcs = new ObservableCollection<PLC>((await _repository!.GetPLCsAsync()).Where(p => p.ModelId == value.Id));
-            SelectedPlc = null;
-
-            // 選択したモデルIDを保存
-            SettingsManager.Settings.LastSelectedModelId = value.Id;
-            SettingsManager.Save();
+            if (!CanExecute() || value == null) return;
+            SelectedModel = value;
+            await Task.CompletedTask;
         }
 
-        async partial void OnSelectedPlcChanged(PLC? value)
+        /// <summary>
+        /// PLCが選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
+        /// </summary>
+        public async Task OnPlcChangedAsync(PLC? value)
         {
-            if (!CanExecute()) return;
-
-            if (value == null) return;
-            Cycles = new ObservableCollection<Cycle>((await _repository!.GetCyclesAsync()).Where(c => c.PlcId == value.Id));
-            SelectedCycle = null;
-
-            // PLCが変更されたらメモリ設定状態を更新
-            UpdateMemoryConfigurationStatus();
+            if (!CanExecute() || value == null) return;
+            SelectedPlc = value;
+            await Task.CompletedTask;
         }
 
-        async partial void OnSelectedCycleChanged(Cycle? value)
+        /// <summary>
+        /// サイクルが選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
+        /// </summary>
+        public async Task OnCycleChangedAsync(Cycle? value)
         {
-            if (!CanExecute()) return;
-
-            if (value == null) return;
-
-            // Processesをフィルタリング
-            Processes = new ObservableCollection<Process>(
-                _allProcesses.Where(p => p.CycleId == value.Id).OrderBy(p => p.SortNumber));
-
-            // 選択されたCycleのOperationを読み込み
-            var operations = await _repository!.GetOperationsByCycleIdAsync(value.Id);
-            SelectedOperations = new ObservableCollection<Operation>(operations.OrderBy(o => o.SortNumber));
-
-            // 選択したサイクルIDを保存
-            SettingsManager.Settings.LastSelectedCycleId = value.Id;
-            SettingsManager.Save();
-
-            // サイクルが変更されたらメモリ設定状態を更新
-            UpdateMemoryConfigurationStatus();
+            if (!CanExecute() || value == null) return;
+            SelectedCycle = value;
+            await Task.CompletedTask;
         }
         public void OnProcessDetailSelected(ProcessDetail selected)
         {
@@ -439,7 +619,7 @@ namespace KdxDesigner.ViewModels
         public void UpdateSelectedProcesses(List<Process> selectedProcesses)
         {
             var selectedIds = selectedProcesses.Select(p => p.Id).ToHashSet();
-            var filtered = _allDetails
+            var filtered = _selectionManager.GetAllDetails()
                 .Where(d => selectedIds.Contains(d.ProcessId))
                 .ToList();
 
@@ -485,7 +665,7 @@ namespace KdxDesigner.ViewModels
 
                 // コレクションとローカルリストに追加
                 Processes.Add(newProcess);
-                _allProcesses.Add(newProcess);
+                _selectionManager.AddProcessToCache(newProcess);
 
                 MessageBox.Show("新しい工程を追加しました。", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -521,7 +701,7 @@ namespace KdxDesigner.ViewModels
 
                 // コレクションとローカルリストに追加
                 ProcessDetails.Add(newDetail);
-                _allDetails.Add(newDetail);
+                _selectionManager.AddDetailToCache(newDetail);
 
                 MessageBox.Show("新しい工程詳細を追加しました。", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -612,14 +792,14 @@ namespace KdxDesigner.ViewModels
                 {
                     await _repository!.DeleteProcessAsync(SelectedProcess.Id);
                     Processes.Remove(SelectedProcess);
-                    _allProcesses.Remove(SelectedProcess);
+                    _selectionManager.RemoveProcessFromCache(SelectedProcess);
 
                     // 関連するProcessDetailも削除
                     var detailsToRemove = ProcessDetails.Where(d => d.ProcessId == SelectedProcess.Id).ToList();
                     foreach (var detail in detailsToRemove)
                     {
                         ProcessDetails.Remove(detail);
-                        _allDetails.Remove(detail);
+                        _selectionManager.RemoveDetailFromCache(detail);
                     }
 
                     SelectedProcess = null;
@@ -646,7 +826,7 @@ namespace KdxDesigner.ViewModels
                 {
                     await _repository!.DeleteProcessDetailAsync(SelectedProcessDetail.Id);
                     ProcessDetails.Remove(SelectedProcessDetail);
-                    _allDetails.Remove(SelectedProcessDetail);
+                    _selectionManager.RemoveDetailFromCache(SelectedProcessDetail);
                     SelectedProcessDetail = null;
                     MessageBox.Show("工程詳細を削除しました。", "削除完了", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -717,8 +897,19 @@ namespace KdxDesigner.ViewModels
                 return;
             }
 
-            // 新しいウィンドウを作成
-            var window = new ProcessFlowDetailWindow(_repository, SelectedCycle.Id, SelectedCycle.CycleName ?? $"サイクル{SelectedCycle.Id}");
+            // MainViewModelで既に取得しているデータを渡してパフォーマンスを改善
+            var allProcesses = _selectionManager.GetAllProcesses();
+            var allProcessDetails = _selectionManager.GetAllDetails();
+            var categories = ProcessDetailCategories.ToList();
+
+            // 新しいウィンドウを作成（既存データを渡す）
+            var window = new ProcessFlowDetailWindow(
+                _repository,
+                SelectedCycle.Id,
+                SelectedCycle.CycleName ?? $"サイクル{SelectedCycle.Id}",
+                allProcesses,
+                allProcessDetails,
+                categories);
 
             // ウィンドウが閉じられたときにリストから削除
             window.Closed += (s, e) =>
@@ -775,9 +966,16 @@ namespace KdxDesigner.ViewModels
                 return;
             }
 
+            // 選択されたサイクルを確認
+            if (SelectedCycle == null)
+            {
+                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             // インターロック設定ウィンドウを表示（シリンダー選択を含む）
             var window = new InterlockSettingsWindow();
-            var viewModel = new InterlockSettingsViewModel(supabaseRepo, _repository!, SelectedPlc?.Id ?? 1, window);
+            var viewModel = new InterlockSettingsViewModel(supabaseRepo, _repository!, SelectedPlc.Id, SelectedCycle.Id, window);
             window.DataContext = viewModel;
             window.ShowDialog();
         }

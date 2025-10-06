@@ -18,15 +18,19 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Kdx.Contracts" Version="2.3.0-alpha" />
+    <PackageReference Include="Kdx.Core" Version="2.3.0-alpha" />
+    <PackageReference Include="Kdx.Infrastructure" Version="2.3.0-alpha" />
+    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="2.3.0-alpha" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
-    <PackageReference Include="Npgsql" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="Npgsql" Version="9.0.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,7 +51,7 @@
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="Views\*.cs" />
-    <Compile Include="ViewModels\*.cs" />
+    <Compile Include="ViewModels\**\*.cs" />
     <Compile Include="Models\*.cs" />
     <Compile Include="Services\**\*.cs" />
     <Compile Include="Utils\**\*.cs" />
@@ -64,10 +68,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kdx.Contracts" Version="2.0.1" />
-    <PackageReference Include="Kdx.Core" Version="2.0.1" />
-    <PackageReference Include="Kdx.Infrastructure" Version="2.0.1" />
-    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="2.0.1" />
+    <ProjectReference Include="..\..\..\KdxProjects\src\Kdx.Contracts\Kdx.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\KdxProjects\src\Kdx.Core\Kdx.Core.csproj" />
+    <ProjectReference Include="..\..\..\KdxProjects\src\Kdx.Infrastructure\Kdx.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\KdxProjects\src\Kdx.Infrastructure.Supabase\Kdx.Infrastructure.Supabase.csproj" />
   </ItemGroup>
 
   <ItemGroup>

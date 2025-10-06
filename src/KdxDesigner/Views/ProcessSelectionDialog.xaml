@@ -1,0 +1,38 @@
+<Window x:Class="KdxDesigner.Views.ProcessSelectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Process選択" Height="400" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="ProcessDetailを移動先のProcessを選択してください:"
+                   Margin="0,0,0,10" FontWeight="Bold"/>
+
+        <DataGrid Grid.Row="1" Name="ProcessDataGrid"
+                  ItemsSource="{Binding Processes}"
+                  SelectedItem="{Binding SelectedProcess}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  IsReadOnly="True"
+                  Margin="0,0,0,10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80"/>
+                <DataGridTextColumn Header="工程名" Binding="{Binding ProcessName}" Width="*"/>
+                <DataGridTextColumn Header="Sort番号" Binding="{Binding SortNumber}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="80" Height="30" Margin="0,0,10,0" Click="OkButton_Click" IsDefault="True"/>
+            <Button Content="キャンセル" Width="80" Height="30" Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
