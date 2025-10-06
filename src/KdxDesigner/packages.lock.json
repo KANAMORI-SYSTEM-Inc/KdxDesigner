@@ -131,6 +131,25 @@
           "System.IO.Packaging": "8.0.1"
         }
       },
+      "EPPlus": {
+        "type": "Transitive",
+        "resolved": "8.2.0",
+        "contentHash": "UFAjVAP4UyR9rPL/adHw1uezX1gDbt2mM7Bkb7cMmqbw51y0HFKyLoHpsjvNzKRL/u05vW4pHJAmkuvrPBcgSw==",
+        "dependencies": {
+          "EPPlus.Interfaces": "8.1.0",
+          "Microsoft.Extensions.Configuration.Json": "8.0.1",
+          "Microsoft.IO.RecyclableMemoryStream": "3.0.1",
+          "System.ComponentModel.Annotations": "5.0.0",
+          "System.Security.Cryptography.Pkcs": "8.0.1",
+          "System.Security.Cryptography.Xml": "8.0.2",
+          "System.Text.Encoding.CodePages": "8.0.0"
+        }
+      },
+      "EPPlus.Interfaces": {
+        "type": "Transitive",
+        "resolved": "8.1.0",
+        "contentHash": "Nfc7ehsn8Sb8Ed8KYYuOxqt8gWqmy2Vhts5nfLMw3zISi+aZFwyW+k9s3FOpVuW91VDSrhVAId9brYtz9NnmKA=="
+      },
       "ExcelNumberFormat": {
         "type": "Transitive",
         "resolved": "1.1.0",
@@ -233,6 +252,11 @@
           "Microsoft.IdentityModel.Logging": "7.0.3"
         }
       },
+      "Microsoft.IO.RecyclableMemoryStream": {
+        "type": "Transitive",
+        "resolved": "3.0.1",
+        "contentHash": "s/s20YTVY9r9TPfTrN5g8zPF1YhwxyqO6PxUkrYTGI2B+OGPe9AdajWZrLhFqXIvqIW23fnUE4+ztrUWNU1+9g=="
+      },
       "MimeMapping": {
         "type": "Transitive",
         "resolved": "2.0.0",
@@ -302,6 +326,11 @@
           "supabase-core": "0.0.3"
         }
       },
+      "System.ComponentModel.Annotations": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "dMkqfy2el8A8/I76n2Hi1oBFEbG1SfxD2l5nhwXV3XjlnOmwxJlQbYpJH4W51odnU9sARCSAgv7S3CyAFMkpYg=="
+      },
       "System.IdentityModel.Tokens.Jwt": {
         "type": "Transitive",
         "resolved": "7.0.3",
@@ -325,6 +354,24 @@
         "type": "Transitive",
         "resolved": "5.0.0",
         "contentHash": "erBZjkQHWL9jpasCE/0qKAryzVBJFxGHVBAvgRN1bzM0q2s1S4oYREEEL0Vb+1kA/6BKb5FjUZMp5VXmy+gzkQ=="
+      },
+      "System.Security.Cryptography.Pkcs": {
+        "type": "Transitive",
+        "resolved": "8.0.1",
+        "contentHash": "CoCRHFym33aUSf/NtWSVSZa99dkd0Hm7OCZUxORBjRB16LNhIEOf8THPqzIYlvKM0nNDAPTRBa1FxEECrgaxxA=="
+      },
+      "System.Security.Cryptography.Xml": {
+        "type": "Transitive",
+        "resolved": "8.0.2",
+        "contentHash": "aDM/wm0ZGEZ6ZYJLzgqjp2FZdHbDHh6/OmpGfb7AdZ105zYmPn/83JRU2xLIbwgoNz9U1SLUTJN0v5th3qmvjA==",
+        "dependencies": {
+          "System.Security.Cryptography.Pkcs": "8.0.1"
+        }
+      },
+      "System.Text.Encoding.CodePages": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "OZIsVplFGaVY90G2SbpgU7EnCoOO5pw1t4ic21dBF3/1omrJFpAGoNAVpPyMVOC90/hvgkGG3VFqR13YgZMQfg=="
       },
       "System.Text.Encodings.Web": {
         "type": "Transitive",
@@ -371,6 +418,7 @@
       "kdx.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "EPPlus": "[8.2.0, )",
           "Kdx.Contracts": "[2.0.0-alpha, )",
           "Kdx.Core": "[2.0.0-alpha, )",
           "Kdx.Infrastructure.Supabase": "[2.0.0-alpha, )",

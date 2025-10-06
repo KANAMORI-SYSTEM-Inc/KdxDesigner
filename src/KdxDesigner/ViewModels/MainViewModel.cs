@@ -641,6 +641,21 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
+        private void OpenIOConversionWindow()
+        {
+            if (_repository == null)
+            {
+                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
+                return;
+            }
+
+            var window = new IOConversionWindow();
+            var viewModel = new IOConversionViewModel(_repository);
+            window.DataContext = viewModel;
+            window.ShowDialog(); // モーダルダイアログとして表示
+        }
+
+        [RelayCommand]
         private async Task AddNewProcess()
         {
             if (!CanExecute() || SelectedCycle == null)

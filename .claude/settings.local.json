@@ -8,7 +8,8 @@
       "Bash(tasklist)",
       "Bash(findstr:*)",
       "Bash(dotnet nuget locals:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Read(//c/Users/amdet/source/repos/kanamori-system-inc/kdxprojects/src/Kdx.Infrastructure/Services/**)"
     ],
     "deny": [],
     "ask": []

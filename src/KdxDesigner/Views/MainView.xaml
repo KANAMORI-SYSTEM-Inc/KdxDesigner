@@ -86,6 +86,7 @@
             </MenuItem>
             <MenuItem Header="_ツール">
                 <MenuItem Header="IOテーブル管理" Command="{Binding OpenIoEditorCommand}" />
+                <MenuItem Header="IO割付表変換" Command="{Binding OpenIOConversionWindowCommand}" />
                 <MenuItem Header="リンクデバイス管理" Command="{Binding OpenLinkDeviceManagerCommand}" />
                 <MenuItem Header="タイマー設定" Command="{Binding OpenTimerEditorCommand}" />
                 <MenuItem Header="メモリプロファイル管理" Command="{Binding OpenMemoryProfileManagerCommand}" />
