@@ -726,6 +726,43 @@ namespace KdxDesigner.ViewModels
             }
         }
 
+        /// <summary>
+        /// 工程プロパティを編集
+        /// </summary>
+        [RelayCommand]
+        private void EditProcess()
+        {
+            if (!CanExecute() || SelectedProcess == null)
+            {
+                MessageBox.Show("編集する工程を選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                // ProcessPropertiesWindowを開く
+                var window = new ProcessPropertiesWindow(_repository, SelectedProcess)
+                {
+                    Owner = Application.Current.MainWindow
+                };
+
+                if (window.ShowDialog() == true)
+                {
+                    // プロセスの更新をUIに反映
+                    var index = Processes.IndexOf(SelectedProcess);
+                    if (index >= 0)
+                    {
+                        Processes[index] = SelectedProcess;
+                        OnPropertyChanged(nameof(Processes));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"工程の編集中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         [RelayCommand]
         private async Task AddNewOperation()
         {
@@ -757,6 +794,42 @@ namespace KdxDesigner.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show($"操作の追加中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddNewCylinder()
+        {
+            if (!CanExecute() || SelectedPlc == null)
+            {
+                MessageBox.Show("PLCを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                // 現在のPLCに紐づくシリンダーの数を取得してSortNumberを設定
+                var existingCylinders = await _repository!.GetCYsAsync();
+                var cylindersForPlc = existingCylinders.Where(c => c.PlcId == SelectedPlc.Id).ToList();
+
+                // 新しいCylinderオブジェクトを作成
+                var newCylinder = new Cylinder
+                {
+                    PlcId = SelectedPlc.Id,
+                    CYNum = "新規シリンダ",
+                    PUCO = "PU",
+                    SortNumber = cylindersForPlc.Count > 0 ? cylindersForPlc.Max(c => c.SortNumber ?? 0) + 1 : 1
+                };
+
+                // データベースに追加
+                int newId = await _repository!.AddCylinderAsync(newCylinder);
+                newCylinder.Id = newId;
+
+                MessageBox.Show($"新しいシリンダーを追加しました。(ID: {newId})", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"シリンダーの追加中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

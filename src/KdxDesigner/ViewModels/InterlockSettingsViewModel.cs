@@ -11,6 +11,49 @@ using System.Windows.Input;
 
 namespace KdxDesigner.ViewModels
 {
+    // Cylinder用のラッパークラス
+    public class CylinderViewModel : INotifyPropertyChanged
+    {
+        private readonly Cylinder _cylinder;
+        private string? _machineNameFullName;
+
+        public CylinderViewModel(Cylinder cylinder)
+        {
+            _cylinder = cylinder;
+        }
+
+        // Cylinderのプロパティをプロキシ
+        public int Id => _cylinder.Id;
+        public int PlcId => _cylinder.PlcId;
+        public string? PUCO => _cylinder.PUCO;
+        public string CYNum => _cylinder.CYNum;
+        public string? Go => _cylinder.Go;
+        public string? Back => _cylinder.Back;
+        public string? OilNum => _cylinder.OilNum;
+        public int? MachineNameId => _cylinder.MachineNameId;
+
+        // MachineNameのFullNameを保持（表示用）
+        public string? MachineNameFullName
+        {
+            get => _machineNameFullName;
+            set
+            {
+                _machineNameFullName = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // 内部のCylinderオブジェクトを取得
+        public Cylinder GetCylinder() => _cylinder;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
     // ViewModel内で使用するラッパークラス
     public class InterlockViewModel : INotifyPropertyChanged
     {
@@ -247,14 +290,14 @@ namespace KdxDesigner.ViewModels
         private readonly Window _window;
         private readonly int _plcId;
         private readonly int _cycleId;
-        private Cylinder? _selectedCylinder;
+        private CylinderViewModel? _selectedCylinder;
         private InterlockViewModel? _selectedInterlock;
         private InterlockConditionDTO? _selectedCondition;
         private InterlockIOViewModel? _selectedIO;
         private string? _cylinderSearchText;
 
         // Cylinder filtering
-        private readonly ObservableCollection<Cylinder> _allCylinders;
+        private readonly ObservableCollection<CylinderViewModel> _allCylinders;
         private readonly ICollectionView _filteredCylinders;
 
         // Track deleted items for database cleanup
@@ -284,7 +327,7 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        public Cylinder? SelectedCylinder
+        public CylinderViewModel? SelectedCylinder
         {
             get => _selectedCylinder;
             set
@@ -361,7 +404,7 @@ namespace KdxDesigner.ViewModels
             ConditionTypes = new ObservableCollection<InterlockConditionType>();
 
             // Initialize cylinder list and filtering
-            _allCylinders = new ObservableCollection<Cylinder>();
+            _allCylinders = new ObservableCollection<CylinderViewModel>();
             _filteredCylinders = CollectionViewSource.GetDefaultView(_allCylinders);
             _filteredCylinders.Filter = FilterCylinder;
 
@@ -411,25 +454,39 @@ namespace KdxDesigner.ViewModels
                 .Select(cc => cc.CylinderId)
                 .ToHashSet();
 
+            // MachineNameを取得してIDでマッピング
+            var machineNames = await _supabaseRepository.GetMachineNamesAsync();
+            var machineNameDict = machineNames.ToDictionary(mn => mn.Id, mn => mn.FullName);
+
             _allCylinders.Clear();
             foreach (var cylinder in allCylinders.Where(c => cylinderIdsInCycle.Contains(c.Id)))
             {
-                _allCylinders.Add(cylinder);
+                // CylinderViewModelを作成
+                var cylinderViewModel = new CylinderViewModel(cylinder);
+
+                // MachineNameIdからFullNameを取得してViewModelに設定
+                if (cylinder.MachineNameId.HasValue && machineNameDict.TryGetValue(cylinder.MachineNameId.Value, out var fullName))
+                {
+                    cylinderViewModel.MachineNameFullName = fullName;
+                }
+
+                _allCylinders.Add(cylinderViewModel);
             }
         }
 
         private bool FilterCylinder(object obj)
         {
-            if (obj is not Cylinder cylinder) return false;
+            if (obj is not CylinderViewModel cylinderVm) return false;
             if (string.IsNullOrWhiteSpace(CylinderSearchText)) return true;
 
             var searchLower = CylinderSearchText.ToLower();
-            return (cylinder.CYNum?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.PUCO?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.Go?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.Back?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.OilNum?.ToLower().Contains(searchLower) ?? false) ||
-                   cylinder.Id.ToString().Contains(searchLower);
+            return (cylinderVm.CYNum?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.PUCO?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.Go?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.Back?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.OilNum?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.MachineNameFullName?.ToLower().Contains(searchLower) ?? false) ||
+                   cylinderVm.Id.ToString().Contains(searchLower);
         }
 
         private void OnConditionPropertyChanged(object? sender, PropertyChangedEventArgs e)

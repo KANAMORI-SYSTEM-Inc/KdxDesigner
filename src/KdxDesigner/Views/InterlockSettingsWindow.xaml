@@ -65,6 +65,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
                         <DataGridTextColumn Header="CYNum" Binding="{Binding CYNum}" Width="100"/>
+                        <DataGridTextColumn Header="機械名" Binding="{Binding MachineNameFullName}" Width="150"/>
                         <DataGridTextColumn Header="PUCO" Binding="{Binding PUCO}" Width="100"/>
                         <DataGridTextColumn Header="Go" Binding="{Binding Go}" Width="100"/>
                         <DataGridTextColumn Header="Back" Binding="{Binding Back}" Width="100"/>

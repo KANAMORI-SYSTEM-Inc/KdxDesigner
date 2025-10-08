@@ -85,5 +85,18 @@ namespace KdxDesigner.Views
                 }
             }
         }
+
+        private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && vm.SelectedProcess != null)
+            {
+                // ヘッダーやスクロールバーをダブルクリックした場合は無視
+                var dataGrid = sender as DataGrid;
+                if (dataGrid?.SelectedItem != null)
+                {
+                    vm.EditProcessCommand.Execute(null);
+                }
+            }
+        }
     }
 }

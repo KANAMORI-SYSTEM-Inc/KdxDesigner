@@ -21,6 +21,53 @@
         "resolved": "8.4.0",
         "contentHash": "tqVU8yc/ADO9oiTRyTnwhFN68hCwvkliMierptWOudIAvWY1mWCh5VFh+guwHJmpMwfg0J0rY+yyd5Oy7ty9Uw=="
       },
+      "Kdx.Contracts": {
+        "type": "Direct",
+        "requested": "[2.4.7, )",
+        "resolved": "2.4.7",
+        "contentHash": "PtamEXCgmlRUVMLb/izG8EoX1wFMjqPPqZ/XySXnnzbUJQ7nQoBhVCYLzTQHB0v2neH7f5DagVzTrqizMBT2+g==",
+        "dependencies": {
+          "Npgsql": "9.0.3"
+        }
+      },
+      "Kdx.Core": {
+        "type": "Direct",
+        "requested": "[2.4.7, )",
+        "resolved": "2.4.7",
+        "contentHash": "HPHWiOWa1GkwuydJSm8aPJm94rLgheaR6zLxuI36U07f8uwi1+aKc56TI+KaRQXdQem+bedBbS2a22hzb5VO0g==",
+        "dependencies": {
+          "Kdx.Contracts": "2.4.7",
+          "Kdx.Infrastructure.Supabase": "2.4.7",
+          "Npgsql": "9.0.3"
+        }
+      },
+      "Kdx.Infrastructure": {
+        "type": "Direct",
+        "requested": "[2.4.7, )",
+        "resolved": "2.4.7",
+        "contentHash": "ZQyiHlMrP/i8FJrEa6uaLt4Ypo4s/6ge/94gJ7UB4Glkq4jH7d5NZJiUCTCP5JJHn0Gg6oNuWgCqjyMC4MV1Hg==",
+        "dependencies": {
+          "EPPlus": "8.2.0",
+          "Kdx.Contracts": "2.4.7",
+          "Kdx.Core": "2.4.7",
+          "Kdx.Infrastructure.Supabase": "2.4.7",
+          "Microsoft.Extensions.Configuration.Binder": "9.0.9",
+          "Microsoft.Extensions.Options": "9.0.9",
+          "Npgsql": "9.0.3"
+        }
+      },
+      "Kdx.Infrastructure.Supabase": {
+        "type": "Direct",
+        "requested": "[2.4.7, )",
+        "resolved": "2.4.7",
+        "contentHash": "DPKqbihgCmTvteVxJrr/SPjmXSUtixPS/s5YstXcOP44V1BWFwnVgyHGz85DSjBIGvXTQ56ScBOQfaine7iKRQ==",
+        "dependencies": {
+          "Kdx.Contracts": "2.4.7",
+          "Npgsql": "9.0.3",
+          "postgrest-csharp": "3.5.1",
+          "supabase-csharp": "0.16.2"
+        }
+      },
       "Microsoft.Extensions.Configuration": {
         "type": "Direct",
         "requested": "[9.0.9, )",
@@ -399,41 +446,6 @@
         "dependencies": {
           "System.Reactive": "5.0.0",
           "System.Threading.Channels": "5.0.0"
-        }
-      },
-      "kdx.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "Npgsql": "[9.0.3, )"
-        }
-      },
-      "kdx.core": {
-        "type": "Project",
-        "dependencies": {
-          "Kdx.Contracts": "[2.0.0-alpha, )",
-          "Kdx.Infrastructure.Supabase": "[2.0.0-alpha, )",
-          "Npgsql": "[9.0.3, )"
-        }
-      },
-      "kdx.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "EPPlus": "[8.2.0, )",
-          "Kdx.Contracts": "[2.0.0-alpha, )",
-          "Kdx.Core": "[2.0.0-alpha, )",
-          "Kdx.Infrastructure.Supabase": "[2.0.0-alpha, )",
-          "Microsoft.Extensions.Configuration.Binder": "[9.0.9, )",
-          "Microsoft.Extensions.Options": "[9.0.9, )",
-          "Npgsql": "[9.0.3, )"
-        }
-      },
-      "kdx.infrastructure.supabase": {
-        "type": "Project",
-        "dependencies": {
-          "Kdx.Contracts": "[2.0.0-alpha, )",
-          "Npgsql": "[9.0.3, )",
-          "postgrest-csharp": "[3.5.1, )",
-          "supabase-csharp": "[0.16.2, )"
         }
       }
     }
