@@ -19,8 +19,8 @@ namespace KdxDesigner.Views
         private ConnectionInfoWindow? _connectionInfoWindow;
 
         // 既存のコンストラクタ（後方互換性のため）
-        public ProcessFlowDetailWindow(ISupabaseRepository repository, int cycleId, string cycleName)
-            : this(repository, cycleId, cycleName, null, null, null)
+        public ProcessFlowDetailWindow(ISupabaseRepository repository, int cycleId, string cycleName, int? plcId = null)
+            : this(repository, cycleId, cycleName, null, null, null, plcId)
         {
         }
 
@@ -31,10 +31,11 @@ namespace KdxDesigner.Views
             string cycleName,
             List<Process>? allProcesses,
             List<ProcessDetail>? allProcessDetails,
-            List<ProcessDetailCategory>? categories)
+            List<ProcessDetailCategory>? categories,
+            int? plcId = null)
         {
             InitializeComponent();
-            _viewModel = new ProcessFlowDetailViewModel(repository, cycleId, cycleName, allProcesses, allProcessDetails, categories);
+            _viewModel = new ProcessFlowDetailViewModel(repository, cycleId, cycleName, allProcesses, allProcessDetails, categories, plcId);
             DataContext = _viewModel;
             _viewModel.LoadNodesAsync();
 

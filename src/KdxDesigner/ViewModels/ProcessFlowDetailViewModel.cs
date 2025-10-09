@@ -19,6 +19,7 @@ namespace KdxDesigner.ViewModels
     {
         private readonly ISupabaseRepository _repository;
         private readonly int _cycleId;
+        private readonly int? _plcId;
 
         // MainViewModelから受け取った既存データのキャッシュ
         private List<Process>? _cachedAllProcesses;
@@ -237,8 +238,8 @@ namespace KdxDesigner.ViewModels
         }
 
         // 既存のコンストラクタ（後方互換性のため）
-        public ProcessFlowDetailViewModel(ISupabaseRepository repository, int cycleId, string cycleName)
-            : this(repository, cycleId, cycleName, null, null, null)
+        public ProcessFlowDetailViewModel(ISupabaseRepository repository, int cycleId, string cycleName, int? plcId = null)
+            : this(repository, cycleId, cycleName, null, null, null, plcId)
         {
         }
 
@@ -249,10 +250,12 @@ namespace KdxDesigner.ViewModels
             string cycleName,
             List<Process>? allProcesses,
             List<ProcessDetail>? allProcessDetails,
-            List<ProcessDetailCategory>? categories)
+            List<ProcessDetailCategory>? categories,
+            int? plcId = null)
         {
             _repository = repository;
             _cycleId = cycleId;
+            _plcId = plcId;
             CycleName = $"{cycleId} - {cycleName}";
             WindowTitle = $"工程フロー詳細 - {CycleName}";
 
@@ -1749,7 +1752,7 @@ namespace KdxDesigner.ViewModels
                 }
 
                 // Operation編集ダイアログを開く
-                var operationViewModel = new OperationViewModel(operation);
+                var operationViewModel = new OperationViewModel(_repository, operation, _plcId);
                 var operationDialog = new Views.OperationEditorDialog
                 {
                     DataContext = operationViewModel,
@@ -1757,17 +1760,22 @@ namespace KdxDesigner.ViewModels
                 };
 
                 bool? dialogResult = false;
-                operationViewModel.SetCloseAction((result) =>
+                operationViewModel.SetCloseAction(async (result) =>
                 {
                     dialogResult = result;
+                    if (result)
+                    {
+                        // 保存処理
+                        var updatedOperation = operationViewModel.GetOperation();
+                        await _repository.UpdateOperationAsync(updatedOperation);
+                    }
                     operationDialog.DialogResult = result;
                 });
 
                 if (operationDialog.ShowDialog() == true)
                 {
-                    // 変更を保存
+                    // 変更は既にSetCloseAction内で保存済み
                     var updatedOperation = operationViewModel.GetOperation();
-                    await _repository.UpdateOperationAsync(updatedOperation);
 
                     // ノードの表示名を更新
                     if (!string.IsNullOrEmpty(updatedOperation.OperationName))

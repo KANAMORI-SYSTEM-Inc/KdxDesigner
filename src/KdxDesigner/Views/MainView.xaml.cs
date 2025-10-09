@@ -98,5 +98,27 @@ namespace KdxDesigner.Views
                 }
             }
         }
+
+        private async void OperationGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                // ヘッダーやスクロールバーをダブルクリックした場合は無視
+                var dataGrid = sender as DataGrid;
+                if (dataGrid?.SelectedItem is Operation selectedOperation)
+                {
+                    var plcId = vm.SelectedPlc?.Id;
+                    var window = new OperationPropertiesWindow(vm.Repository!, selectedOperation, plcId)
+                    {
+                        Owner = this
+                    };
+                    if (window.ShowDialog() == true)
+                    {
+                        // 更新後にOperationリストを再読み込み
+                        await vm.ReloadOperationsAsync();
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,20 +1,35 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Models;
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace KdxDesigner.ViewModels
 {
     public partial class OperationViewModel : ObservableObject
     {
         private readonly Operation _operation;
-        private Action<bool>? _closeAction;
+        private readonly ISupabaseRepository _repository;
+        private Func<bool, Task>? _closeAction;
 
-        public OperationViewModel(Operation operation)
+        [ObservableProperty]
+        private ObservableCollection<OperationCategory> _operationCategories = new();
+
+        [ObservableProperty]
+        private ObservableCollection<Cylinder> _cylinders = new();
+
+        private readonly int? _plcId;
+
+        public OperationViewModel(ISupabaseRepository repository, Operation operation, int? plcId = null)
         {
+            _repository = repository;
             _operation = operation ?? new Operation();
+            _plcId = plcId;
             LoadOperation();
+            LoadMasterData();
         }
 
         [ObservableProperty]
@@ -31,9 +46,6 @@ namespace KdxDesigner.ViewModels
 
         [ObservableProperty]
         private int? _categoryId;
-
-        [ObservableProperty]
-        private string? _stay;
 
         [ObservableProperty]
         private string? _goBack;
@@ -75,13 +87,13 @@ namespace KdxDesigner.ViewModels
         private string? _sS4;
 
         [ObservableProperty]
-        private int? _pIL;
+        private string? _pIL;
 
         [ObservableProperty]
-        private int? _sC;
+        private string? _sC;
 
         [ObservableProperty]
-        private int? _fC;
+        private string? _fC;
 
         [ObservableProperty]
         private int? _cycleId;
@@ -92,13 +104,31 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty]
         private string? _con;
 
+        private async void LoadMasterData()
+        {
+            var categories = await _repository.GetOperationCategoriesAsync();
+            OperationCategories = new ObservableCollection<OperationCategory>(categories);
+
+            var cylinders = await _repository.GetCYsAsync();
+
+            // PLCIDでフィルタリング
+            if (_plcId.HasValue)
+            {
+                cylinders = cylinders.Where(c => c.PlcId == _plcId.Value).ToList();
+            }
+
+            // SortNumberでソート
+            cylinders = cylinders.OrderBy(c => c.SortNumber ?? int.MaxValue).ToList();
+
+            Cylinders = new ObservableCollection<Cylinder>(cylinders);
+        }
+
         private void LoadOperation()
         {
             Id = _operation.Id;
             OperationName = _operation.OperationName;
             CYId = _operation.CYId;
             CategoryId = _operation.CategoryId;
-            Stay = _operation.Stay;
             GoBack = _operation.GoBack;
             Start = _operation.Start;
             Finish = _operation.Finish;
@@ -128,7 +158,6 @@ namespace KdxDesigner.ViewModels
             _operation.OperationName = OperationName;
             _operation.CYId = CYId;
             _operation.CategoryId = CategoryId;
-            _operation.Stay = Stay;
             _operation.GoBack = GoBack;
             _operation.Start = Start;
             _operation.Finish = Finish;
@@ -152,21 +181,27 @@ namespace KdxDesigner.ViewModels
             return _operation;
         }
 
-        public void SetCloseAction(Action<bool> closeAction)
+        public void SetCloseAction(Func<bool, Task> closeAction)
         {
             _closeAction = closeAction;
         }
 
         [RelayCommand]
-        private void Save()
+        private async void Save()
         {
-            _closeAction?.Invoke(true);
+            if (_closeAction != null)
+            {
+                await _closeAction(true);
+            }
         }
 
         [RelayCommand]
-        private void Cancel()
+        private async void Cancel()
         {
-            _closeAction?.Invoke(false);
+            if (_closeAction != null)
+            {
+                await _closeAction(false);
+            }
         }
     }
 }

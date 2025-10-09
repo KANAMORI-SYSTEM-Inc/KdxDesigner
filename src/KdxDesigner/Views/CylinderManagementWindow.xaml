@@ -1,0 +1,59 @@
+<Window x:Class="KdxDesigner.Views.CylinderManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="シリンダー管理" Height="600" Width="1000"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- タイトル -->
+        <TextBlock Grid.Row="0" Text="シリンダー管理" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <!-- ボタン -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="＋ シリンダー追加" Command="{Binding AddCylinderCommand}" Width="120" Margin="0,0,5,0"/>
+            <Button Content="編集" Command="{Binding EditCylinderCommand}" Width="80" Margin="0,0,5,0"/>
+            <Button Content="削除" Command="{Binding DeleteCylinderCommand}" Width="80" Margin="0,0,5,0"/>
+            <Button Content="更新" Command="{Binding RefreshCommand}" Width="80" Margin="0,0,5,0"/>
+        </StackPanel>
+
+        <!-- シリンダー一覧 -->
+        <DataGrid Grid.Row="2"
+                  x:Name="CylinderGrid"
+                  ItemsSource="{Binding Cylinders}"
+                  SelectedItem="{Binding SelectedCylinder, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserSortColumns="True"
+                  MouseDoubleClick="CylinderGrid_MouseDoubleClick">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="プロパティを編集(_E)" Command="{Binding EditCylinderCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="削除(_D)" Command="{Binding DeleteCylinderCommand}"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Cylinder.Id}" Width="60"/>
+                <DataGridTextColumn Header="PLC ID" Binding="{Binding Cylinder.PlcId}" Width="70"/>
+                <DataGridTextColumn Header="PUCO" Binding="{Binding Cylinder.PUCO}" Width="70"/>
+                <DataGridTextColumn Header="CY番号" Binding="{Binding Cylinder.CYNum}" Width="120"/>
+                <DataGridTextColumn Header="Go" Binding="{Binding Cylinder.Go}" Width="100"/>
+                <DataGridTextColumn Header="Back" Binding="{Binding Cylinder.Back}" Width="100"/>
+                <DataGridTextColumn Header="油番号" Binding="{Binding Cylinder.OilNum}" Width="80"/>
+                <DataGridTextColumn Header="機械名" Binding="{Binding MachineName}" Width="120"/>
+                <DataGridTextColumn Header="駆動サブ" Binding="{Binding DriveSubName}" Width="100"/>
+                <DataGridTextColumn Header="ソート番号" Binding="{Binding Cylinder.SortNumber}" Width="90"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>

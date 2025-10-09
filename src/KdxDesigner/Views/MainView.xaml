@@ -91,7 +91,7 @@
                 <MenuItem Header="タイマー設定" Command="{Binding OpenTimerEditorCommand}" />
                 <MenuItem Header="メモリプロファイル管理" Command="{Binding OpenMemoryProfileManagerCommand}" />
                 <MenuItem Header="操作盤選択" Command="{Binding OpenControllBoxViewCommand}" />
-                <MenuItem Header="シリンダー追加" Command="{Binding AddNewCylinderCommand}" />
+                <MenuItem Header="シリンダー管理" Command="{Binding OpenCylinderManagementCommand}" />
 
                 <Separator/>
                 <MenuItem Header="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}" />
@@ -321,8 +321,8 @@
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <DataGrid Grid.Row="1" Grid.Column="2" Margin="5" x:Name="OperationGrid" ItemsSource="{Binding SelectedOperations}" AutoGenerateColumns="False" 
-                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" PreviewKeyDown="OperationGrid_PreviewKeyDown">
+                        <DataGrid Grid.Row="1" Grid.Column="2" Margin="5" x:Name="OperationGrid" ItemsSource="{Binding SelectedOperations}" AutoGenerateColumns="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" PreviewKeyDown="OperationGrid_PreviewKeyDown" MouseDoubleClick="OperationGrid_MouseDoubleClick">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="操作名" Binding="{Binding OperationName}" Width="150"/>
@@ -342,7 +342,6 @@
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
                                 <DataGridTextColumn Header="CY ID" Binding="{Binding CYId}" Width="60"/>
-                                <DataGridTextColumn Header="Stay" Binding="{Binding Stay}" Width="60"/>
                                 <DataGridTextColumn Header="GoBack" Binding="{Binding GoBack}" Width="60"/>
                                 <DataGridTextColumn Header="Start" Binding="{Binding Start}" Width="80"/>
                                 <DataGridTextColumn Header="Finish" Binding="{Binding Finish}" Width="80"/>

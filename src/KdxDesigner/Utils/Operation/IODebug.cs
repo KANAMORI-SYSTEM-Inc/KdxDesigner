@@ -47,7 +47,7 @@ namespace KdxDesigner.Utils.Operation
             if (_operation.Operation.Start != null)
             {
                 // RSTセンサーの処理
-                if (_operation.Operation.SC != null && _operation.Operation.SC != 0)
+                if (!string.IsNullOrEmpty(_operation.Operation.SC) && _operation.Operation.SC != "0")
                 {
                     // SC複数センサである
                     // Startセンサーがある
@@ -109,7 +109,7 @@ namespace KdxDesigner.Utils.Operation
             // Finishセンサーの処理
             if (_operation.Operation.Finish != null)
             {
-                if (_operation.Operation.FC != null && _operation.Operation.FC != 0)
+                if (!string.IsNullOrEmpty(_operation.Operation.FC) && _operation.Operation.FC != "0")
                 {
                     // FC複数センサである
                     // Finishセンサーがある
@@ -162,7 +162,7 @@ namespace KdxDesigner.Utils.Operation
             if (_operation.Operation.Start != null)
             {
                 // RSTセンサーの処理
-                if (_operation.Operation.SC != null && _operation.Operation.SC != 0)
+                if (!string.IsNullOrEmpty(_operation.Operation.SC) && _operation.Operation.SC != "0")
                 {
                     // SC複数センサである
                     // Startセンサーがある
@@ -349,7 +349,7 @@ namespace KdxDesigner.Utils.Operation
             // Finishセンサーの処理
             if (_operation.Operation.Finish != null)
             {
-                if (_operation.Operation.FC != null && _operation.Operation.FC != 0)
+                if (!string.IsNullOrEmpty(_operation.Operation.FC) && _operation.Operation.FC != "0")
                 {
                     // FC複数センサである
                     // Finishセンサーがある

@@ -145,9 +145,10 @@ namespace KdxDesigner.Utils.Cylinder
             result.Add(LadderRow.AddNOP());
 
             // 出力検索
-            if (cylinder.Cylinder.CYNameSub != null)
+            int? cyNameSub = int.TryParse(cylinder.Cylinder.CYNameSub, out int cyNameSubValue) ? cyNameSubValue : (int?)null;
+            if (cyNameSub != null)
             {
-                result.AddRange(functions.SingleValve(sensors, cylinder.Cylinder.CYNameSub));
+                result.AddRange(functions.SingleValve(sensors, cyNameSub));
             }
             else
             {
@@ -258,9 +259,10 @@ namespace KdxDesigner.Utils.Cylinder
             result.Add(LadderRow.AddNOP());
 
             // 出力検索
-            if (cylinder.Cylinder.CYNameSub != null)
+            int? cyNameSub = int.TryParse(cylinder.Cylinder.CYNameSub, out int cyNameSubValue) ? cyNameSubValue : (int?)null;
+            if (cyNameSub != null)
             {
-                result.AddRange(functions.DoubleValve(sensors, cylinder.Cylinder.CYNameSub));
+                result.AddRange(functions.DoubleValve(sensors, cyNameSub));
 
             }
             else
@@ -395,9 +397,10 @@ namespace KdxDesigner.Utils.Cylinder
             result.Add(LadderRow.AddNOP());
 
             // 出力検索
-            if (cylinder.Cylinder.CYNameSub != null)
+            int? cyNameSub = int.TryParse(cylinder.Cylinder.CYNameSub, out int cyNameSubValue) ? cyNameSubValue : (int?)null;
+            if (cyNameSub != null)
             {
-                result.AddRange(functions.Motor(sensors, cylinder.Cylinder.CYNameSub));
+                result.AddRange(functions.Motor(sensors, cyNameSub));
 
             }
             else

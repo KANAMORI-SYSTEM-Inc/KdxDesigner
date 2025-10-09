@@ -1,0 +1,275 @@
+<Window x:Class="KdxDesigner.Views.OperationPropertiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="{Binding OperationTitle}" Height="700" Width="600"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding OperationTitle}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- ID (読み取り専用) -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="ID:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Id}" IsReadOnly="True" Background="#F0F0F0"/>
+                </Grid>
+
+                <!-- 操作名 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="操作名:"/>
+                    <TextBox Grid.Column="1" Text="{Binding OperationName}"/>
+                </Grid>
+
+                <!-- CY ID -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="シリンダー:"/>
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding Cylinders}"
+                              SelectedValue="{Binding CYId}"
+                              SelectedValuePath="Id">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Run Text="{Binding PUCO}"/>
+                                    <Run Text=" - "/>
+                                    <Run Text="{Binding CYNum}"/>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Grid>
+
+                <!-- カテゴリ -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="カテゴリ:"/>
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding OperationCategories}"
+                              SelectedValue="{Binding CategoryId}"
+                              SelectedValuePath="Id"
+                              DisplayMemberPath="CategoryName"/>
+                </Grid>
+
+                <!-- GoBack -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="GoBack:"/>
+                    <TextBox Grid.Column="1" Text="{Binding GoBack}"/>
+                </Grid>
+
+                <!-- Start -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="Start:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Start}"/>
+                </Grid>
+
+                <!-- Finish -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="Finish:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Finish}"/>
+                </Grid>
+
+                <!-- Valve1 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="Valve1:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Valve1}"/>
+                </Grid>
+
+                <!-- S1 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="S1:"/>
+                    <TextBox Grid.Column="1" Text="{Binding S1}"/>
+                </Grid>
+
+                <!-- S2 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="S2:"/>
+                    <TextBox Grid.Column="1" Text="{Binding S2}"/>
+                </Grid>
+
+                <!-- S3 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="S3:"/>
+                    <TextBox Grid.Column="1" Text="{Binding S3}"/>
+                </Grid>
+
+                <!-- S4 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="S4:"/>
+                    <TextBox Grid.Column="1" Text="{Binding S4}"/>
+                </Grid>
+
+                <!-- S5 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="S5:"/>
+                    <TextBox Grid.Column="1" Text="{Binding S5}"/>
+                </Grid>
+
+                <!-- SS1 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="SS1:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SS1}"/>
+                </Grid>
+
+                <!-- SS2 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="SS2:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SS2}"/>
+                </Grid>
+
+                <!-- SS3 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="SS3:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SS3}"/>
+                </Grid>
+
+                <!-- SS4 -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="SS4:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SS4}"/>
+                </Grid>
+
+                <!-- PIL -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="PIL:"/>
+                    <TextBox Grid.Column="1" Text="{Binding PIL}"/>
+                </Grid>
+
+                <!-- SC -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="SC:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SC}"/>
+                </Grid>
+
+                <!-- FC -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="FC:"/>
+                    <TextBox Grid.Column="1" Text="{Binding FC}"/>
+                </Grid>
+
+                <!-- CycleId -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="Cycle ID:"/>
+                    <TextBox Grid.Column="1" Text="{Binding CycleId}"/>
+                </Grid>
+
+                <!-- SortNumber -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="並び順:"/>
+                    <TextBox Grid.Column="1" Text="{Binding SortNumber}"/>
+                </Grid>
+
+                <!-- Con -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="Con:"/>
+                    <TextBox Grid.Column="1" Text="{Binding Con}"/>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ボタン -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="保存" Width="80" Margin="5" Command="{Binding SaveCommand}"/>
+            <Button Content="キャンセル" Width="80" Margin="5" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>

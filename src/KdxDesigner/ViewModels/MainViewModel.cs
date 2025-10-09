@@ -35,6 +35,29 @@ namespace KdxDesigner.ViewModels
         // リポジトリと認証サービス
         protected private readonly ISupabaseRepository _repository = null!;
         private readonly IAuthenticationService _authService = null!;
+
+        // Repositoryを公開（ViewからOperationPropertiesWindowにアクセスするため）
+        public ISupabaseRepository? Repository => _repository;
+
+        // Operationsを再読み込みするメソッド（Operation編集後に呼び出す）
+        public async Task ReloadOperationsAsync()
+        {
+            if (SelectedCycle != null && _repository != null)
+            {
+                var operations = await _repository.GetOperationsAsync();
+                var cycleOperations = operations
+                    .Where(o => o.CycleId == SelectedCycle.Id)
+                    .OrderBy(o => o.SortNumber)
+                    .ToList();
+
+                // DataGridの更新を確実にするため、ObservableCollectionを新しく作成
+                _selectionManager.SelectedOperations = new ObservableCollection<Operation>(cycleOperations);
+
+                // プロパティ変更通知を発火
+                OnPropertyChanged(nameof(SelectedOperations));
+            }
+        }
+
         private readonly SupabaseConnectionHelper? _supabaseHelper;
 
         // マネージャークラス
@@ -798,7 +821,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddNewCylinder()
+        private void OpenCylinderManagement()
         {
             if (!CanExecute() || SelectedPlc == null)
             {
@@ -808,28 +831,15 @@ namespace KdxDesigner.ViewModels
 
             try
             {
-                // 現在のPLCに紐づくシリンダーの数を取得してSortNumberを設定
-                var existingCylinders = await _repository!.GetCYsAsync();
-                var cylindersForPlc = existingCylinders.Where(c => c.PlcId == SelectedPlc.Id).ToList();
-
-                // 新しいCylinderオブジェクトを作成
-                var newCylinder = new Cylinder
+                var window = new CylinderManagementWindow(_repository!, SelectedPlc.Id)
                 {
-                    PlcId = SelectedPlc.Id,
-                    CYNum = "新規シリンダ",
-                    PUCO = "PU",
-                    SortNumber = cylindersForPlc.Count > 0 ? cylindersForPlc.Max(c => c.SortNumber ?? 0) + 1 : 1
+                    Owner = Application.Current.MainWindow
                 };
-
-                // データベースに追加
-                int newId = await _repository!.AddCylinderAsync(newCylinder);
-                newCylinder.Id = newId;
-
-                MessageBox.Show($"新しいシリンダーを追加しました。(ID: {newId})", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
+                window.Show();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"シリンダーの追加中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"シリンダー管理ウィンドウを開く際にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -989,6 +999,7 @@ namespace KdxDesigner.ViewModels
             var allProcesses = _selectionManager.GetAllProcesses();
             var allProcessDetails = _selectionManager.GetAllDetails();
             var categories = ProcessDetailCategories.ToList();
+            var plcId = SelectedPlc?.Id;
 
             // 新しいウィンドウを作成（既存データを渡す）
             var window = new ProcessFlowDetailWindow(
@@ -997,7 +1008,8 @@ namespace KdxDesigner.ViewModels
                 SelectedCycle.CycleName ?? $"サイクル{SelectedCycle.Id}",
                 allProcesses,
                 allProcessDetails,
-                categories);
+                categories,
+                plcId);
 
             // ウィンドウが閉じられたときにリストから削除
             window.Closed += (s, e) =>

@@ -378,8 +378,11 @@ namespace KdxDesigner.Utils.Cylinder
         public List<LadderCsvRow> Retention(List<IO> sensors, string cycleDevice)
         {
             // ■■■ 1. ヘルパーメソッドを使って、Go/Backセンサーのアドレスリストをシンプルに取得 ■■■
-            var goSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorGo, _cylinder.Cylinder.GoSensorCount, false); // isOutput: false
-            var backSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorBack, _cylinder.Cylinder.BackSensorCount, false); // isOutput: false
+            int? goSensorCount = int.TryParse(_cylinder.Cylinder.GoSensorCount, out int goCount) ? goCount : (int?)null;
+            int? backSensorCount = int.TryParse(_cylinder.Cylinder.BackSensorCount, out int backCount) ? backCount : (int?)null;
+
+            var goSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorGo, goSensorCount, false); // isOutput: false
+            var backSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorBack, backSensorCount, false); // isOutput: false
 
             // ■■■ 2. ラダーロジックの生成 ■■■
             var result = new List<LadderCsvRow>();
