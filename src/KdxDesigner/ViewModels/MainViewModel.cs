@@ -19,6 +19,7 @@ using KdxDesigner.Utils.Cylinder;
 using KdxDesigner.Utils.Operation;
 using KdxDesigner.Utils.ProcessDetail;
 using KdxDesigner.Views;
+using KdxDesigner.Controls;
 using KdxDesigner.ViewModels.Managers;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
@@ -1035,6 +1036,99 @@ namespace KdxDesigner.ViewModels
                 window.Close();
             }
             _openProcessFlowWindows.Clear();
+        }
+
+        [RelayCommand]
+        private void OpenProcessListWindow()
+        {
+            if (SelectedCycle == null || _repository == null)
+            {
+                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // 動的にWindowを生成
+            var window = new Window
+            {
+                Title = $"Process一覧 - Cycle ID: {SelectedCycle.Id}",
+                Width = 1000,
+                Height = 600,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            var control = new Controls.ProcessListControl
+            {
+                Repository = _repository,
+                Processes = Processes,
+                ProcessCategories = ProcessCategories,
+                CycleId = SelectedCycle.Id,
+                PlcId = SelectedPlc?.Id
+            };
+
+            window.Content = control;
+            window.Show();
+        }
+
+        [RelayCommand]
+        private void OpenProcessDetailListWindow()
+        {
+            if (SelectedProcess == null || _repository == null)
+            {
+                MessageBox.Show("工程を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // 動的にWindowを生成
+            var window = new Window
+            {
+                Title = $"ProcessDetail一覧 - Process ID: {SelectedProcess.Id}",
+                Width = 1200,
+                Height = 600,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            var control = new Controls.ProcessDetailListControl
+            {
+                Repository = _repository,
+                ProcessDetails = ProcessDetails,
+                Operations = SelectedOperations,
+                ProcessDetailCategories = ProcessDetailCategories,
+                ProcessId = SelectedProcess.Id
+            };
+
+            window.Content = control;
+            window.Show();
+        }
+
+        [RelayCommand]
+        private void OpenOperationListWindow()
+        {
+            if (SelectedCycle == null || _repository == null)
+            {
+                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // 動的にWindowを生成
+            var window = new Window
+            {
+                Title = $"Operation一覧 - Cycle ID: {SelectedCycle.Id}",
+                Width = 1000,
+                Height = 600,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            var control = new Controls.OperationListControl
+            {
+                Repository = _repository,
+                Operations = SelectedOperations,
+                OperationCategories = OperationCategories,
+                PlcId = SelectedPlc?.Id,
+                CycleId = SelectedCycle.Id
+            };
+
+            window.Content = control;
+            window.Show();
         }
 
         [RelayCommand]

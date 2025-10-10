@@ -1,0 +1,91 @@
+<UserControl x:Class="KdxDesigner.Controls.OperationListControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:KdxDesigner.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ヘッダーとボタン -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="Operation" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <Button Content="＋ 操作追加" Click="AddNewOperation_Click"
+                    Width="100" Height="25" Margin="0,0,5,0"
+                    Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+            <Button Content="📋 コピー追加" Click="CopyOperation_Click"
+                    Width="110" Height="25" Margin="0,0,5,0"
+                    Background="#9C27B0" Foreground="White" FontWeight="Bold"/>
+            <Button Content="✕ 削除" Click="DeleteOperation_Click"
+                    Width="80" Height="25" Margin="0,0,5,0"
+                    Background="#F44336" Foreground="White" FontWeight="Bold"/>
+            <Button Content="🔄 再読み込み" Click="ReloadOperations_Click"
+                    Width="110" Height="25"
+                    Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+        </StackPanel>
+
+        <!-- DataGrid -->
+        <DataGrid Grid.Row="1"
+                  x:Name="OperationGrid"
+                  Margin="5"
+                  ItemsSource="{Binding Operations, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                  SelectedItem="{Binding SelectedOperation, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  IsReadOnly="False"
+                  PreviewKeyDown="OperationGrid_PreviewKeyDown"
+                  MouseDoubleClick="OperationGrid_MouseDoubleClick">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="削除" Click="DeleteOperation_Click"/>
+                    <MenuItem Header="プロパティを編集" Click="EditOperationProperties_Click"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True" Width="50"/>
+                <DataGridTextColumn Header="操作名" Binding="{Binding OperationName}" Width="150"/>
+                <DataGridTextColumn Header="CycleId" Binding="{Binding CycleId}" Width="70"/>
+                <DataGridComboBoxColumn Header="カテゴリ"
+                                        SelectedValueBinding="{Binding CategoryId}"
+                                        SelectedValuePath="Id"
+                                        DisplayMemberPath="CategoryName" Width="100">
+                    <DataGridComboBoxColumn.ElementStyle>
+                        <Style TargetType="ComboBox">
+                            <Setter Property="ItemsSource" Value="{Binding OperationCategories, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        </Style>
+                    </DataGridComboBoxColumn.ElementStyle>
+                    <DataGridComboBoxColumn.EditingElementStyle>
+                        <Style TargetType="ComboBox">
+                            <Setter Property="ItemsSource" Value="{Binding OperationCategories, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        </Style>
+                    </DataGridComboBoxColumn.EditingElementStyle>
+                </DataGridComboBoxColumn>
+                <DataGridTextColumn Header="CY ID" Binding="{Binding CYId}" Width="60"/>
+                <DataGridTextColumn Header="GoBack" Binding="{Binding GoBack}" Width="70"/>
+                <DataGridTextColumn Header="Start" Binding="{Binding Start}" Width="80"/>
+                <DataGridTextColumn Header="Finish" Binding="{Binding Finish}" Width="80"/>
+                <DataGridTextColumn Header="Valve1" Binding="{Binding Valve1}" Width="70"/>
+                <DataGridTextColumn Header="S1" Binding="{Binding S1}" Width="70"/>
+                <DataGridTextColumn Header="S2" Binding="{Binding S2}" Width="70"/>
+                <DataGridTextColumn Header="S3" Binding="{Binding S3}" Width="70"/>
+                <DataGridTextColumn Header="S4" Binding="{Binding S4}" Width="70"/>
+                <DataGridTextColumn Header="S5" Binding="{Binding S5}" Width="70"/>
+                <DataGridTextColumn Header="SS1" Binding="{Binding SS1}" Width="70"/>
+                <DataGridTextColumn Header="SS2" Binding="{Binding SS2}" Width="70"/>
+                <DataGridTextColumn Header="SS3" Binding="{Binding SS3}" Width="70"/>
+                <DataGridTextColumn Header="SS4" Binding="{Binding SS4}" Width="70"/>
+                <DataGridTextColumn Header="PIL" Binding="{Binding PIL}" Width="70"/>
+                <DataGridTextColumn Header="SC" Binding="{Binding SC}" Width="70"/>
+                <DataGridTextColumn Header="FC" Binding="{Binding FC}" Width="70"/>
+                <DataGridTextColumn Header="Con" Binding="{Binding Con}" Width="70"/>
+                <DataGridTextColumn Header="並び順" Binding="{Binding SortNumber}" Width="70"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

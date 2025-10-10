@@ -218,21 +218,30 @@
                         
                         <!-- 追加ボタンヘッダー -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 工程追加" Command="{Binding AddNewProcessCommand}" 
+                            <Button Content="＋ 工程追加" Command="{Binding AddNewProcessCommand}"
                                     Width="100" Height="25" Margin="0,0,5,0"
                                     Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenProcessListWindowCommand}"
+                                    Width="120" Height="25" Margin="0,0,5,0"
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
-                        
+
                         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 詳細追加" Command="{Binding AddNewProcessDetailCommand}" 
+                            <Button Content="＋ 詳細追加" Command="{Binding AddNewProcessDetailCommand}"
                                     Width="100" Height="25" Margin="0,0,5,0"
                                     Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenProcessDetailListWindowCommand}"
+                                    Width="120" Height="25" Margin="0,0,5,0"
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
-                        
+
                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 操作追加" Command="{Binding AddNewOperationCommand}" 
+                            <Button Content="＋ 操作追加" Command="{Binding AddNewOperationCommand}"
                                     Width="100" Height="25" Margin="0,0,5,0"
                                     Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenOperationListWindowCommand}"
+                                    Width="120" Height="25" Margin="0,0,5,0"
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
 
                         <DataGrid Grid.Row="1" Grid.Column="0" Margin="5" x:Name="ProcessGrid" ItemsSource="{Binding Processes}" AutoGenerateColumns="False"

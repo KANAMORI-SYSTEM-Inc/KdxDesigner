@@ -7,6 +7,17 @@ using System.Collections.ObjectModel;
 namespace KdxDesigner.ViewModels
 {
     /// <summary>
+    /// Cycle選択用のラッパークラス
+    /// </summary>
+    public partial class CycleSelectionModel : ObservableObject
+    {
+        public Cycle Cycle { get; set; } = new();
+
+        [ObservableProperty]
+        private bool _isSelected;
+    }
+
+    /// <summary>
     /// シリンダープロパティウィンドウのViewModel
     /// </summary>
     public partial class CylinderPropertiesViewModel : ObservableObject
@@ -38,6 +49,7 @@ namespace KdxDesigner.ViewModels
 
         [ObservableProperty] private ObservableCollection<MachineName> _machineNames = new();
         [ObservableProperty] private ObservableCollection<DriveSub> _driveSubs = new();
+        [ObservableProperty] private ObservableCollection<CycleSelectionModel> _availableCycles = new();
 
         public bool DialogResult { get; private set; }
 
@@ -65,11 +77,87 @@ namespace KdxDesigner.ViewModels
 
                 var driveSubs = await _repository.GetDriveSubsAsync();
                 DriveSubs = new ObservableCollection<DriveSub>(driveSubs);
+
+                // Cycleリストを読み込み
+                await LoadCycles();
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"マスターデータの読み込み中にエラーが発生しました: {ex.Message}", "エラー",
                     System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Cycleリストを読み込み、既存の関連付けに基づいて選択状態を設定
+        /// </summary>
+        private async Task LoadCycles()
+        {
+            try
+            {
+                // PlcIdに紐づくすべてのCycleを取得
+                var allCycles = await _repository.GetCyclesAsync();
+                var cyclesForPlc = allCycles.Where(c => c.PlcId == _cylinder.PlcId).ToList();
+
+                // このシリンダーに関連付けられているCycleIdを取得
+                var cylinderCycles = await _repository.GetCylinderCyclesByCylinderIdAsync(_cylinder.Id);
+                var selectedCycleIds = cylinderCycles.Select(cc => cc.CycleId).ToHashSet();
+
+                // CycleSelectionModelリストを作成
+                var cycleSelections = cyclesForPlc.Select(c => new CycleSelectionModel
+                {
+                    Cycle = c,
+                    IsSelected = selectedCycleIds.Contains(c.Id)
+                }).ToList();
+
+                AvailableCycles = new ObservableCollection<CycleSelectionModel>(cycleSelections);
+
+                // IsSelectedプロパティの変更を監視
+                foreach (var cycleSelection in AvailableCycles)
+                {
+                    cycleSelection.PropertyChanged += CycleSelection_PropertyChanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"サイクルの読み込み中にエラーが発生しました: {ex.Message}", "エラー",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Cycleの選択状態が変更されたときの処理
+        /// </summary>
+        private async void CycleSelection_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(CycleSelectionModel.IsSelected) && sender is CycleSelectionModel cycleSelection)
+            {
+                try
+                {
+                    if (cycleSelection.IsSelected)
+                    {
+                        // 関連を追加
+                        var cylinderCycle = new CylinderCycle
+                        {
+                            CylinderId = _cylinder.Id,
+                            PlcId = _cylinder.PlcId,
+                            CycleId = cycleSelection.Cycle.Id
+                        };
+                        await _repository.AddCylinderCycleAsync(cylinderCycle);
+                    }
+                    else
+                    {
+                        // 関連を削除
+                        await _repository.DeleteCylinderCycleAsync(_cylinder.Id, cycleSelection.Cycle.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"サイクルの関連付け更新中にエラーが発生しました: {ex.Message}", "エラー",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    // エラーが発生した場合、選択状態を元に戻す
+                    cycleSelection.IsSelected = !cycleSelection.IsSelected;
+                }
             }
         }
 
@@ -162,6 +250,12 @@ namespace KdxDesigner.ViewModels
         public void ClearEventHandlers()
         {
             RequestClose = null;
+
+            // CycleSelectionのイベントハンドラもクリア
+            foreach (var cycleSelection in AvailableCycles)
+            {
+                cycleSelection.PropertyChanged -= CycleSelection_PropertyChanged;
+            }
         }
     }
 }

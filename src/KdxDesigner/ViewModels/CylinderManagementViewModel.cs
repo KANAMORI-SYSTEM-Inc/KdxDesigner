@@ -119,6 +119,63 @@ namespace KdxDesigner.ViewModels
         }
 
         /// <summary>
+        /// シリンダーコピーコマンド
+        /// </summary>
+        [RelayCommand]
+        private async Task CopyCylinder()
+        {
+            if (SelectedCylinder == null)
+            {
+                MessageBox.Show("コピーするシリンダーを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                // 既存のシリンダー数を取得してSortNumberを設定
+                int nextSortNumber = Cylinders.Count > 0 ? Cylinders.Max(c => c.Cylinder.SortNumber ?? 0) + 1 : 1;
+
+                // 選択されたシリンダーをコピー
+                var copiedCylinder = new Cylinder
+                {
+                    PlcId = _plcId,
+                    CYNum = SelectedCylinder.Cylinder.CYNum + " (コピー)",
+                    PUCO = SelectedCylinder.Cylinder.PUCO,
+                    Go = SelectedCylinder.Cylinder.Go,
+                    Back = SelectedCylinder.Cylinder.Back,
+                    OilNum = SelectedCylinder.Cylinder.OilNum,
+                    MachineNameId = SelectedCylinder.Cylinder.MachineNameId,
+                    DriveSubId = SelectedCylinder.Cylinder.DriveSubId,
+                    PlaceId = SelectedCylinder.Cylinder.PlaceId,
+                    CYNameSub = SelectedCylinder.Cylinder.CYNameSub,
+                    SensorId = SelectedCylinder.Cylinder.SensorId,
+                    FlowType = SelectedCylinder.Cylinder.FlowType,
+                    GoSensorCount = SelectedCylinder.Cylinder.GoSensorCount,
+                    BackSensorCount = SelectedCylinder.Cylinder.BackSensorCount,
+                    RetentionSensorGo = SelectedCylinder.Cylinder.RetentionSensorGo,
+                    RetentionSensorBack = SelectedCylinder.Cylinder.RetentionSensorBack,
+                    SortNumber = nextSortNumber,
+                    FlowCount = SelectedCylinder.Cylinder.FlowCount,
+                    FlowCYGo = SelectedCylinder.Cylinder.FlowCYGo,
+                    FlowCYBack = SelectedCylinder.Cylinder.FlowCYBack
+                };
+
+                // データベースに追加
+                int newId = await _repository.AddCylinderAsync(copiedCylinder);
+                copiedCylinder.Id = newId;
+
+                // リストを再読み込み
+                LoadCylinders();
+
+                MessageBox.Show($"シリンダーをコピーして追加しました。(ID: {newId})", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"シリンダーのコピー中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
         /// シリンダー編集コマンド
         /// </summary>
         [RelayCommand]

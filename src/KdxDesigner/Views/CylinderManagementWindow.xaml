@@ -18,10 +18,18 @@
 
         <!-- ボタン -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Content="＋ シリンダー追加" Command="{Binding AddCylinderCommand}" Width="120" Margin="0,0,5,0"/>
-            <Button Content="編集" Command="{Binding EditCylinderCommand}" Width="80" Margin="0,0,5,0"/>
-            <Button Content="削除" Command="{Binding DeleteCylinderCommand}" Width="80" Margin="0,0,5,0"/>
-            <Button Content="更新" Command="{Binding RefreshCommand}" Width="80" Margin="0,0,5,0"/>
+            <Button Content="＋ シリンダー追加" Command="{Binding AddCylinderCommand}"
+                    Width="120" Height="25" Margin="0,0,5,0"
+                    Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+            <Button Content="📋 コピー追加" Command="{Binding CopyCylinderCommand}"
+                    Width="110" Height="25" Margin="0,0,5,0"
+                    Background="#9C27B0" Foreground="White" FontWeight="Bold"/>
+            <Button Content="編集" Command="{Binding EditCylinderCommand}"
+                    Width="80" Height="25" Margin="0,0,5,0"/>
+            <Button Content="削除" Command="{Binding DeleteCylinderCommand}"
+                    Width="80" Height="25" Margin="0,0,5,0"/>
+            <Button Content="更新" Command="{Binding RefreshCommand}"
+                    Width="80" Height="25" Margin="0,0,5,0"/>
         </StackPanel>
 
         <!-- シリンダー一覧 -->
