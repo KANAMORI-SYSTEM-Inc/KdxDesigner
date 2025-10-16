@@ -676,12 +676,14 @@ namespace KdxDesigner.ViewModels
                     Connections.Add(connection);
                 }
                 // ProcessDetail -> Process の接続
-                else if (conn.ToProcessId.HasValue && 
+                // Note: ToProcessId プロパティは削除されたため、この機能は現在サポートされていません
+                /*
+                else if (conn.ToProcessId.HasValue &&
                     nodeDict.ContainsKey(conn.FromProcessDetailId))
                 {
                     var fromNode = nodeDict[conn.FromProcessDetailId];
                     var toProcessNode = AllNodes.FirstOrDefault(n => n.NodeType == ProcessFlowNodeType.Process && n.Process?.Id == conn.ToProcessId.Value);
-                    
+
                     if (toProcessNode != null)
                     {
                         var connection = new ProcessFlowConnection(fromNode, toProcessNode)
@@ -696,6 +698,7 @@ namespace KdxDesigner.ViewModels
                         Connections.Add(connection);
                     }
                 }
+                */
             }
 
             // 終了条件接続を作成
@@ -714,18 +717,22 @@ namespace KdxDesigner.ViewModels
                         IsFinishConnection = true,
                         IsOtherCycleConnection = fromNode.ProcessDetail?.CycleId != _cycleId || toNode.ProcessDetail?.CycleId != _cycleId
                     };
-                    connection.DbStartSensor = finish.FinishSensor ?? "";
+                    // FinishSensorプロパティはProcessDetailFinishテーブルに存在しないためコメントアウト
+                    // connection.DbStartSensor = finish.FinishSensor ?? "";
 
                     AllConnections.Add(connection);
                     Connections.Add(connection);
                 }
                 // ProcessDetail -> Process の終了条件
-                else if (finish.FinishProcessId.HasValue && 
+                // FinishProcessIdプロパティがProcessDetailFinishテーブルに存在しないため、
+                // ProcessDetail -> Process の終了条件接続は現在のスキーマではサポートされていません
+                /*
+                else if (finish.FinishProcessId.HasValue &&
                     nodeDict.ContainsKey(finish.ProcessDetailId))
                 {
                     var fromNode = nodeDict[finish.ProcessDetailId];
                     var toProcessNode = AllNodes.FirstOrDefault(n => n.NodeType == ProcessFlowNodeType.Process && n.Process?.Id == finish.FinishProcessId.Value);
-                    
+
                     if (toProcessNode != null)
                     {
                         var connection = new ProcessFlowConnection(fromNode, toProcessNode)
@@ -740,6 +747,7 @@ namespace KdxDesigner.ViewModels
                         Connections.Add(connection);
                     }
                 }
+                */
             }
         }
 
@@ -1167,8 +1175,8 @@ namespace KdxDesigner.ViewModels
                             var dbFinish = new ProcessDetailFinish
                             {
                                 ProcessDetailId = _connectionStartNode.ProcessDetail.Id,
-                                FinishProcessDetailId = node.ProcessDetail.Id,
-                                FinishSensor = ""
+                                FinishProcessDetailId = node.ProcessDetail.Id
+                                // FinishSensorプロパティはProcessDetailFinishテーブルに存在しません
                             };
                             await _repository.AddProcessDetailFinishAsync(dbFinish);
                             _dbFinishes.Add(dbFinish);
@@ -1180,6 +1188,25 @@ namespace KdxDesigner.ViewModels
                                 FromProcessDetailId = _connectionStartNode.ProcessDetail.Id,
                                 ToProcessDetailId = node.ProcessDetail.Id
                             };
+
+                            // デバッグ出力：保存しようとしているデータを表示
+                            System.Diagnostics.Debug.WriteLine("=== ProcessDetailConnection 保存前 ===");
+                            System.Diagnostics.Debug.WriteLine($"  FromProcessDetailId: {dbConnection.FromProcessDetailId}");
+                            System.Diagnostics.Debug.WriteLine($"  ToProcessDetailId: {dbConnection.ToProcessDetailId}");
+                            System.Diagnostics.Debug.WriteLine($"  From: {_connectionStartNode.ProcessDetail.DetailName} (ID: {_connectionStartNode.ProcessDetail.Id})");
+                            System.Diagnostics.Debug.WriteLine($"  To: {node.ProcessDetail.DetailName} (ID: {node.ProcessDetail.Id})");
+
+                            // 既存の接続を確認
+                            var existingDbConnection = _dbConnections.FirstOrDefault(c =>
+                                c.FromProcessDetailId == dbConnection.FromProcessDetailId &&
+                                c.ToProcessDetailId == dbConnection.ToProcessDetailId);
+                            if (existingDbConnection != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine("  ⚠️ 警告: 既に同じ接続が存在します！");
+                                System.Diagnostics.Debug.WriteLine($"    既存接続ID: {existingDbConnection.Id}");
+                            }
+                            System.Diagnostics.Debug.WriteLine("=====================================");
+
                             await _repository.AddProcessDetailConnectionAsync(dbConnection);
                             _dbConnections.Add(dbConnection);
                         }
@@ -1233,6 +1260,10 @@ namespace KdxDesigner.ViewModels
                                 f.ProcessDetailId == connection.FromNode.ProcessDetail.Id &&
                                 f.FinishProcessDetailId == connection.ToNode.ProcessDetail.Id);
 
+                            // FinishSensorプロパティがProcessDetailFinishテーブルに存在しないため、
+                            // センサー情報の保存はサポートされていません
+                            // 終了条件の接続関係のみが管理されます
+                            /*
                             if (finish != null)
                             {
                                 finish.FinishSensor = connection.StartSensor;
@@ -1240,8 +1271,12 @@ namespace KdxDesigner.ViewModels
                                 await _repository.DeleteProcessDetailFinishAsync(finish.Id);
                                 await _repository.AddProcessDetailFinishAsync(finish);
                             }
+                            */
                         }
                         // ProcessDetail -> Process の終了条件
+                        // FinishProcessIdプロパティがProcessDetailFinishテーブルに存在しないため、
+                        // ProcessDetail -> Process の終了条件接続は現在のスキーマではサポートされていません
+                        /*
                         else if (connection.FromNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
                             connection.ToNode.NodeType == ProcessFlowNodeType.Process &&
                             connection.FromNode.ProcessDetail != null &&
@@ -1259,6 +1294,7 @@ namespace KdxDesigner.ViewModels
                                 await _repository.AddProcessDetailFinishAsync(finish);
                             }
                         }
+                        */
                     }
                     else
                     {
@@ -1274,6 +1310,8 @@ namespace KdxDesigner.ViewModels
 
                         }
                         // ProcessDetail -> Process の通常接続
+                        // Note: ToProcessId プロパティは削除されたため、この機能は現在サポートされていません
+                        /*
                         else if (connection.FromNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
                             connection.ToNode.NodeType == ProcessFlowNodeType.Process &&
                             connection.FromNode.ProcessDetail != null &&
@@ -1283,6 +1321,7 @@ namespace KdxDesigner.ViewModels
                                 c.FromProcessDetailId == connection.FromNode.ProcessDetail.Id &&
                                 c.ToProcessId == connection.ToNode.Process.Id);
                         }
+                        */
                     }
 
                     connection.IsModified = false;

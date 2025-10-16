@@ -539,12 +539,12 @@ namespace KdxDesigner.Utils.ProcessDetail
             // L1 操作開始
             if (!string.IsNullOrEmpty(_detail.Detail.FinishSensor))
             {
-                // StartSensorが設定されている場合
+                // FinishSensorが設定されている場合
                 result.Add(LadderRow.AddLD(_detail.Detail.FinishSensor));
             }
             else
             {
-                // StartSensornの設定ナシ
+                // FinishSensornの設定ナシ
                 result.Add(LadderRow.AddLD(SettingsManager.Settings.AlwaysOFF));
                 detailFunctions.DetailError("FinishSensor が設定されていません。");
             }

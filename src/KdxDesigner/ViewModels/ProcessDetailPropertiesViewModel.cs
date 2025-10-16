@@ -31,8 +31,19 @@ namespace KdxDesigner.ViewModels
 
         [ObservableProperty] private ObservableCollection<Operation> _operations = new();
         [ObservableProperty] private ObservableCollection<ProcessDetailCategory> _processDetailCategories = new();
+        [ObservableProperty] private ObservableCollection<ProcessDetailSelectionModel> _availableProcessDetails = new();
+        [ObservableProperty] private ObservableCollection<ProcessDetailSelectionModel> _availableFinishProcessDetails = new();
 
         public bool DialogResult { get; private set; }
+
+        /// <summary>
+        /// ProcessDetailの選択モデル（マルチセレクト用）
+        /// </summary>
+        public partial class ProcessDetailSelectionModel : ObservableObject
+        {
+            public ProcessDetail ProcessDetail { get; set; } = new();
+            [ObservableProperty] private bool _isSelected;
+        }
 
         public ProcessDetailPropertiesViewModel(ISupabaseRepository repository, ProcessDetail processDetail, int? cycleId)
         {
@@ -53,16 +64,62 @@ namespace KdxDesigner.ViewModels
         {
             try
             {
-                // Operationリストを読み込み
-                if (cycleId.HasValue)
+                // CycleIdを取得（ProcessDetailのCycleIdまたはProcessのCycleIdから）
+                int? actualCycleId = cycleId;
+
+                // ProcessDetailにCycleIdが設定されていない場合、ProcessからCycleIdを取得
+                if (!actualCycleId.HasValue && _processDetail.ProcessId > 0)
                 {
-                    var operations = await _repository.GetOperationsByCycleIdAsync(cycleId.Value);
+                    var processes = await _repository.GetProcessesAsync();
+                    var process = processes.FirstOrDefault(p => p.Id == _processDetail.ProcessId);
+                    actualCycleId = process?.CycleId;
+                }
+
+                // Operationリストを読み込み
+                if (actualCycleId.HasValue)
+                {
+                    var operations = await _repository.GetOperationsByCycleIdAsync(actualCycleId.Value);
                     Operations = new ObservableCollection<Operation>(operations);
                 }
 
                 // ProcessDetailCategoryリストを読み込み
                 var categories = await _repository.GetProcessDetailCategoriesAsync();
                 ProcessDetailCategories = new ObservableCollection<ProcessDetailCategory>(categories);
+
+                // 同一Cycle内のProcessDetailリストを読み込み（接続先候補）
+                if (actualCycleId.HasValue)
+                {
+                    var allProcessDetails = await _repository.GetProcessDetailsAsync();
+                    var processDetailsInCycle = allProcessDetails
+                        .Where(pd => pd.CycleId == actualCycleId.Value && pd.Id != _processDetail.Id)
+                        .OrderBy(pd => pd.SortNumber)
+                        .ToList();
+
+                    // 既存の接続を取得
+                    var existingConnections = await _repository.GetConnectionsByFromIdAsync(_processDetail.Id);
+                    var connectedIds = existingConnections.Select(c => c.ToProcessDetailId).ToHashSet();
+
+                    // 選択モデルを作成
+                    var selections = processDetailsInCycle.Select(pd => new ProcessDetailSelectionModel
+                    {
+                        ProcessDetail = pd,
+                        IsSelected = connectedIds.Contains(pd.Id)
+                    }).ToList();
+
+                    AvailableProcessDetails = new ObservableCollection<ProcessDetailSelectionModel>(selections);
+
+                    // 終了条件用のProcessDetailリストを読み込み（同じ候補を使用）
+                    var existingFinishes = await _repository.GetFinishesByProcessDetailIdAsync(_processDetail.Id);
+                    var finishIds = existingFinishes.Select(f => f.FinishProcessDetailId).ToHashSet();
+
+                    var finishSelections = processDetailsInCycle.Select(pd => new ProcessDetailSelectionModel
+                    {
+                        ProcessDetail = pd,
+                        IsSelected = finishIds.Contains(pd.Id)
+                    }).ToList();
+
+                    AvailableFinishProcessDetails = new ObservableCollection<ProcessDetailSelectionModel>(finishSelections);
+                }
             }
             catch (Exception ex)
             {
@@ -116,6 +173,58 @@ namespace KdxDesigner.ViewModels
 
                 // データベースに保存
                 await _repository.UpdateProcessDetailAsync(_processDetail);
+
+                // ProcessDetailConnection を保存
+                // まず既存の接続を全て削除
+                await _repository.DeleteConnectionsByFromIdAsync(_processDetail.Id);
+
+                // 選択されたProcessDetailとの接続を作成
+                var selectedProcessDetails = AvailableProcessDetails.Where(s => s.IsSelected).ToList();
+                System.Diagnostics.Debug.WriteLine($"=== ProcessDetailConnection 保存開始 (ProcessDetailPropertiesViewModel) ===");
+                System.Diagnostics.Debug.WriteLine($"  FromProcessDetail: {_processDetail.DetailName} (ID: {_processDetail.Id})");
+                System.Diagnostics.Debug.WriteLine($"  保存する接続数: {selectedProcessDetails.Count}");
+
+                foreach (var selection in selectedProcessDetails)
+                {
+                    var connection = new ProcessDetailConnection
+                    {
+                        FromProcessDetailId = _processDetail.Id,
+                        ToProcessDetailId = selection.ProcessDetail.Id
+                    };
+
+                    System.Diagnostics.Debug.WriteLine($"  → 接続 {selectedProcessDetails.IndexOf(selection) + 1}/{selectedProcessDetails.Count}:");
+                    System.Diagnostics.Debug.WriteLine($"     FromProcessDetailId: {connection.FromProcessDetailId}");
+                    System.Diagnostics.Debug.WriteLine($"     ToProcessDetailId: {connection.ToProcessDetailId}");
+                    System.Diagnostics.Debug.WriteLine($"     To: {selection.ProcessDetail.DetailName} (ID: {selection.ProcessDetail.Id})");
+
+                    try
+                    {
+                        await _repository.AddProcessDetailConnectionAsync(connection);
+                        System.Diagnostics.Debug.WriteLine($"     ✓ 保存成功");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"     ✗ 保存失敗: {ex.Message}");
+                        throw; // エラーを再スロー
+                    }
+                }
+                System.Diagnostics.Debug.WriteLine("=========================================================");
+
+                // ProcessDetailFinish を保存
+                // まず既存の終了条件を全て削除
+                await _repository.DeleteFinishesByProcessDetailIdAsync(_processDetail.Id);
+
+                // 選択されたProcessDetailとの終了条件を作成
+                var selectedFinishProcessDetails = AvailableFinishProcessDetails.Where(s => s.IsSelected).ToList();
+                foreach (var selection in selectedFinishProcessDetails)
+                {
+                    var finish = new ProcessDetailFinish
+                    {
+                        ProcessDetailId = _processDetail.Id,
+                        FinishProcessDetailId = selection.ProcessDetail.Id
+                    };
+                    await _repository.AddProcessDetailFinishAsync(finish);
+                }
 
                 DialogResult = true;
                 RequestClose?.Invoke();

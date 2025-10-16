@@ -117,6 +117,22 @@ namespace KdxDesigner.Controls
             set => SetValue(ProcessIdProperty, value);
         }
 
+        /// <summary>
+        /// 選択されたサイクルID（新規追加時のデフォルト値として使用）
+        /// </summary>
+        public static readonly DependencyProperty CycleIdProperty =
+            DependencyProperty.Register(
+                nameof(CycleId),
+                typeof(int?),
+                typeof(ProcessDetailListControl),
+                new PropertyMetadata(null));
+
+        public int? CycleId
+        {
+            get => (int?)GetValue(CycleIdProperty);
+            set => SetValue(CycleIdProperty, value);
+        }
+
         #endregion
 
         #region Events
@@ -194,6 +210,7 @@ namespace KdxDesigner.Controls
                 {
                     ProcessId = ProcessId.Value,
                     DetailName = "新規詳細",
+                    CycleId = CycleId, // MainViewで選択されているCycleIdを設定
                     SortNumber = ProcessDetails?.Count > 0 ? ProcessDetails.Max(d => d.SortNumber ?? 0) + 1 : 1
                 };
 
@@ -359,9 +376,6 @@ namespace KdxDesigner.Controls
                 if (viewModel.DialogResult)
                 {
                     ProcessDetailUpdated?.Invoke(this, SelectedProcessDetail);
-
-                    // DataGridの表示を更新
-                    ProcessDetailGrid.Items.Refresh();
                 }
             }
             catch (Exception ex)

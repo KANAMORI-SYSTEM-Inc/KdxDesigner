@@ -23,34 +23,34 @@
       },
       "Kdx.Contracts": {
         "type": "Direct",
-        "requested": "[2.4.14, )",
-        "resolved": "2.4.14",
-        "contentHash": "kkWHlDxb0zYBjUJdm8WO9MZnJpRoR8AYPaEN8XnOfeq4MJNcgSP177gcXGbCpt7GOzzW8RXO8h6VzK3wxuTg2Q==",
+        "requested": "[2.4.21, )",
+        "resolved": "2.4.21",
+        "contentHash": "wAM9oXLlRYeR0z30XgpJG/GcB6zPGzwbSidbWMiX4Op7LkLPZV++EeTPd3oDU3ae9Qjpcww2cuspbJ4mQtcr1w==",
         "dependencies": {
           "Npgsql": "9.0.3"
         }
       },
       "Kdx.Core": {
         "type": "Direct",
-        "requested": "[2.4.14, )",
-        "resolved": "2.4.14",
-        "contentHash": "ke+cQvO+T5Imr2eM1Fx/aahlLJs8Kqjsu4ypEb/u9D8gKP8qTBVd2IZuATePneY+rk2hzWkQR3diWQlgY+jsgA==",
+        "requested": "[2.4.21, )",
+        "resolved": "2.4.21",
+        "contentHash": "C/j0tv7SAGduqL+yZPLKqDRKBepvgCF8tlukUxiVUyHBvVPXMwZ50XpxDeImc2hFjSRmO7FTpHnLuxpsu02ACA==",
         "dependencies": {
-          "Kdx.Contracts": "2.4.14",
-          "Kdx.Infrastructure.Supabase": "2.4.14",
+          "Kdx.Contracts": "2.4.21",
+          "Kdx.Infrastructure.Supabase": "2.4.21",
           "Npgsql": "9.0.3"
         }
       },
       "Kdx.Infrastructure": {
         "type": "Direct",
-        "requested": "[2.4.14, )",
-        "resolved": "2.4.14",
-        "contentHash": "NexaZu/+6WgmfvvKk5GEjUb1VjVDwEJjiY7xWhfMRyefZ0zBVXSzEsDpNmbhwWql/AaU+VEJWaMTnS0n38LjSA==",
+        "requested": "[2.4.21, )",
+        "resolved": "2.4.21",
+        "contentHash": "j0Hb/ANb7imt92NLeOmXuy1kuPROgnwSArs+YukAQpcqR452jdv2WDfffEXKOPaGgMWZcQ2Uo1+F0EQqEwTO/A==",
         "dependencies": {
           "EPPlus": "8.2.0",
-          "Kdx.Contracts": "2.4.14",
-          "Kdx.Core": "2.4.14",
-          "Kdx.Infrastructure.Supabase": "2.4.14",
+          "Kdx.Contracts": "2.4.21",
+          "Kdx.Core": "2.4.21",
+          "Kdx.Infrastructure.Supabase": "2.4.21",
           "Microsoft.Extensions.Configuration.Binder": "9.0.9",
           "Microsoft.Extensions.Options": "9.0.9",
           "Npgsql": "9.0.3"
@@ -58,11 +58,11 @@
       },
       "Kdx.Infrastructure.Supabase": {
         "type": "Direct",
-        "requested": "[2.4.14, )",
-        "resolved": "2.4.14",
-        "contentHash": "eWmzc3Um6rlK7y0Cem7kUWRgzFy2XbLDTHM8XH5SdsEMgO8yHYg+XSYzVhlA4czaotKySUVqae6BjV4cros6Lw==",
+        "requested": "[2.4.21, )",
+        "resolved": "2.4.21",
+        "contentHash": "ZSpGQ8t/8diXaqc0kqBhsJ45oid48dpNYdkip/iQb4pmMaRepGJmu9V8SPWzMuMWTR8kMnguBT/0zndremjkJg==",
         "dependencies": {
-          "Kdx.Contracts": "2.4.14",
+          "Kdx.Contracts": "2.4.21",
           "Npgsql": "9.0.3",
           "postgrest-csharp": "3.5.1",
           "supabase-csharp": "0.16.2"

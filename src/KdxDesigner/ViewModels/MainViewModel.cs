@@ -1093,7 +1093,8 @@ namespace KdxDesigner.ViewModels
                 ProcessDetails = ProcessDetails,
                 Operations = SelectedOperations,
                 ProcessDetailCategories = ProcessDetailCategories,
-                ProcessId = SelectedProcess.Id
+                ProcessId = SelectedProcess.Id,
+                CycleId = SelectedCycle?.Id
             };
 
             window.Content = control;
