@@ -176,7 +176,7 @@ namespace KdxDesigner.ViewModels
 
         partial void OnFullTextSearchChanged(string? value)
         {
-            IoRecordsView.Refresh();
+            // 検索ボタンを押したときのみRefreshするため、ここでは何もしない
         }
 
         partial void OnSelectedCylinderChanged(Cylinder? value)
@@ -207,6 +207,15 @@ namespace KdxDesigner.ViewModels
         partial void OnOperationAssociatedIoFilterTextChanged(string? value)
         {
             OperationAssociatedIoListView.Refresh();
+        }
+
+        /// <summary>
+        /// 検索ボタンが押されたときに実行されるコマンド
+        /// </summary>
+        [RelayCommand]
+        private void Search()
+        {
+            IoRecordsView.Refresh();
         }
 
         private bool FilterIoRecord(object item)

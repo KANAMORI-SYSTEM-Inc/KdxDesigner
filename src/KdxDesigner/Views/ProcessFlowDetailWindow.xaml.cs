@@ -16,6 +16,7 @@ namespace KdxDesigner.Views
         private Point _lastPanPoint;
         private Point _panStartScrollOffset;
         private ProcessDetailPropertiesWindow? _propertiesWindow;
+        private ProcessDetailPropertiesViewModel? _propertiesViewModel;
         private ConnectionInfoWindow? _connectionInfoWindow;
 
         // 既存のコンストラクタ（後方互換性のため）
@@ -57,13 +58,10 @@ namespace KdxDesigner.Views
                 _scrollViewer.PreviewMouseUp += OnScrollViewerMouseUp;
                 _scrollViewer.PreviewMouseWheel += OnScrollViewerMouseWheel;
             }
-            
-            // プロパティウィンドウを開く
-            ShowPropertiesWindow();
-            
+
             // ViewModelのSelectedNodeプロパティの変更を監視
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-            
+
             // 接続選択イベントを監視
             _viewModel.ConnectionSelected += OnConnectionSelected;
         }
@@ -155,42 +153,66 @@ namespace KdxDesigner.Views
         
         private void ShowPropertiesWindow()
         {
+            // SelectedNodeが null または ProcessDetailノード以外の場合は何もしない
+            if (_viewModel.SelectedNode == null ||
+                _viewModel.SelectedNode.NodeType != Models.ProcessFlowNodeType.ProcessDetail ||
+                _viewModel.SelectedNode.ProcessDetail == null)
+            {
+                return;
+            }
+
             if (_propertiesWindow == null || !_propertiesWindow.IsLoaded)
             {
+                // ProcessDetailPropertiesViewModelを作成
+                var repository = _viewModel.GetType().GetField("_repository",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                    .GetValue(_viewModel) as ISupabaseRepository;
+
+                if (repository == null) return;
+
+                _propertiesViewModel = new ProcessDetailPropertiesViewModel(
+                    repository,
+                    _viewModel.SelectedNode.ProcessDetail,
+                    _viewModel.SelectedNode.ProcessDetail.CycleId);
+
                 _propertiesWindow = new ProcessDetailPropertiesWindow
                 {
-                    DataContext = _viewModel,
+                    DataContext = _propertiesViewModel,
                     Owner = this
                 };
-                
+
                 // ウィンドウの位置を設定（メインウィンドウの右側）
                 // 画面の境界をチェックして、画面外に出ないようにする
                 var screenWidth = SystemParameters.WorkArea.Width;
                 var screenHeight = SystemParameters.WorkArea.Height;
-                
+
                 var proposedLeft = this.Left + this.Width + 10;
                 var proposedTop = this.Top;
-                
+
                 // 画面右端を超える場合は、メインウィンドウの左側に表示
                 if (proposedLeft + _propertiesWindow.Width > screenWidth)
                 {
                     proposedLeft = Math.Max(0, this.Left - _propertiesWindow.Width - 10);
                 }
-                
+
                 // 画面下端を超える場合は調整
                 if (proposedTop + _propertiesWindow.Height > screenHeight)
                 {
                     proposedTop = Math.Max(0, screenHeight - _propertiesWindow.Height);
                 }
-                
+
                 _propertiesWindow.Left = proposedLeft;
                 _propertiesWindow.Top = proposedTop;
-                
+
                 // ウィンドウが閉じられたときの処理
-                _propertiesWindow.Closed += (s, e) => _propertiesWindow = null;
-                
+                _propertiesWindow.Closed += (s, e) =>
+                {
+                    _propertiesWindow = null;
+                    _propertiesViewModel = null;
+                };
+
                 _propertiesWindow.Show();
-                
+
                 // ウィンドウを前面に表示
                 _propertiesWindow.Activate();
             }
@@ -201,16 +223,25 @@ namespace KdxDesigner.Views
             // ノードが選択されたときにプロパティウィンドウを表示
             if (e.PropertyName == nameof(ProcessFlowDetailViewModel.SelectedNode))
             {
-                if (_viewModel.SelectedNode != null)
+                if (_viewModel.SelectedNode != null &&
+                    _viewModel.SelectedNode.NodeType == Models.ProcessFlowNodeType.ProcessDetail &&
+                    _viewModel.SelectedNode.ProcessDetail != null)
                 {
-                    // ノードが選択された場合
+                    // ProcessDetailノードが選択された場合
                     if (_propertiesWindow == null || !_propertiesWindow.IsLoaded)
                     {
+                        // 新しいプロパティウィンドウを作成
                         ShowPropertiesWindow();
                     }
                     else
                     {
-                        // ウィンドウが既に開いている場合は、確実に表示してアクティブにする
+                        // ウィンドウが既に開いている場合は、ProcessDetailを更新
+                        if (_propertiesViewModel != null)
+                        {
+                            _propertiesViewModel.UpdateProcessDetail(_viewModel.SelectedNode.ProcessDetail);
+                        }
+
+                        // ウィンドウが最小化されている場合は元に戻す
                         if (_propertiesWindow.WindowState == WindowState.Minimized)
                         {
                             _propertiesWindow.WindowState = WindowState.Normal;

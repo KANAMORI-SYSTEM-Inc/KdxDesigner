@@ -571,8 +571,8 @@ namespace KdxDesigner.ViewModels
             {
                 if (!nodeDict.ContainsKey(finish.ProcessDetailId))
                     otherCycleDetailIds.Add(finish.ProcessDetailId);
-                if (finish.FinishProcessDetailId.HasValue && !nodeDict.ContainsKey(finish.FinishProcessDetailId.Value))
-                    otherCycleDetailIds.Add(finish.FinishProcessDetailId.Value);
+                if (!nodeDict.ContainsKey(finish.FinishProcessDetailId))
+                    otherCycleDetailIds.Add(finish.FinishProcessDetailId);
             }
 
             // 他サイクルのProcessDetailを取得
@@ -705,12 +705,11 @@ namespace KdxDesigner.ViewModels
             foreach (var finish in _dbFinishes)
             {
                 // ProcessDetail -> ProcessDetail の終了条件
-                if (finish.FinishProcessDetailId.HasValue && 
-                    nodeDict.ContainsKey(finish.ProcessDetailId) && 
-                    nodeDict.ContainsKey(finish.FinishProcessDetailId.Value))
+                if (nodeDict.ContainsKey(finish.ProcessDetailId) &&
+                    nodeDict.ContainsKey(finish.FinishProcessDetailId))
                 {
                     var fromNode = nodeDict[finish.ProcessDetailId];
-                    var toNode = nodeDict[finish.FinishProcessDetailId.Value];
+                    var toNode = nodeDict[finish.FinishProcessDetailId];
 
                     var connection = new ProcessFlowConnection(fromNode, toNode)
                     {
@@ -1175,7 +1174,8 @@ namespace KdxDesigner.ViewModels
                             var dbFinish = new ProcessDetailFinish
                             {
                                 ProcessDetailId = _connectionStartNode.ProcessDetail.Id,
-                                FinishProcessDetailId = node.ProcessDetail.Id
+                                FinishProcessDetailId = node.ProcessDetail.Id,
+                                CycleId = _cycleId
                                 // FinishSensorプロパティはProcessDetailFinishテーブルに存在しません
                             };
                             await _repository.AddProcessDetailFinishAsync(dbFinish);
@@ -1186,13 +1186,15 @@ namespace KdxDesigner.ViewModels
                             var dbConnection = new ProcessDetailConnection
                             {
                                 FromProcessDetailId = _connectionStartNode.ProcessDetail.Id,
-                                ToProcessDetailId = node.ProcessDetail.Id
+                                ToProcessDetailId = node.ProcessDetail.Id,
+                                CycleId = _cycleId  // 現在のサイクルIDを設定
                             };
 
                             // デバッグ出力：保存しようとしているデータを表示
                             System.Diagnostics.Debug.WriteLine("=== ProcessDetailConnection 保存前 ===");
                             System.Diagnostics.Debug.WriteLine($"  FromProcessDetailId: {dbConnection.FromProcessDetailId}");
                             System.Diagnostics.Debug.WriteLine($"  ToProcessDetailId: {dbConnection.ToProcessDetailId}");
+                            System.Diagnostics.Debug.WriteLine($"  CycleId: {dbConnection.CycleId}");
                             System.Diagnostics.Debug.WriteLine($"  From: {_connectionStartNode.ProcessDetail.DetailName} (ID: {_connectionStartNode.ProcessDetail.Id})");
                             System.Diagnostics.Debug.WriteLine($"  To: {node.ProcessDetail.DetailName} (ID: {node.ProcessDetail.Id})");
 
@@ -1203,7 +1205,7 @@ namespace KdxDesigner.ViewModels
                             if (existingDbConnection != null)
                             {
                                 System.Diagnostics.Debug.WriteLine("  ⚠️ 警告: 既に同じ接続が存在します！");
-                                System.Diagnostics.Debug.WriteLine($"    既存接続ID: {existingDbConnection.Id}");
+                                System.Diagnostics.Debug.WriteLine($"    既存接続: From={existingDbConnection.FromProcessDetailId}, To={existingDbConnection.ToProcessDetailId}");
                             }
                             System.Diagnostics.Debug.WriteLine("=====================================");
 
@@ -1397,7 +1399,7 @@ namespace KdxDesigner.ViewModels
                                 f.ProcessDetailId == conn.FromNode.ProcessDetail.Id &&
                                 f.FinishProcessDetailId == conn.ToNode.ProcessDetail.Id);
                             if (finish != null)
-                                await _repository.DeleteProcessDetailFinishAsync(finish.Id);
+                                await _repository.DeleteProcessDetailFinishAsync(finish.ProcessDetailId, finish.FinishProcessDetailId);
                         }
                     }
                     else
@@ -1410,8 +1412,8 @@ namespace KdxDesigner.ViewModels
                             var connection = _dbConnections.FirstOrDefault(c =>
                                 c.FromProcessDetailId == conn.FromNode.ProcessDetail.Id &&
                                 c.ToProcessDetailId == conn.ToNode.ProcessDetail.Id);
-                            if (connection != null)
-                                await _repository.DeleteProcessDetailConnectionAsync(connection.Id);
+                            if (connection != null && connection.ToProcessDetailId.HasValue)
+                                await _repository.DeleteProcessDetailConnectionAsync(connection.FromProcessDetailId, connection.ToProcessDetailId.Value);
                         }
                     }
                 }
@@ -1456,9 +1458,6 @@ namespace KdxDesigner.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                AllConnections.Remove(connection);
-                Connections.Remove(connection);
-
                 // データベースから削除
                 // ProcessDetail -> ProcessDetail の接続
                 if (connection.FromNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
@@ -1473,7 +1472,7 @@ namespace KdxDesigner.ViewModels
                             f.FinishProcessDetailId == connection.ToNode.ProcessDetail.Id);
                         if (finish != null)
                         {
-                            await _repository.DeleteProcessDetailFinishAsync(finish.Id);
+                            await _repository.DeleteProcessDetailFinishAsync(finish.ProcessDetailId, finish.FinishProcessDetailId);
                             _dbFinishes.Remove(finish);
                         }
                     }
@@ -1482,9 +1481,9 @@ namespace KdxDesigner.ViewModels
                         var conn = _dbConnections.FirstOrDefault(c =>
                             c.FromProcessDetailId == connection.FromNode.ProcessDetail.Id &&
                             c.ToProcessDetailId == connection.ToNode.ProcessDetail.Id);
-                        if (conn != null)
+                        if (conn != null && conn.ToProcessDetailId.HasValue)
                         {
-                            await _repository.DeleteProcessDetailConnectionAsync(conn.Id);
+                            await _repository.DeleteProcessDetailConnectionAsync(conn.FromProcessDetailId, conn.ToProcessDetailId.Value);
                             _dbConnections.Remove(conn);
                         }
                     }
@@ -1536,6 +1535,14 @@ namespace KdxDesigner.ViewModels
                         _processStartConditions.Remove(start);
                     }
                 }
+
+                // UIから接続を削除（データベース削除後に行う）
+                AllConnections.Remove(connection);
+                Connections.Remove(connection);
+
+                // 明示的にUIの更新を通知
+                OnPropertyChanged(nameof(Connections));
+                OnPropertyChanged(nameof(AllConnections));
 
                 SelectedConnection = null;
             }

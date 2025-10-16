@@ -13,6 +13,7 @@ namespace KdxDesigner.ViewModels
     {
         private readonly ISupabaseRepository _repository;
         private ProcessDetail _processDetail;
+        private readonly int? _constructorCycleId;  // コンストラクタから受け取ったCycleIdを保持
 
         [ObservableProperty] private int _id;
         [ObservableProperty] private int _processId;
@@ -49,6 +50,7 @@ namespace KdxDesigner.ViewModels
         {
             _repository = repository;
             _processDetail = processDetail;
+            _constructorCycleId = cycleId;  // CycleIdを保持
 
             // マスターデータを読み込み
             LoadMasterData(cycleId);
@@ -181,21 +183,23 @@ namespace KdxDesigner.ViewModels
                 // 選択されたProcessDetailとの接続を作成
                 var selectedProcessDetails = AvailableProcessDetails.Where(s => s.IsSelected).ToList();
                 System.Diagnostics.Debug.WriteLine($"=== ProcessDetailConnection 保存開始 (ProcessDetailPropertiesViewModel) ===");
-                System.Diagnostics.Debug.WriteLine($"  FromProcessDetail: {_processDetail.DetailName} (ID: {_processDetail.Id})");
+                System.Diagnostics.Debug.WriteLine($"  ToProcessDetail: {_processDetail.DetailName} (ID: {_processDetail.Id})");
                 System.Diagnostics.Debug.WriteLine($"  保存する接続数: {selectedProcessDetails.Count}");
 
                 foreach (var selection in selectedProcessDetails)
                 {
                     var connection = new ProcessDetailConnection
                     {
-                        FromProcessDetailId = _processDetail.Id,
-                        ToProcessDetailId = selection.ProcessDetail.Id
+                        FromProcessDetailId = selection.ProcessDetail.Id,  // 選択されたProcessDetailがFrom
+                        ToProcessDetailId = _processDetail.Id,              // 編集中のProcessDetailがTo
+                        CycleId = _constructorCycleId ?? _processDetail.CycleId  // コンストラクタのcycleIdを優先、なければProcessDetailのCycleId
                     };
 
                     System.Diagnostics.Debug.WriteLine($"  → 接続 {selectedProcessDetails.IndexOf(selection) + 1}/{selectedProcessDetails.Count}:");
                     System.Diagnostics.Debug.WriteLine($"     FromProcessDetailId: {connection.FromProcessDetailId}");
                     System.Diagnostics.Debug.WriteLine($"     ToProcessDetailId: {connection.ToProcessDetailId}");
-                    System.Diagnostics.Debug.WriteLine($"     To: {selection.ProcessDetail.DetailName} (ID: {selection.ProcessDetail.Id})");
+                    System.Diagnostics.Debug.WriteLine($"     CycleId: {connection.CycleId}");
+                    System.Diagnostics.Debug.WriteLine($"     From: {selection.ProcessDetail.DetailName} (ID: {selection.ProcessDetail.Id})");
 
                     try
                     {
@@ -221,7 +225,8 @@ namespace KdxDesigner.ViewModels
                     var finish = new ProcessDetailFinish
                     {
                         ProcessDetailId = _processDetail.Id,
-                        FinishProcessDetailId = selection.ProcessDetail.Id
+                        FinishProcessDetailId = selection.ProcessDetail.Id,
+                        CycleId = _constructorCycleId ?? _processDetail.CycleId ?? 0
                     };
                     await _repository.AddProcessDetailFinishAsync(finish);
                 }
