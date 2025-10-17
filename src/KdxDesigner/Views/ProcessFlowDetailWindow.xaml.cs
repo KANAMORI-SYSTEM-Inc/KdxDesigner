@@ -182,6 +182,9 @@ namespace KdxDesigner.Views
                     _viewModel.SelectedNode.ProcessDetail,
                     _viewModel.SelectedNode.ProcessDetail.CycleId);
 
+                // ProcessDetail保存イベントを購読
+                _propertiesViewModel.ProcessDetailSaved += OnProcessDetailSaved;
+
                 _propertiesWindow = new ProcessDetailPropertiesWindow
                 {
                     DataContext = _propertiesViewModel,
@@ -283,6 +286,16 @@ namespace KdxDesigner.Views
         {
             // ダブルクリックでプロパティウィンドウを表示
             ShowPropertiesWindow();
+        }
+
+        private void OnProcessDetailSaved(object? sender, ProcessDetail updatedProcessDetail)
+        {
+            // ProcessDetailが保存されたら、ViewModelのノード表示を更新
+            // Dispatcherで遅延実行することで、編集中のトランザクションとの競合を避ける
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+            {
+                _viewModel.UpdateNodeFromProcessDetail(updatedProcessDetail);
+            }));
         }
 
         private void Node_MouseDown(object sender, MouseButtonEventArgs e)

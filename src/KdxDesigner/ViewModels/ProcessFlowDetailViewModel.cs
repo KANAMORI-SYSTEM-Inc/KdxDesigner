@@ -88,6 +88,7 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty] private ObservableCollection<ProcessFlowConnection> _incomingConnections = new();
         [ObservableProperty] private ObservableCollection<ProcessFlowConnection> _outgoingConnections = new();
         [ObservableProperty] private bool _hasOtherCycleConnections = false;
+        [ObservableProperty] private bool _isLoading = false;
         private bool _showNodeId = false;
         private bool _showBlockNumber = false;
 
@@ -288,11 +289,17 @@ namespace KdxDesigner.ViewModels
 
         public async void LoadNodesAsync()
         {
+            // ローディング開始
+            IsLoading = true;
+
             // データ取得を非同期で行い、UI更新はUIスレッドで実行
-            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
             {
-                LoadProcessDetails();
+                await LoadProcessDetailsAsync();
             });
+
+            // ローディング終了
+            IsLoading = false;
         }
 
         private async void LoadProcesses()
@@ -360,7 +367,21 @@ namespace KdxDesigner.ViewModels
         // プロパティウィンドウ表示要求イベント（ダブルクリック時）
         public event EventHandler? RequestShowPropertiesWindow;
 
+        private async Task LoadProcessDetailsAsync()
+        {
+            await Task.Run(async () =>
+            {
+                // キャッシュされたデータを使用するか、データベースから取得するかを決定
+                await LoadProcessDetailsInternal();
+            });
+        }
+
         public async void LoadProcessDetails()
+        {
+            await LoadProcessDetailsInternal();
+        }
+
+        private async Task LoadProcessDetailsInternal()
         {
             // キャッシュされたデータを使用するか、データベースから取得するかを決定
             Task<List<ProcessDetail>> detailsTask;
@@ -2049,6 +2070,89 @@ namespace KdxDesigner.ViewModels
             if (dialog.ShowDialog() == true && dialog.SelectedProcess != null)
             {
                 await MoveProcessDetailToProcess(SelectedNode, dialog.SelectedProcess.Id);
+            }
+        }
+
+        /// <summary>
+        /// ProcessDetailが更新されたときにノードの表示を更新
+        /// </summary>
+        public void UpdateNodeFromProcessDetail(ProcessDetail updatedProcessDetail)
+        {
+            if (updatedProcessDetail == null) return;
+
+            // 対応するノードを検索
+            var node = AllNodes.FirstOrDefault(n =>
+                n.NodeType == ProcessFlowNodeType.ProcessDetail &&
+                n.ProcessDetail != null &&
+                n.ProcessDetail.Id == updatedProcessDetail.Id);
+
+            if (node != null)
+            {
+                // ProcessDetailオブジェクトのプロパティを更新
+                node.ProcessDetail.DetailName = updatedProcessDetail.DetailName;
+                node.ProcessDetail.OperationId = updatedProcessDetail.OperationId;
+                node.ProcessDetail.StartSensor = updatedProcessDetail.StartSensor;
+                node.ProcessDetail.CategoryId = updatedProcessDetail.CategoryId;
+                node.ProcessDetail.FinishSensor = updatedProcessDetail.FinishSensor;
+                node.ProcessDetail.BlockNumber = updatedProcessDetail.BlockNumber;
+                node.ProcessDetail.SkipMode = updatedProcessDetail.SkipMode;
+                node.ProcessDetail.CycleId = updatedProcessDetail.CycleId;
+                node.ProcessDetail.SortNumber = updatedProcessDetail.SortNumber;
+                node.ProcessDetail.Comment = updatedProcessDetail.Comment;
+                node.ProcessDetail.ILStart = updatedProcessDetail.ILStart;
+                node.ProcessDetail.StartTimerId = updatedProcessDetail.StartTimerId;
+
+                // カテゴリ名を更新
+                if (node.ProcessDetail.CategoryId.HasValue)
+                {
+                    var category = Categories.FirstOrDefault(c => c.Id == node.ProcessDetail.CategoryId.Value);
+                    node.CategoryName = category?.CategoryName;
+                }
+                else
+                {
+                    node.CategoryName = null;
+                }
+
+                // 複合工程名を更新
+                if (node.ProcessDetail.BlockNumber.HasValue)
+                {
+                    var process = Processes.FirstOrDefault(p => p.Id == node.ProcessDetail.BlockNumber.Value);
+                    node.CompositeProcessName = process?.ProcessName;
+                }
+                else
+                {
+                    node.CompositeProcessName = null;
+                }
+
+                // 表示名を更新
+                node.UpdateDisplayName();
+
+                // 現在選択中のノードの場合は、プロパティも更新
+                if (SelectedNode == node)
+                {
+                    SelectedNodeDetailName = node.ProcessDetail.DetailName ?? "";
+                    SelectedNodeOperationId = node.ProcessDetail.OperationId;
+                    SelectedNodeStartSensor = node.ProcessDetail.StartSensor ?? "";
+                    SelectedNodeFinishSensor = node.ProcessDetail.FinishSensor ?? "";
+                    SelectedNodeCategoryId = node.ProcessDetail.CategoryId;
+                    SelectedNodeBlockNumber = node.ProcessDetail.BlockNumber;
+                    SelectedNodeSkipMode = node.ProcessDetail.SkipMode ?? "";
+                    SelectedNodeSortNumber = node.ProcessDetail.SortNumber;
+                    SelectedNodeComment = node.ProcessDetail.Comment ?? "";
+                    SelectedNodeILStart = node.ProcessDetail.ILStart ?? "";
+                    SelectedNodeStartTimerId = node.ProcessDetail.StartTimerId;
+                    SelectedNodeDisplayName = node.DisplayName;
+                }
+
+                // 接続線の開始センサー情報も更新
+                var connections = AllConnections.Where(c => c.FromNode == node).ToList();
+                foreach (var conn in connections)
+                {
+                    // ProcessDetailのStartSensorが変更された場合、接続線のセンサー表示も更新
+                    conn.UpdatePosition();
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Updated node display for ProcessDetail ID={updatedProcessDetail.Id}, Name={updatedProcessDetail.DetailName}");
             }
         }
     }

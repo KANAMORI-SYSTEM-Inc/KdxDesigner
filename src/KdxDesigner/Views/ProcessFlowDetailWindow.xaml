@@ -232,11 +232,13 @@
             </TextBlock>
         </ToolBar>
         
-        <!-- メインキャンバス -->
-        <ScrollViewer x:Name="ProcessFlowScrollViewer" 
-                      HorizontalScrollBarVisibility="Auto" 
-                      VerticalScrollBarVisibility="Auto"
-                      CanContentScroll="True">
+        <!-- メインコンテンツとローディング画面を含むGrid -->
+        <Grid>
+            <!-- メインキャンバス -->
+            <ScrollViewer x:Name="ProcessFlowScrollViewer"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          CanContentScroll="True">
             <Grid MinWidth="{Binding CanvasWidth}" MinHeight="{Binding CanvasHeight}">
                 <Canvas x:Name="MainCanvas" 
                         Width="{Binding CanvasWidth}" 
@@ -662,7 +664,63 @@
                 </Canvas>
             </Grid>
         </ScrollViewer>
-        
+
+            <!-- ローディング画面 -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Background="#80000000"
+                  Panel.ZIndex="1000">
+                <Border Background="White"
+                        CornerRadius="10"
+                        Padding="40,30"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" Opacity="0.5" BlurRadius="20" ShadowDepth="0"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- ローディングアニメーション -->
+                        <Viewbox Width="80" Height="80" Margin="0,0,0,20">
+                            <Grid>
+                                <Ellipse Width="60" Height="60"
+                                         Stroke="#4A90E2"
+                                         StrokeThickness="6"
+                                         StrokeDashArray="40,20"
+                                         RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <RotateTransform x:Name="LoadingRotation" Angle="0"/>
+                                    </Ellipse.RenderTransform>
+                                    <Ellipse.Triggers>
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <DoubleAnimation Storyboard.TargetName="LoadingRotation"
+                                                                     Storyboard.TargetProperty="Angle"
+                                                                     From="0" To="360" Duration="0:0:1.5"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Ellipse.Triggers>
+                                </Ellipse>
+                            </Grid>
+                        </Viewbox>
+
+                        <!-- ローディングテキスト -->
+                        <TextBlock Text="データを読み込んでいます..."
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="#4A90E2"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,10"/>
+
+                        <TextBlock Text="しばらくお待ちください"
+                                   FontSize="12"
+                                   Foreground="Gray"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
         <!-- ノード選択時の接続線リスト表示 -->
         <Popup IsOpen="{Binding IsNodeSelected}" 
                PlacementTarget="{Binding ElementName=ProcessFlowScrollViewer}"

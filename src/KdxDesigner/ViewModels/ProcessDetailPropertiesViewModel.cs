@@ -232,6 +232,10 @@ namespace KdxDesigner.ViewModels
                 }
 
                 DialogResult = true;
+
+                // 保存完了イベントを発火（更新されたProcessDetailを渡す）
+                ProcessDetailSaved?.Invoke(this, _processDetail);
+
                 RequestClose?.Invoke();
             }
             catch (Exception ex)
@@ -254,6 +258,11 @@ namespace KdxDesigner.ViewModels
         public event Action? RequestClose;
 
         /// <summary>
+        /// ProcessDetailが保存された時に発火するイベント
+        /// </summary>
+        public event EventHandler<ProcessDetail>? ProcessDetailSaved;
+
+        /// <summary>
         /// ProcessDetailオブジェクトを更新
         /// </summary>
         public void UpdateProcessDetail(ProcessDetail processDetail)
@@ -268,6 +277,7 @@ namespace KdxDesigner.ViewModels
         public void ClearEventHandlers()
         {
             RequestClose = null;
+            ProcessDetailSaved = null;
         }
     }
 }
