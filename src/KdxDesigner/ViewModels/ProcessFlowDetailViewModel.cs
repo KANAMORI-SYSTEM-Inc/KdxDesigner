@@ -354,6 +354,12 @@ namespace KdxDesigner.ViewModels
         // 接続選択時のイベント
         public event EventHandler? ConnectionSelected;
 
+        // 接続削除完了時のイベント
+        public event EventHandler? ConnectionDeleted;
+
+        // プロパティウィンドウ表示要求イベント（ダブルクリック時）
+        public event EventHandler? RequestShowPropertiesWindow;
+
         public async void LoadProcessDetails()
         {
             // キャッシュされたデータを使用するか、データベースから取得するかを決定
@@ -1227,8 +1233,8 @@ namespace KdxDesigner.ViewModels
             // (ProcessFlowDetailWindow.xaml.cs側で処理される)
             if (SelectedNode != null)
             {
-                // PropertyChangedイベントを明示的に発火させる
-                OnPropertyChanged(nameof(SelectedNode));
+                // プロパティウィンドウ表示要求イベントを発火
+                RequestShowPropertiesWindow?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -1545,6 +1551,9 @@ namespace KdxDesigner.ViewModels
                 OnPropertyChanged(nameof(AllConnections));
 
                 SelectedConnection = null;
+
+                // 接続削除完了イベントを発火（ConnectionInfoWindowを閉じるため）
+                ConnectionDeleted?.Invoke(this, EventArgs.Empty);
             }
         }
 

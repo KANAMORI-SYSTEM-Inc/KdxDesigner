@@ -452,9 +452,14 @@
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="{Binding NodeWidth}" 
+                                <Border Width="{Binding NodeWidth}"
                                         CornerRadius="5"
-                                        Opacity="{Binding Opacity}">
+                                        Opacity="{Binding Opacity}"
+                                        MouseDown="Node_MouseDown"
+                                        MouseUp="Node_MouseUp">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DataContext.EditSelectedNodeCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                    </Border.InputBindings>
                                     <Border.Height>
                                         <MultiBinding>
                                             <MultiBinding.Converter>
@@ -464,19 +469,6 @@
                                             <Binding Path="DataContext.ShowBlockNumber" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                         </MultiBinding>
                                     </Border.Height>
-                                    <i:Interaction.Triggers>
-                                        <i:EventTrigger EventName="MouseDown">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.NodeMouseDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                   CommandParameter="{Binding}"/>
-                                        </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseUp">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.NodeMouseUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                   CommandParameter="{Binding}"/>
-                                        </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseDoubleClick">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.EditSelectedNodeCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                        </i:EventTrigger>
-                                    </i:Interaction.Triggers>
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="{Binding CategoryId, Converter={StaticResource CategoryToColorConverter}}"/>

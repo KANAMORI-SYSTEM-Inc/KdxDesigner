@@ -1,6 +1,7 @@
 using Kdx.Infrastructure.Supabase.Repositories;
 using Kdx.Contracts.DTOs;
 using KdxDesigner.ViewModels;
+using KdxDesigner.Models;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
@@ -64,6 +65,12 @@ namespace KdxDesigner.Views
 
             // 接続選択イベントを監視
             _viewModel.ConnectionSelected += OnConnectionSelected;
+
+            // 接続削除イベントを監視
+            _viewModel.ConnectionDeleted += OnConnectionDeleted;
+
+            // プロパティウィンドウ表示要求イベントを監視（ダブルクリック時）
+            _viewModel.RequestShowPropertiesWindow += OnRequestShowPropertiesWindow;
         }
         
         private void OnScrollViewerMouseDown(object sender, MouseButtonEventArgs e)
@@ -220,36 +227,29 @@ namespace KdxDesigner.Views
         
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            // ノードが選択されたときにプロパティウィンドウを表示
+            // ノードが選択されたときの処理
             if (e.PropertyName == nameof(ProcessFlowDetailViewModel.SelectedNode))
             {
-                if (_viewModel.SelectedNode != null &&
+                // 既にプロパティウィンドウが開いている場合のみ、内容を更新
+                if (_propertiesWindow != null && _propertiesWindow.IsLoaded &&
+                    _viewModel.SelectedNode != null &&
                     _viewModel.SelectedNode.NodeType == Models.ProcessFlowNodeType.ProcessDetail &&
                     _viewModel.SelectedNode.ProcessDetail != null)
                 {
-                    // ProcessDetailノードが選択された場合
-                    if (_propertiesWindow == null || !_propertiesWindow.IsLoaded)
+                    // ウィンドウが既に開いている場合は、ProcessDetailを更新
+                    if (_propertiesViewModel != null)
                     {
-                        // 新しいプロパティウィンドウを作成
-                        ShowPropertiesWindow();
+                        _propertiesViewModel.UpdateProcessDetail(_viewModel.SelectedNode.ProcessDetail);
                     }
-                    else
-                    {
-                        // ウィンドウが既に開いている場合は、ProcessDetailを更新
-                        if (_propertiesViewModel != null)
-                        {
-                            _propertiesViewModel.UpdateProcessDetail(_viewModel.SelectedNode.ProcessDetail);
-                        }
 
-                        // ウィンドウが最小化されている場合は元に戻す
-                        if (_propertiesWindow.WindowState == WindowState.Minimized)
-                        {
-                            _propertiesWindow.WindowState = WindowState.Normal;
-                        }
-                        _propertiesWindow.Show();
-                        _propertiesWindow.Activate();
-                        _propertiesWindow.Focus();
+                    // ウィンドウが最小化されている場合は元に戻す
+                    if (_propertiesWindow.WindowState == WindowState.Minimized)
+                    {
+                        _propertiesWindow.WindowState = WindowState.Normal;
                     }
+                    _propertiesWindow.Show();
+                    _propertiesWindow.Activate();
+                    _propertiesWindow.Focus();
                 }
             }
         }
@@ -260,19 +260,54 @@ namespace KdxDesigner.Views
             {
                 // 既存の接続情報ウィンドウがあれば閉じる
                 _connectionInfoWindow?.Close();
-                
+
                 // 新しい接続情報ウィンドウを作成して表示
                 _connectionInfoWindow = new ConnectionInfoWindow
                 {
                     DataContext = _viewModel,
                     Owner = this
                 };
-                
+
                 _connectionInfoWindow.Closed += (s, args) => _connectionInfoWindow = null;
                 _connectionInfoWindow.ShowDialog();
             }
         }
-        
+
+        private void OnConnectionDeleted(object? sender, EventArgs e)
+        {
+            // 接続が削除されたら、接続情報ウィンドウを閉じる
+            _connectionInfoWindow?.Close();
+        }
+
+        private void OnRequestShowPropertiesWindow(object? sender, EventArgs e)
+        {
+            // ダブルクリックでプロパティウィンドウを表示
+            ShowPropertiesWindow();
+        }
+
+        private void Node_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border border && border.DataContext is ProcessFlowNode node)
+            {
+                // ダブルクリック（ClickCount == 2）の場合はドラッグ処理をスキップ
+                if (e.ClickCount == 2)
+                {
+                    return;
+                }
+
+                // 通常のクリックの場合はViewModelのコマンドを実行
+                _viewModel.NodeMouseDownCommand.Execute(node);
+            }
+        }
+
+        private void Node_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border border && border.DataContext is ProcessFlowNode node)
+            {
+                _viewModel.NodeMouseUpCommand.Execute(node);
+            }
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
@@ -288,6 +323,8 @@ namespace KdxDesigner.Views
             {
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
                 _viewModel.ConnectionSelected -= OnConnectionSelected;
+                _viewModel.ConnectionDeleted -= OnConnectionDeleted;
+                _viewModel.RequestShowPropertiesWindow -= OnRequestShowPropertiesWindow;
             }
             
             if (_scrollViewer != null)
