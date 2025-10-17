@@ -128,14 +128,14 @@ namespace KdxDesigner.Views
                 var contentX = scrollOffsetX + mousePosition.X;
                 var contentY = scrollOffsetY + mousePosition.Y;
                 
-                // ズーム処理
+                // ズーム処理（生成されたコマンドを使用）
                 if (e.Delta > 0)
                 {
-                    _viewModel.ZoomIn();
+                    _viewModel.ZoomInCommand.Execute(null);
                 }
                 else if (e.Delta < 0)
                 {
-                    _viewModel.ZoomOut();
+                    _viewModel.ZoomOutCommand.Execute(null);
                 }
                 
                 // ズーム後、マウス位置を中心にスクロール位置を調整

@@ -1966,13 +1966,15 @@ namespace KdxDesigner.ViewModels
         }
 
         // ズーム機能のメソッド
-        public void ZoomIn()
+        [RelayCommand]
+        private void ZoomIn()
         {
             var newScale = Math.Min(ZoomScale + _zoomStep, _maxZoomScale);
             ZoomScale = Math.Round(newScale, 2);
         }
 
-        public void ZoomOut()
+        [RelayCommand]
+        private void ZoomOut()
         {
             var newScale = Math.Max(ZoomScale - _zoomStep, _minZoomScale);
             ZoomScale = Math.Round(newScale, 2);
