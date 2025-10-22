@@ -334,16 +334,17 @@ namespace KdxDesigner.Utils.Cylinder
                     var eachCycle = _mainViewModel.Cycles.FirstOrDefault(c => c.Id == startCycleId);
                     if (eachCycle != null)
                     {
-                        if (!isFirstCycleInLoop)
-                        {
-                            // 2つ目以降のサイクルの場合はORBを追加
-                            result.Add(LadderRow.AddORB());
-                        }
 
                         // Cycleに関連する処理をここに追加
                         result.Add(LadderRow.AddLDP(eachCycle.StartDevice));
                         result.Add(LadderRow.AddANI(_label + (_startNum + 0).ToString()));
                         result.Add(LadderRow.AddANI(_label + (_startNum + 1).ToString()));
+
+                        if (!isFirstCycleInLoop)
+                        {
+                            // 2つ目以降のサイクルの場合はORBを追加
+                            result.Add(LadderRow.AddORB());
+                        }
 
                         isFirstCycleInLoop = false; // フラグを更新
                     }
@@ -589,7 +590,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 操作盤「実行」ボタンと「各個」モードの対応デバイス
             // 「実行」ボタンを離した時と、「各個」がOFFになったときにリセットする。
             result.Add(LadderRow.AddLDF(_controlBox.ManualButton));
-            result.Add(LadderRow.AddLDF(_controlBox.ManualMode));
+            result.Add(LadderRow.AddORF(_controlBox.ManualMode));
 
             // JOGスイッチのリセット処理
             result.Add(LadderRow.AddRST(_bJogGo));

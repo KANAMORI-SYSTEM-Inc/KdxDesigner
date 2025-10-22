@@ -420,11 +420,11 @@ namespace KdxDesigner.Utils.ProcessDetail
             result.Add(LadderRow.AddAND(label + (outNum + 0).ToString()));
             result.Add(LadderRow.AddOUT(label + (outNum + 1).ToString()));
 
-            if (!string.IsNullOrEmpty(detail.Detail.ILStart))
+            if (!string.IsNullOrEmpty(detail.Detail.StartSensor))
             {
                 result.Add(LadderRow.AddLD(label + (outNum + 0).ToString()));
                 result.Add(LadderRow.AddANI(label + (outNum + 1).ToString()));
-                result.Add(LadderRow.AddOUT(detail.Detail.ILStart));
+                result.Add(LadderRow.AddOUT(detail.Detail.StartSensor));
             }
 
             // L4 工程完了
