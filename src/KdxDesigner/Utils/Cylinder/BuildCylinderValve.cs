@@ -66,11 +66,11 @@ namespace KdxDesigner.Utils.Cylinder
                                             && cylinder.Cylinder.CYNum != null
                                             && i.IOName.Contains(cylinder.Cylinder.CYNum)).ToList();
 
-            // 行間ステートメント  
+            // 行間ステートメント
             string id = cylinder.Cylinder.Id.ToString();
-            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
-            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
+            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得
+            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + " シングルバルブ"));
 
@@ -200,10 +200,10 @@ namespace KdxDesigner.Utils.Cylinder
                                             && cylinder.Cylinder.CYNum != null
                                             && i.IOName.Contains(cylinder.Cylinder.CYNum)).ToList();
 
-            // 行間ステートメント  
+            // 行間ステートメント
             string id = cylinder.Cylinder.Id.ToString();
-            string cyNum = cylinder.Cylinder.CYNum ?? "";                   // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNum = cylinder.Cylinder.CYNum ?? "";                   // シリンダー名の取得
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得
             string cyName = cyNum + cyNumSub;                               // シリンダー名の組み合わせ  
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + " ダブルバルブ"));
@@ -316,11 +316,11 @@ namespace KdxDesigner.Utils.Cylinder
                                             && cylinder.Cylinder.CYNum != null
                                             && i.IOName.Contains(cylinder.Cylinder.CYNum)).ToList();
 
-            // 行間ステートメント  
+            // 行間ステートメント
             string id = cylinder.Cylinder.Id.ToString();
-            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
-            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
+            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得
+            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + "モーター"));
 

@@ -12,7 +12,12 @@ namespace KdxDesigner.Views
         public ControlBoxViews(ISupabaseRepository repo, int plcId)
         {
             InitializeComponent();
-            DataContext = new ControlBoxViewModel(repo, plcId);
+
+            // 非同期初期化を行う
+            Loaded += async (s, e) =>
+            {
+                DataContext = await ControlBoxViewModel.CreateAsync(repo, plcId);
+            };
         }
     }
 }

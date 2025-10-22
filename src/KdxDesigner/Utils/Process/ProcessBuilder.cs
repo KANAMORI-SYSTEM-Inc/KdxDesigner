@@ -32,24 +32,27 @@ namespace KdxDesigner.Utils
         {
             var mnemonic = new List<LadderCsvRow>();
 
+            // BuildProcessCommon のインスタンスを作成
+            var buildProcess = new BuildProcessCommon(repository, details);
+
             foreach (var pros in list)
             {
                 switch (pros.Process.ProcessCategoryId)
                 {
                     case 1:     // 通常工程
-                        mnemonic.AddRange(await BuildProcess.BuildNormal(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildNormal(pros));
                         break;
                     case 2:     // Single
-                        mnemonic.AddRange(await BuildProcess.BuildNormal(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildNormal(pros));
                         break;
                     case 3:     // リセット後工程 #issue16
-                        mnemonic.AddRange(await BuildProcess.BuildResetAfter(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildResetAfter(pros));
                         break;
                     case 4:     // センサON確認 #issue17
-                        mnemonic.AddRange(await BuildProcess.BuildIL(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildIL(pros));
                         break;
                     case 5:     // リセット
-                        mnemonic.AddRange(await BuildProcess.BuildReset(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildReset(pros));
                         break;
                     default:
                         break;
@@ -57,7 +60,7 @@ namespace KdxDesigner.Utils
             }
 
             // テスト実行釦のリセットサブルーチン
-            mnemonic.AddRange(BuildProcess.BuildSubRoutine(list));
+            mnemonic.AddRange(buildProcess.BuildSubRoutine(list));
 
             return mnemonic;
         }

@@ -1725,10 +1725,12 @@ namespace KdxDesigner.ViewModels
                 MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
                 return;
             }
-            var timer = await _repository.GetTimersAsync();
-            var details = await _repository.GetProcessDetailsAsync();
-            var operations = await _repository.GetOperationsAsync();
-            var cylinders = await _repository.GetCYsAsync();
+
+            // prepDataから選択されたCycleに紐づくデータを使用
+            var timer = prepData.timers;
+            var details = prepData.details;
+            var operations = prepData.operations;
+            var cylinders = prepData.cylinders;
 
             int timerCount = 0;
 

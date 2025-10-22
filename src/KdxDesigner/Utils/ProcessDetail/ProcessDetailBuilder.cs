@@ -31,9 +31,8 @@ namespace KdxDesigner.Utils.ProcessDetail
             LadderCsvRow.ResetKeyCounter();
             var allRows = new List<LadderCsvRow>();
 
-            // 1. BuildDetail のインスタンス化を修正
-            //    processes もコンストラクタに渡すようにする
-            BuildDetail buildDetail = new(
+            // BuildDetailCommon のインスタンスを作成
+            var buildDetail = new BuildDetailCommon(
                 _mainViewModel,
                 _ioAddressService,
                 _errorAggregator,

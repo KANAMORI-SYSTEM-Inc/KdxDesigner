@@ -102,7 +102,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 行間ステートメント  
             string id = cylinder.Cylinder.Id.ToString();
             string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得  
             string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ
             result.Add(LadderRow.AddStatement(id + ":" + cyName + " サーボ"));
 

@@ -38,23 +38,25 @@ namespace KdxDesigner.Views
         
         private readonly TimerViewModel _timer;
         private readonly ISupabaseRepository _repository;
+        private readonly int _plcId;
         private ObservableCollection<RecordItem> _availableRecords;
         private ObservableCollection<int> _selectedRecordIds;
         private string _filterText = string.Empty;
         private ICollectionView _filteredRecords;
 
-        public RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository)
-            : this(timer, repository, true)
+        public RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository, int plcId)
+            : this(timer, repository, plcId, true)
         {
         }
 
         // 非同期初期化用のコンストラクタ
-        private RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository, bool asyncInit)
+        private RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository, int plcId, bool asyncInit)
         {
             InitializeComponent();
             DataContext = this;
             _timer = timer;
             _repository = repository;
+            _plcId = plcId;
             _availableRecords = new ObservableCollection<RecordItem>();
             _selectedRecordIds = new ObservableCollection<int>();
 
@@ -150,65 +152,97 @@ namespace KdxDesigner.Views
         private async Task LoadAvailableRecords()
         {
             _availableRecords.Clear();
-            
+
             if (!MnemonicId.HasValue)
                 return;
-                
+
+            // タイマーのCycleIdを取得
+            var cycleId = _timer.CycleId;
+
             switch (MnemonicId.Value)
             {
                 case 1: // Process
                     var processes = await _repository.GetProcessesAsync();
-                    foreach (var process in processes)
+                    // CycleIdでフィルタリング
+                    var filteredProcesses = cycleId.HasValue
+                        ? processes.Where(p => p.CycleId == cycleId.Value).ToList()
+                        : processes.ToList();
+
+                    foreach (var process in filteredProcesses)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = process.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = process.Id,
                             Name = $"{process.ProcessName} (ID: {process.Id})",
                             IsSelected = false
                         });
                     }
                     break;
-                    
+
                 case 2: // ProcessDetail
                     var details = await _repository.GetProcessDetailsAsync();
-                    foreach (var detail in details)
+                    // CycleIdでフィルタリング
+                    var filteredDetails = cycleId.HasValue
+                        ? details.Where(d => d.CycleId == cycleId.Value).ToList()
+                        : details.ToList();
+
+                    foreach (var detail in filteredDetails)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = detail.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = detail.Id,
                             Name = $"{detail.DetailName} (ID: {detail.Id})",
                             IsSelected = false
                         });
                     }
                     break;
-                    
+
                 case 3: // Operation
                     var operations = await _repository.GetOperationsAsync();
-                    foreach (var operation in operations)
+                    // CycleIdでフィルタリング
+                    var filteredOperations = cycleId.HasValue
+                        ? operations.Where(o => o.CycleId == cycleId.Value).ToList()
+                        : operations.ToList();
+
+                    foreach (var operation in filteredOperations)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = operation.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = operation.Id,
                             Name = $"{operation.OperationName} (ID: {operation.Id})",
                             IsSelected = false
                         });
                     }
                     break;
-                    
-                case 4: // CY
+
+                case 4: // CY (Cylinder)
+                    // Cylinderの場合、CycleIdはCylinderCycleテーブルで紐付けられている
                     var cylinders = await _repository.GetCYsAsync();
+
+                    if (cycleId.HasValue)
+                    {
+                        // CycleIdに紐づくCylinderを取得
+                        var cylinderCycles = await _repository.GetCylinderCyclesByPlcIdAsync(_plcId);
+                        var cylinderIdsInCycle = cylinderCycles
+                            .Where(cc => cc.CycleId == cycleId.Value)
+                            .Select(cc => cc.CylinderId)
+                            .ToHashSet();
+
+                        cylinders = cylinders.Where(c => cylinderIdsInCycle.Contains(c.Id)).ToList();
+                    }
+
                     foreach (var cy in cylinders)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = cy.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = cy.Id,
                             Name = $"CY{cy.CYNum} (ID: {cy.Id})",
                             IsSelected = false
                         });
                     }
                     break;
             }
-            
+
             // フィルタリングを更新
             _filteredRecords?.Refresh();
             OnPropertyChanged(nameof(FilteredRecords));

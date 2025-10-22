@@ -292,14 +292,16 @@ namespace KdxDesigner.ViewModels
             // ローディング開始
             IsLoading = true;
 
-            // データ取得を非同期で行い、UI更新はUIスレッドで実行
-            await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+            try
             {
-                await LoadProcessDetailsAsync();
-            });
-
-            // ローディング終了
-            IsLoading = false;
+                // データ取得を非同期で行い、UI更新はUIスレッドで実行
+                await LoadProcessDetailsInternal();
+            }
+            finally
+            {
+                // ローディング終了
+                IsLoading = false;
+            }
         }
 
         private async void LoadProcesses()
@@ -366,15 +368,6 @@ namespace KdxDesigner.ViewModels
 
         // プロパティウィンドウ表示要求イベント（ダブルクリック時）
         public event EventHandler? RequestShowPropertiesWindow;
-
-        private async Task LoadProcessDetailsAsync()
-        {
-            await Task.Run(async () =>
-            {
-                // キャッシュされたデータを使用するか、データベースから取得するかを決定
-                await LoadProcessDetailsInternal();
-            });
-        }
 
         public async void LoadProcessDetails()
         {

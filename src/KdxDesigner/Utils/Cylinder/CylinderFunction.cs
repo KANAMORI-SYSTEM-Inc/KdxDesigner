@@ -1020,7 +1020,7 @@ namespace KdxDesigner.Utils.Cylinder
             var result = new List<LadderCsvRow>();
 
             string cyNum = _cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = _cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNumSub = _cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得  
             string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
 
             var stpIO = _ioAddressService.GetSingleAddress(sensors, "STP", true, cyNum + cyName, _cylinder.Cylinder.Id, null);
