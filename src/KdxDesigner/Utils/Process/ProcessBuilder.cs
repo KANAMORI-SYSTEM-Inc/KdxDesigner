@@ -1,63 +1,58 @@
 ﻿using Kdx.Contracts.DTOs;
-using KdxDesigner.Models;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Utils.Process;
-using KdxDesigner.Services;
-using Kdx.Contracts.Interfaces;
-using System.Windows;
-using KdxDesigner.Utils.ProcessDetail;
-using KdxDesigner.Models.Define;
 
 namespace KdxDesigner.Utils
 {
     public static class ProcessBuilder
     {
-        public static List<LadderCsvRow> GenerateAllLadderCsvRows(
+        public static async Task<List<LadderCsvRow>> GenerateAllLadderCsvRows(
             Cycle selectedCycle,
             int processStartDevice,
             int detailStartDevice,
             List<MnemonicDeviceWithProcess> processes,
             List<MnemonicDeviceWithProcessDetail> details,
             List<IO> ioList,
-            IAccessRepository repository,
-            out List<OutputError> errors)
+            ISupabaseRepository repository)
         {
             LadderCsvRow.ResetKeyCounter();                     // 0から再スタート
             var allRows = new List<LadderCsvRow>();             // ニモニック配列を格納するリスト
-            errors = new List<OutputError>();                   // エラーリストの初期化
-
             processes = processes.OrderBy(p => p.Process.SortNumber).ToList(); // 工程をカテゴリIDでソート
 
             // プロセスのニモニックを生成
-            allRows = GenerateCsvRowsProcess(processes, details, repository);
+            allRows = await GenerateCsvRowsProcess(processes, details, repository);
             // プロセス詳細のニモニックを生成
             return allRows;
         }
 
-        public static List<LadderCsvRow> GenerateCsvRowsProcess(
-            List<MnemonicDeviceWithProcess> list, 
+        public static async Task<List<LadderCsvRow>> GenerateCsvRowsProcess(
+            List<MnemonicDeviceWithProcess> list,
             List<MnemonicDeviceWithProcessDetail> details,
-            IAccessRepository repository)
+            ISupabaseRepository repository)
         {
             var mnemonic = new List<LadderCsvRow>();
 
+            // BuildProcessCommon のインスタンスを作成
+            var buildProcess = new BuildProcessCommon(repository, details);
+
             foreach (var pros in list)
             {
-                switch(pros.Process.ProcessCategoryId)
+                switch (pros.Process.ProcessCategoryId)
                 {
                     case 1:     // 通常工程
-                        mnemonic.AddRange(BuildProcess.BuildNormal(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildNormal(pros));
                         break;
                     case 2:     // Single
-                        mnemonic.AddRange(BuildProcess.BuildNormal(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildNormal(pros));
                         break;
                     case 3:     // リセット後工程 #issue16
-                        mnemonic.AddRange(BuildProcess.BuildResetAfter(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildResetAfter(pros));
                         break;
                     case 4:     // センサON確認 #issue17
-                        mnemonic.AddRange(BuildProcess.BuildIL(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildIL(pros));
                         break;
                     case 5:     // リセット
-                        mnemonic.AddRange(BuildProcess.BuildReset(repository, pros, details));
+                        mnemonic.AddRange(await buildProcess.BuildReset(pros));
                         break;
                     default:
                         break;
@@ -65,7 +60,7 @@ namespace KdxDesigner.Utils
             }
 
             // テスト実行釦のリセットサブルーチン
-            mnemonic.AddRange(BuildProcess.BuildSubRoutine(list));
+            mnemonic.AddRange(buildProcess.BuildSubRoutine(list));
 
             return mnemonic;
         }

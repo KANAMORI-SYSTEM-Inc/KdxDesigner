@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using KdxDesigner.Models;
 using KdxDesigner.Services;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using Kdx.Contracts.DTOs;
 
 using System;
@@ -18,7 +18,7 @@ namespace KdxDesigner.ViewModels
     {
         private readonly MemoryProfileManager _profileManager;
         private readonly MainViewModel _mainViewModel;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
         [ObservableProperty] private ObservableCollection<MemoryProfile> profiles = new();
         [ObservableProperty] private MemoryProfile? selectedProfile;
@@ -27,7 +27,7 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty] private string? memoryRecordSummary;
         [ObservableProperty] private List<DeviceOverlapInfo>? deviceOverlaps;
 
-        public MemoryProfileViewModel(MainViewModel mainViewModel, IAccessRepository repository)
+        public MemoryProfileViewModel(MainViewModel mainViewModel, ISupabaseRepository repository)
         {
             _mainViewModel = mainViewModel;
             _profileManager = new MemoryProfileManager();
@@ -169,15 +169,15 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        private void CalculateMemoryUsage(MemoryProfile profile)
+        private async void CalculateMemoryUsage(MemoryProfile profile)
         {
             if (_mainViewModel.SelectedPlc == null) return;
 
             // 各タイプのレコード数を取得
-            var processes = _repository.GetProcesses();
-            var processDetails = _repository.GetProcessDetails();
-            var operations = _repository.GetOperations();
-            var cylinders = _repository.GetCYs();
+            var processes = await _repository.GetProcessesAsync();
+            var processDetails = await _repository.GetProcessDetailsAsync();
+            var operations = await _repository.GetOperationsAsync();
+            var cylinders = await _repository.GetCYsAsync();
 
             // 各カテゴリのMemoryレコード数を計算
             int processMemoryCount = processes.Count * 5; // 各プロセスは5レコード

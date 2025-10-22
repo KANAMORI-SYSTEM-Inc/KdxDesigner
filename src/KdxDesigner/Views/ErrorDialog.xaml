@@ -1,0 +1,50 @@
+<Window x:Class="KdxDesigner.Views.ErrorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="エラー" Height="300" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Icon and Title -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Image Source="/Resources/error.png" Width="32" Height="32" Margin="0,0,10,0"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   VerticalAlignment="Center">
+                <Image.Style>
+                    <Style TargetType="Image">
+                        <Style.Triggers>
+                            <!-- ファイルが存在しない場合は非表示 -->
+                            <Trigger Property="Source" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+            <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Error Message (Selectable) -->
+        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,10">
+            <TextBox Text="{Binding Message, Mode=OneWay}"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     BorderThickness="0"
+                     Padding="5"
+                     Background="White"/>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="コピー" Width="80" Height="30" Margin="0,0,10,0" Click="CopyButton_Click"/>
+            <Button Content="OK" Width="80" Height="30" Click="OkButton_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

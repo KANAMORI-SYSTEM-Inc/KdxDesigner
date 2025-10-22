@@ -1,5 +1,5 @@
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -9,7 +9,8 @@ using System.Windows.Input;
 
 namespace KdxDesigner.ViewModels
 {
-    internal class ControlBoxViewModel : INotifyPropertyChanged
+    // コンストラクタを async Task に分離
+    public class ControlBoxViewModel : INotifyPropertyChanged
     {
         // --- 既存: CylinderViewModel はそのまま（省略可） ---
         public class CylinderViewModel
@@ -62,7 +63,7 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        private readonly IAccessRepository _repo;
+        private readonly ISupabaseRepository _repo;
         private readonly int _plcId;
 
         private readonly ObservableCollection<CylinderViewModel> _cylindersSource = new();
@@ -83,7 +84,7 @@ namespace KdxDesigner.ViewModels
         public ICommand SaveAllMappingsCommand { get; }
         public ICommand DeleteAllMappingsCommand { get; }
 
-        public ControlBoxViewModel(IAccessRepository repo, int plcId)
+        public ControlBoxViewModel(ISupabaseRepository repo, int plcId)
         {
             _repo = repo;
             _plcId = plcId;
@@ -100,11 +101,25 @@ namespace KdxDesigner.ViewModels
                 collectionView.SortDescriptions.Add(new SortDescription("Cylinder.SortNumber", ListSortDirection.Ascending));
             }
 
+            AddMappingCommand = new RelayCommand(_ => AddMapping(), _ => SelectedCylinder != null);
+            RemoveMappingCommand = new RelayCommand(m =>
+            {
+                if (m is MappingItem item) Mappings.Remove(item);
+            }, _ => SelectedCylinder != null);
+
+            SaveAllMappingsCommand = new RelayCommand(_ => SaveAllMappings(), _ => SelectedCylinder != null);
+            DeleteAllMappingsCommand = new RelayCommand(_ => DeleteAllMappings(), _ => SelectedCylinder != null && Mappings.Count > 0);
+        }
+
+        public static async Task<ControlBoxViewModel> CreateAsync(ISupabaseRepository repo, int plcId)
+        {
+            var vm = new ControlBoxViewModel(repo, plcId);
+
             // 左ペイン: シリンダー一覧
-            var cy = _repo.GetCyList(plcId);
-            var machines = _repo.GetMachines();
-            var mnames = _repo.GetMachineNames();
-            var cycles = _repo.GetCylinderCyclesByPlcId(plcId);   // ← 追加：このPLCの全Cycle
+            var cy = await repo.GetCyListAsync(plcId);
+            var machines = await repo.GetMachinesAsync();
+            var mnames = await repo.GetMachineNamesAsync();
+            var cycles = await repo.GetCylinderCyclesByPlcIdAsync(plcId);   // ← 追加：このPLCの全Cycle
 
             // 安全に辞書化（重複キーがあっても落ちないよう GroupBy→First）
             var machineByKey = machines
@@ -131,30 +146,24 @@ namespace KdxDesigner.ViewModels
                 // ここで cc を取り出す
                 cycleByKey.TryGetValue((c.Id, plcId), out var cc);
 
-                _cylindersSource.Add(new CylinderViewModel(c, m, mn, cc));
+                vm._cylindersSource.Add(new CylinderViewModel(c, m, mn, cc));
             }
 
             // 右ペイン：ControlBox のコンボ
-            foreach (var cb in _repo.GetControlBoxesByPlcId(plcId).OrderBy(x => x.BoxNumber))
-                ControlBoxes.Add(cb);
+            var controlBoxes = await repo.GetControlBoxesByPlcIdAsync(plcId);
+            foreach (var cb in controlBoxes.OrderBy(x => x.BoxNumber))
+                vm.ControlBoxes.Add(cb);
 
-            AddMappingCommand = new RelayCommand(_ => AddMapping(), _ => SelectedCylinder != null);
-            RemoveMappingCommand = new RelayCommand(m =>
-            {
-                if (m is MappingItem item) Mappings.Remove(item);
-            }, _ => SelectedCylinder != null);
-
-            SaveAllMappingsCommand = new RelayCommand(_ => SaveAllMappings(), _ => SelectedCylinder != null);
-            DeleteAllMappingsCommand = new RelayCommand(_ => DeleteAllMappings(), _ => SelectedCylinder != null && Mappings.Count > 0);
+            return vm;
         }
 
-        private void LoadMappingsForSelection()
+        private async Task LoadMappingsForSelection()
         {
             Mappings.Clear();
             if (SelectedCylinder == null) return;
 
             // 既存を全件取得（複数行）
-            var links = _repo.GetCylinderControlBoxes(_plcId, SelectedCylinder.Cylinder.Id); // ← List<CylinderControlBox>
+            var links = await _repo.GetCylinderControlBoxesAsync(_plcId, SelectedCylinder.Cylinder.Id); // ← List<CylinderControlBox>
             foreach (var link in links.OrderBy(l => l.ManualNumber))
             {
                 Mappings.Add(new MappingItem
@@ -181,7 +190,7 @@ namespace KdxDesigner.ViewModels
             });
         }
 
-        private void SaveAllMappings()
+        private async Task SaveAllMappings()
         {
             if (SelectedCylinder == null) return;
 
@@ -200,7 +209,7 @@ namespace KdxDesigner.ViewModels
             var cylId = SelectedCylinder.Cylinder.Id;
 
             // 1) 現在DBにある全リンク
-            var existing = _repo.GetCylinderControlBoxes(_plcId, cylId);
+            var existing = await _repo.GetCylinderControlBoxesAsync(_plcId, cylId);
 
             // 2) 画面の最新状態を Upsert
             var toKeepKeys = new HashSet<(int plcId, int cylId, int manual)>();
@@ -219,7 +228,7 @@ namespace KdxDesigner.ViewModels
                     ManualNumber = m.ManualNumber, // = BoxNumber で基本OK（手入力上書きも可）
                     Device = m.Device ?? string.Empty
                 };
-                _repo.UpsertCylinderControlBox(link);
+                await _repo.UpsertCylinderControlBoxAsync(link);
                 toKeepKeys.Add((link.PlcId, link.CylinderId, link.ManualNumber));
             }
 
@@ -228,14 +237,14 @@ namespace KdxDesigner.ViewModels
             {
                 var key = (row.PlcId, row.CylinderId, row.ManualNumber);
                 if (!toKeepKeys.Contains(key))
-                    _repo.DeleteCylinderControlBox(row.PlcId, row.CylinderId, row.ManualNumber);
+                    await _repo.DeleteCylinderControlBoxAsync(row.PlcId, row.CylinderId, row.ManualNumber);
             }
 
             // 再読込して同期
-            LoadMappingsForSelection();
+            await LoadMappingsForSelection();
         }
 
-        private void DeleteAllMappings()
+        private async Task DeleteAllMappings()
         {
             if (SelectedCylinder == null) return;
 
@@ -251,10 +260,10 @@ namespace KdxDesigner.ViewModels
             var cylId = SelectedCylinder.Cylinder.Id;
 
             // 現在DBにある全リンクを削除
-            var existing = _repo.GetCylinderControlBoxes(_plcId, cylId);
+            var existing = await _repo.GetCylinderControlBoxesAsync(_plcId, cylId);
             foreach (var row in existing)
             {
-                _repo.DeleteCylinderControlBox(row.PlcId, row.CylinderId, row.ManualNumber);
+                await _repo.DeleteCylinderControlBoxAsync(row.PlcId, row.CylinderId, row.ManualNumber);
             }
 
             // 画面をクリア

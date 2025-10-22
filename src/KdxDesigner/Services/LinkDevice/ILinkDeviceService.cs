@@ -3,6 +3,7 @@ using KdxDesigner.Models;
 using KdxDesigner.ViewModels;
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace KdxDesigner.Services.LinkDevice
 {
@@ -17,12 +18,12 @@ namespace KdxDesigner.Services.LinkDevice
         /// <param name="mainPlc">メインPLC</param>
         /// <param name="selectedSettings">選択されたPLCリンク設定のリスト</param>
         /// <returns>処理成功の場合はtrue</returns>
-        bool CreateLinkDeviceRecords(PLC mainPlc, List<PlcLinkSettingViewModel> selectedSettings);
+        Task<bool> CreateLinkDeviceRecords(PLC mainPlc, List<PlcLinkSettingViewModel> selectedSettings);
 
         /// <summary>
         /// リンクデバイス情報をCSVファイルにエクスポートする
         /// </summary>
         /// <param name="filePath">出力ファイルパス</param>
-        void ExportLinkDeviceCsv(string filePath);
+        Task ExportLinkDeviceCsv(string filePath);
     }
 }

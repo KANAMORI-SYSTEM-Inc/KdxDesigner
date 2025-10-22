@@ -1,6 +1,6 @@
 using Kdx.Contracts.DTOs;
 using KdxDesigner.Models;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -30,28 +30,36 @@ namespace KdxDesigner.Views
             }
             
             public event PropertyChangedEventHandler? PropertyChanged;
-            protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
         
         private readonly TimerViewModel _timer;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
+        private readonly int _plcId;
         private ObservableCollection<RecordItem> _availableRecords;
         private ObservableCollection<int> _selectedRecordIds;
         private string _filterText = string.Empty;
         private ICollectionView _filteredRecords;
 
-        public RecordIdsEditorDialog(TimerViewModel timer, IAccessRepository repository)
+        public RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository, int plcId)
+            : this(timer, repository, plcId, true)
+        {
+        }
+
+        // 非同期初期化用のコンストラクタ
+        private RecordIdsEditorDialog(TimerViewModel timer, ISupabaseRepository repository, int plcId, bool asyncInit)
         {
             InitializeComponent();
             DataContext = this;
             _timer = timer;
             _repository = repository;
+            _plcId = plcId;
             _availableRecords = new ObservableCollection<RecordItem>();
             _selectedRecordIds = new ObservableCollection<int>();
-            
+
             // フィルタリング用のCollectionViewを設定
             _filteredRecords = CollectionViewSource.GetDefaultView(_availableRecords);
             _filteredRecords.Filter = FilterRecords;
@@ -60,12 +68,21 @@ namespace KdxDesigner.Views
             TimerName = _timer.TimerName ?? "";
             MnemonicTypeName = _timer.MnemonicTypeName ?? "";
             MnemonicId = _timer.MnemonicId;
-            
+
+            // 非同期初期化を呼び出し
+            if (asyncInit)
+            {
+                Loaded += async (s, e) => await InitializeAsync();
+            }
+        }
+
+        private async Task InitializeAsync()
+        {
             // MnemonicTypeに応じて選択可能なレコードを読み込む
-            LoadAvailableRecords();
-            
+            await LoadAvailableRecords();
+
             // 既存のRecordIdsを読み込んで選択状態に設定
-            var existingIds = _repository.GetTimerRecordIds(_timer.ID);
+            var existingIds = await _repository.GetTimerRecordIdsAsync(_timer.ID);
             foreach (var record in _availableRecords)
             {
                 if (existingIds.Contains(record.Id))
@@ -132,68 +149,100 @@ namespace KdxDesigner.Views
                    record.Id.ToString().Contains(searchText);
         }
 
-        private void LoadAvailableRecords()
+        private async Task LoadAvailableRecords()
         {
             _availableRecords.Clear();
-            
+
             if (!MnemonicId.HasValue)
                 return;
-                
+
+            // タイマーのCycleIdを取得
+            var cycleId = _timer.CycleId;
+
             switch (MnemonicId.Value)
             {
                 case 1: // Process
-                    var processes = _repository.GetProcesses();
-                    foreach (var process in processes)
+                    var processes = await _repository.GetProcessesAsync();
+                    // CycleIdでフィルタリング
+                    var filteredProcesses = cycleId.HasValue
+                        ? processes.Where(p => p.CycleId == cycleId.Value).ToList()
+                        : processes.ToList();
+
+                    foreach (var process in filteredProcesses)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = process.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = process.Id,
                             Name = $"{process.ProcessName} (ID: {process.Id})",
                             IsSelected = false
                         });
                     }
                     break;
-                    
+
                 case 2: // ProcessDetail
-                    var details = _repository.GetProcessDetails();
-                    foreach (var detail in details)
+                    var details = await _repository.GetProcessDetailsAsync();
+                    // CycleIdでフィルタリング
+                    var filteredDetails = cycleId.HasValue
+                        ? details.Where(d => d.CycleId == cycleId.Value).ToList()
+                        : details.ToList();
+
+                    foreach (var detail in filteredDetails)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = detail.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = detail.Id,
                             Name = $"{detail.DetailName} (ID: {detail.Id})",
                             IsSelected = false
                         });
                     }
                     break;
-                    
+
                 case 3: // Operation
-                    var operations = _repository.GetOperations();
-                    foreach (var operation in operations)
+                    var operations = await _repository.GetOperationsAsync();
+                    // CycleIdでフィルタリング
+                    var filteredOperations = cycleId.HasValue
+                        ? operations.Where(o => o.CycleId == cycleId.Value).ToList()
+                        : operations.ToList();
+
+                    foreach (var operation in filteredOperations)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = operation.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = operation.Id,
                             Name = $"{operation.OperationName} (ID: {operation.Id})",
                             IsSelected = false
                         });
                     }
                     break;
-                    
-                case 4: // CY
-                    var cylinders = _repository.GetCYs();
+
+                case 4: // CY (Cylinder)
+                    // Cylinderの場合、CycleIdはCylinderCycleテーブルで紐付けられている
+                    var cylinders = await _repository.GetCYsAsync();
+
+                    if (cycleId.HasValue)
+                    {
+                        // CycleIdに紐づくCylinderを取得
+                        var cylinderCycles = await _repository.GetCylinderCyclesByPlcIdAsync(_plcId);
+                        var cylinderIdsInCycle = cylinderCycles
+                            .Where(cc => cc.CycleId == cycleId.Value)
+                            .Select(cc => cc.CylinderId)
+                            .ToHashSet();
+
+                        cylinders = cylinders.Where(c => cylinderIdsInCycle.Contains(c.Id)).ToList();
+                    }
+
                     foreach (var cy in cylinders)
                     {
-                        _availableRecords.Add(new RecordItem 
-                        { 
-                            Id = cy.Id, 
+                        _availableRecords.Add(new RecordItem
+                        {
+                            Id = cy.Id,
                             Name = $"CY{cy.CYNum} (ID: {cy.Id})",
                             IsSelected = false
                         });
                     }
                     break;
             }
-            
+
             // フィルタリングを更新
             _filteredRecords?.Refresh();
             OnPropertyChanged(nameof(FilteredRecords));
@@ -220,17 +269,17 @@ namespace KdxDesigner.Views
             }
         }
 
-        private void OkButton_Click(object sender, RoutedEventArgs e)
+        private async void OkButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // 既存のRecordIdsをすべて削除
-                _repository.DeleteAllTimerRecordIds(_timer.ID);
+                await _repository.DeleteAllTimerRecordIdsAsync(_timer.ID);
 
                 // 新しいRecordIdsを追加
                 foreach (var recordId in _selectedRecordIds)
                 {
-                    _repository.AddTimerRecordId(_timer.ID, recordId);
+                    await _repository.AddTimerRecordIdAsync(_timer.ID, recordId);
                 }
 
                 // ViewModelを更新

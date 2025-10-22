@@ -1,25 +1,38 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
-using Kdx.Contracts.Interfaces;
-using KdxDesigner.Models.Define;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 namespace KdxDesigner.Utils.Process
 {
     /// <summary>
-    /// Processのラダー出力を生成するクラス
+    /// Processのラダー出力を生成する基底クラス
     /// ProcessStartConditionとProcessFinishConditionテーブルを使用する
     /// </summary>
-    internal class BuildProcess
+    internal class IBuildProcess
     {
+        protected readonly ISupabaseRepository _repository;
+        protected readonly List<MnemonicDeviceWithProcessDetail> _details;
+
+        /// <summary>
+        /// IBuildProcess のインスタンスを初期化します
+        /// </summary>
+        /// <param name="repository">Supabaseリポジトリ</param>
+        /// <param name="details">工程詳細のリスト</param>
+        public IBuildProcess(
+            ISupabaseRepository repository,
+            List<MnemonicDeviceWithProcessDetail> details)
+        {
+            _repository = repository;
+            _details = details;
+        }
+
         /// <summary>
         /// 開始条件を取得する（新しい中間テーブルを使用）
         /// </summary>
-        private static List<int> GetStartConditions(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process)
+        protected async Task<List<int>> GetStartConditions(MnemonicDeviceWithProcess process)
         {
             // 新しい中間テーブルから開始条件を取得
-            var startConditions = repository.GetStartConditionsByProcessId(process.Process.Id);
+            var startConditions = await _repository.GetStartConditionsByProcessIdAsync(process.Process.Id);
 
             return startConditions
                 .Select(sc => sc.StartProcessDetailId)
@@ -29,12 +42,10 @@ namespace KdxDesigner.Utils.Process
         /// <summary>
         /// 終了条件を取得する（新しい中間テーブルを使用）
         /// </summary>
-        private static List<int> GetFinishConditions(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process)
+        protected async Task<List<int>> GetFinishConditions(MnemonicDeviceWithProcess process)
         {
             // 新しい中間テーブルから終了条件を取得
-            var finishConditions = repository.GetFinishConditionsByProcessId(process.Process.Id);
+            var finishConditions = await _repository.GetFinishConditionsByProcessIdAsync(process.Process.Id);
 
             return finishConditions
                 .Select(fc => fc.FinishProcessDetailId)
@@ -42,60 +53,48 @@ namespace KdxDesigner.Utils.Process
         }
 
         /// <summary>
-        /// BuildNormalメソッド
+        /// 行間ステートメントを生成する共通メソッド
         /// </summary>
-        public static List<LadderCsvRow> BuildNormal(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        protected LadderCsvRow CreateStatement(MnemonicDeviceWithProcess process)
         {
-            var result = new List<LadderCsvRow>();
-
-            // 行間ステートメント
             string id = process.Process.Id.ToString();
             if (string.IsNullOrEmpty(process.Process.ProcessName))
             {
-                result.Add(LadderRow.AddStatement(id));
+                return LadderRow.AddStatement(id);
             }
             else
             {
-                result.Add(LadderRow.AddStatement(id + ":" + process.Process.ProcessName));
+                return LadderRow.AddStatement(id + ":" + process.Process.ProcessName);
             }
+        }
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
+        /// <summary>
+        /// 開始条件のLD/AND行を追加する共通メソッド
+        /// </summary>
+        protected async Task AddStartConditionRows(
+            List<LadderCsvRow> result,
+            MnemonicDeviceWithProcess process)
+        {
+            List<int> startCondition = await GetStartConditions(process);
 
             if (startCondition.Count == 0)
             {
-                // 開始条件が無い場合は、ProcessDetailのIDを取得する
                 result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
             }
             else
             {
-                // 開始条件がある場合
                 bool first = true;
                 foreach (var detailId in startCondition)
                 {
-                    // 1. IDから対象のProcessDetailのレコードを取得する。
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
+                    var target = _details.FirstOrDefault(d => d.Detail.Id == detailId);
+                    if (target == null) continue;
 
-                    if (target == null)
-                    {
-                        // エラー処理を追加してください issue#13
-                        continue;
-                    }
-
-                    // 2. ProcessDetailのレコードから、完了のアウトコイルの数値を取得する。
                     var mnemonic = target.Mnemonic;
-
-                    // 3. ラベルと数値を取得して結合する。
                     var label = mnemonic.DeviceLabel ?? string.Empty;
                     var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
                     var device = deviceNumber.ToString();
-
                     var labelDevice = label + device;
 
-                    // 4. 命令を生成する
                     var row = first
                         ? LadderRow.AddLD(labelDevice)
                         : LadderRow.AddAND(labelDevice);
@@ -104,6 +103,20 @@ namespace KdxDesigner.Utils.Process
                     first = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// 通常工程のビルド
+        /// </summary>
+        public virtual async Task<List<LadderCsvRow>> BuildNormal(MnemonicDeviceWithProcess process)
+        {
+            var result = new List<LadderCsvRow>();
+
+            // 行間ステートメント
+            result.Add(CreateStatement(process));
+
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -151,12 +164,12 @@ namespace KdxDesigner.Utils.Process
 
             // OUT L4 完了
             // 終了条件を新しい方法で取得
-            List<int> finishConditions = GetFinishConditions(repository, process);
+            List<int> finishConditions = await GetFinishConditions(process);
 
             if (finishConditions.Any())
             {
                 var completeContact = finishConditions.First(); // 最初の終了条件を使用
-                var completeDetailRecord = detail.FirstOrDefault(d => d.Mnemonic.RecordId == completeContact);
+                var completeDetailRecord = _details.FirstOrDefault(d => d.Mnemonic.RecordId == completeContact);
 
                 if (completeDetailRecord != null)
                 {
@@ -176,55 +189,17 @@ namespace KdxDesigner.Utils.Process
         }
 
         /// <summary>
-        /// BuildResetAfterメソッド
+        /// リセット後工程のビルド
         /// </summary>
-        public static List<LadderCsvRow> BuildResetAfter(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        public virtual async Task<List<LadderCsvRow>> BuildResetAfter(MnemonicDeviceWithProcess process)
         {
             var result = new List<LadderCsvRow>();
 
             // 行間ステートメント
-            string id = process.Process.Id.ToString();
-            if (string.IsNullOrEmpty(process.Process.ProcessName))
-            {
-                result.Add(LadderRow.AddStatement(id));
-            }
-            else
-            {
-                result.Add(LadderRow.AddStatement(id + ":" + process.Process.ProcessName));
-            }
+            result.Add(CreateStatement(process));
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
-
-            if (startCondition.Count == 0)
-            {
-                result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
-            }
-            else
-            {
-                bool first = true;
-                foreach (var detailId in startCondition)
-                {
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
-                    if (target == null) continue;
-
-                    var mnemonic = target.Mnemonic;
-                    var label = mnemonic.DeviceLabel ?? string.Empty;
-                    var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
-                    var device = deviceNumber.ToString();
-                    var labelDevice = label + device;
-
-                    var row = first
-                        ? LadderRow.AddLD(labelDevice)
-                        : LadderRow.AddAND(labelDevice);
-
-                    result.Add(row);
-                    first = false;
-                }
-            }
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -273,12 +248,12 @@ namespace KdxDesigner.Utils.Process
 
             // OUT L2 実行中
             // 終了条件を新しい方法で取得
-            List<int> finishConditions = GetFinishConditions(repository, process);
+            List<int> finishConditions = await GetFinishConditions(process);
 
             if (finishConditions.Any())
             {
                 var completeContact = finishConditions.First(); // 最初の終了条件を使用
-                var completeDetailRecord = detail.FirstOrDefault(d => d.Mnemonic.RecordId == completeContact);
+                var completeDetailRecord = _details.FirstOrDefault(d => d.Mnemonic.RecordId == completeContact);
 
                 if (completeDetailRecord != null)
                 {
@@ -302,44 +277,14 @@ namespace KdxDesigner.Utils.Process
         }
 
         /// <summary>
-        /// BuildSubProcessメソッド
+        /// サブプロセスのビルド
         /// </summary>
-        public static List<LadderCsvRow> BuildSubProcess(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        public virtual async Task<List<LadderCsvRow>> BuildSubProcess(MnemonicDeviceWithProcess process)
         {
             var result = new List<LadderCsvRow>();
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
-
-            if (startCondition.Count == 0)
-            {
-                result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
-            }
-            else
-            {
-                bool first = true;
-                foreach (var detailId in startCondition)
-                {
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
-                    if (target == null) continue;
-
-                    var mnemonic = target.Mnemonic;
-                    var label = mnemonic.DeviceLabel ?? string.Empty;
-                    var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
-                    var device = deviceNumber.ToString();
-                    var labelDevice = label + device;
-
-                    var row = first
-                        ? LadderRow.AddLD(labelDevice)
-                        : LadderRow.AddAND(labelDevice);
-
-                    result.Add(row);
-                    first = false;
-                }
-            }
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -356,44 +301,14 @@ namespace KdxDesigner.Utils.Process
         }
 
         /// <summary>
-        /// BuildConditionメソッド
+        /// 条件分岐のビルド
         /// </summary>
-        public static List<LadderCsvRow> BuildCondition(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        public virtual async Task<List<LadderCsvRow>> BuildCondition(MnemonicDeviceWithProcess process)
         {
             var result = new List<LadderCsvRow>();
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
-
-            if (startCondition.Count == 0)
-            {
-                result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
-            }
-            else
-            {
-                bool first = true;
-                foreach (var detailId in startCondition)
-                {
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
-                    if (target == null) continue;
-
-                    var mnemonic = target.Mnemonic;
-                    var label = mnemonic.DeviceLabel ?? string.Empty;
-                    var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
-                    var device = deviceNumber.ToString();
-                    var labelDevice = label + device;
-
-                    var row = first
-                        ? LadderRow.AddLD(labelDevice)
-                        : LadderRow.AddAND(labelDevice);
-
-                    result.Add(row);
-                    first = false;
-                }
-            }
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -410,44 +325,14 @@ namespace KdxDesigner.Utils.Process
         }
 
         /// <summary>
-        /// BuildConditionStartメソッド
+        /// 条件開始のビルド
         /// </summary>
-        public static List<LadderCsvRow> BuildConditionStart(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        public virtual async Task<List<LadderCsvRow>> BuildConditionStart(MnemonicDeviceWithProcess process)
         {
             var result = new List<LadderCsvRow>();
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
-
-            if (startCondition.Count == 0)
-            {
-                result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
-            }
-            else
-            {
-                bool first = true;
-                foreach (var detailId in startCondition)
-                {
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
-                    if (target == null) continue;
-
-                    var mnemonic = target.Mnemonic;
-                    var label = mnemonic.DeviceLabel ?? string.Empty;
-                    var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
-                    var device = deviceNumber.ToString();
-                    var labelDevice = label + device;
-
-                    var row = first
-                        ? LadderRow.AddLD(labelDevice)
-                        : LadderRow.AddAND(labelDevice);
-
-                    result.Add(row);
-                    first = false;
-                }
-            }
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -460,54 +345,18 @@ namespace KdxDesigner.Utils.Process
             return result;
         }
 
-        // BuildIL
-        public static List<LadderCsvRow> BuildIL(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        /// <summary>
+        /// IL待ちのビルド
+        /// </summary>
+        public virtual async Task<List<LadderCsvRow>> BuildIL(MnemonicDeviceWithProcess process)
         {
             var result = new List<LadderCsvRow>();
 
             // 行間ステートメント
-            string id = process.Process.Id.ToString();
-            if (string.IsNullOrEmpty(process.Process.ProcessName))
-            {
-                result.Add(LadderRow.AddStatement(id));
-            }
-            else
-            {
-                result.Add(LadderRow.AddStatement(id + ":" + process.Process.ProcessName));
-            }
+            result.Add(CreateStatement(process));
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
-
-            if (startCondition.Count == 0)
-            {
-                result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
-            }
-            else
-            {
-                bool first = true;
-                foreach (var detailId in startCondition)
-                {
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
-                    if (target == null) continue;
-
-                    var mnemonic = target.Mnemonic;
-                    var label = mnemonic.DeviceLabel ?? string.Empty;
-                    var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
-                    var device = deviceNumber.ToString();
-                    var labelDevice = label + device;
-
-                    var row = first
-                        ? LadderRow.AddLD(labelDevice)
-                        : LadderRow.AddAND(labelDevice);
-
-                    result.Add(row);
-                    first = false;
-                }
-            }
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -563,54 +412,18 @@ namespace KdxDesigner.Utils.Process
             return result;
         }
 
-        // BuildReset
-        public static List<LadderCsvRow> BuildReset(
-            IAccessRepository repository,
-            MnemonicDeviceWithProcess process,
-            List<MnemonicDeviceWithProcessDetail> detail)
+        /// <summary>
+        /// リセットのビルド
+        /// </summary>
+        public virtual async Task<List<LadderCsvRow>> BuildReset(MnemonicDeviceWithProcess process)
         {
             var result = new List<LadderCsvRow>();
 
             // 行間ステートメント
-            string id = process.Process.Id.ToString();
-            if (string.IsNullOrEmpty(process.Process.ProcessName))
-            {
-                result.Add(LadderRow.AddStatement(id));
-            }
-            else
-            {
-                result.Add(LadderRow.AddStatement(id + ":" + process.Process.ProcessName));
-            }
+            result.Add(CreateStatement(process));
 
-            // 開始条件を新しい方法で取得
-            List<int> startCondition = GetStartConditions(repository, process);
-
-            if (startCondition.Count == 0)
-            {
-                result.Add(LadderRow.AddLD(process.Process.AutoStart ?? string.Empty));
-            }
-            else
-            {
-                bool first = true;
-                foreach (var detailId in startCondition)
-                {
-                    var target = detail.FirstOrDefault(d => d.Detail.Id == detailId);
-                    if (target == null) continue;
-
-                    var mnemonic = target.Mnemonic;
-                    var label = mnemonic.DeviceLabel ?? string.Empty;
-                    var deviceNumber = mnemonic.StartNum + mnemonic.OutCoilCount - 1;
-                    var device = deviceNumber.ToString();
-                    var labelDevice = label + device;
-
-                    var row = first
-                        ? LadderRow.AddLD(labelDevice)
-                        : LadderRow.AddAND(labelDevice);
-
-                    result.Add(row);
-                    first = false;
-                }
-            }
+            // 開始条件を追加
+            await AddStartConditionRows(result, process);
 
             int? outcoilNum = process.Mnemonic.StartNum;
             var outcoilLabel = process.Mnemonic.DeviceLabel ?? string.Empty;
@@ -663,9 +476,10 @@ namespace KdxDesigner.Utils.Process
             return result;
         }
 
-        // BuildSubRoutine
-        public static List<LadderCsvRow> BuildSubRoutine(
-            List<MnemonicDeviceWithProcess> process)
+        /// <summary>
+        /// サブルーチンのビルド
+        /// </summary>
+        public virtual List<LadderCsvRow> BuildSubRoutine(List<MnemonicDeviceWithProcess> process)
         {
             var result = new List<LadderCsvRow>();
             result.Add(LadderRow.AddStatement("SubRoutine"));

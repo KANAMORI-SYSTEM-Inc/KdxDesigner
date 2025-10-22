@@ -1,6 +1,7 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Models;
 using System.Data;
 
@@ -11,7 +12,7 @@ namespace KdxDesigner.Services.MnemonicDevice
     /// </summary>
     internal class MnemonicDeviceService : IMnemonicDeviceService
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private readonly IMemoryService _memoryService;
 
         static MnemonicDeviceService()
@@ -20,7 +21,7 @@ namespace KdxDesigner.Services.MnemonicDevice
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
 
-        public MnemonicDeviceService(IAccessRepository repository, IMemoryService memoryService)
+        public MnemonicDeviceService(ISupabaseRepository repository, IMemoryService memoryService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _memoryService = memoryService ?? throw new ArgumentNullException(nameof(memoryService));
@@ -31,10 +32,10 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// </summary>
         /// <param name="plcId"></param>
         /// <returns></returns>
-        public List<Kdx.Contracts.DTOs.MnemonicDevice> GetMnemonicDevice(int plcId)
+        public async Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDevice(int plcId)
         {
-            // IAccessRepository経由で取得
-            var dtoDevices = _repository.GetMnemonicDevices(plcId);
+            // ISupabaseRepository経由で取得
+            var dtoDevices = await _repository.GetMnemonicDevicesAsync(plcId);
             // DTOからModelsへ変換
             return dtoDevices.Select(d => new Kdx.Contracts.DTOs.MnemonicDevice
             {
@@ -56,10 +57,10 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <param name="plcId"></param>
         /// <param name="mnemonicId"></param>
         /// <returns></returns>
-        public List<Kdx.Contracts.DTOs.MnemonicDevice> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId)
+        public async  Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId)
         {
-            // IAccessRepository経由で取得
-            var dtoDevices = _repository.GetMnemonicDevicesByMnemonic(plcId, mnemonicId);
+            // ISupabaseRepository経由で取得
+            var dtoDevices = await _repository.GetMnemonicDevicesByMnemonicAsync(plcId, mnemonicId);
             // DTOからModelsへ変換
             return dtoDevices.Select(d => new Kdx.Contracts.DTOs.MnemonicDevice
             {
@@ -80,19 +81,19 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// </summary>
         /// <param name="plcId">削除対象のPLC ID</param>
         /// <param name="mnemonicId">削除対象のMnemonic ID</param>
-        public void DeleteMnemonicDevice(int plcId, int mnemonicId)
+        public async Task DeleteMnemonicDevice(int plcId, int mnemonicId)
         {
-            // IAccessRepository経由で削除
-            _repository.DeleteMnemonicDevice(plcId, mnemonicId);
+            // ISupabaseRepository経由で削除
+            await _repository.DeleteMnemonicDeviceAsync(plcId, mnemonicId);
         }
 
         /// <summary>
         /// MnemonicDevice テーブルの全レコードを削除する。
         /// </summary>
-        public void DeleteAllMnemonicDevices()
+        public async Task DeleteAllMnemonicDevices()
         {
-            // IAccessRepository経由で削除
-            _repository.DeleteAllMnemonicDevices();
+            // ISupabaseRepository経由で削除
+            await _repository.DeleteAllMnemonicDevicesAsync();
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         public void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId)
         {
             // TODO: Supabase対応実装
-            // トランザクション処理をIAccessRepository経由で実装する必要がある
+            // トランザクション処理をISupabaseRepository経由で実装する必要がある
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
@@ -114,10 +115,10 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <param name="processes"></param>
         /// <param name="startNum"></param>
         /// <param name="plcId"></param>
-        public void SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId)
+        public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId)
         {
             // TODO: Supabase対応実装
-            // トランザクション処理をIAccessRepository経由で実装する必要がある
+            // トランザクション処理をISupabaseRepository経由で実装する必要がある
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
@@ -125,15 +126,15 @@ namespace KdxDesigner.Services.MnemonicDevice
         public void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId)
         {
             // TODO: Supabase対応実装
-            // トランザクション処理をIAccessRepository経由で実装する必要がある
+            // トランザクション処理をISupabaseRepository経由で実装する必要がある
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
         // Cylinderのリストを受け取り、MnemonicDeviceテーブルに保存する
-        public void SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId)
+        public async Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId)
         {
             // TODO: Supabase対応実装
-            // トランザクション処理をIAccessRepository経由で実装する必要がある
+            // トランザクション処理をISupabaseRepository経由で実装する必要がある
             throw new NotImplementedException("Supabase対応が必要です");
         }
     }

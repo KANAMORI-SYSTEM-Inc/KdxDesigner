@@ -1,8 +1,7 @@
-using KdxDesigner.Models;
-using KdxDesigner.Models.Define;
-using KdxDesigner.ViewModels;
-using Kdx.Contracts.Interfaces;
 using Kdx.Contracts.DTOs;
+using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.ViewModels;
 
 namespace KdxDesigner.Utils.ProcessDetail
 {
@@ -11,9 +10,9 @@ namespace KdxDesigner.Utils.ProcessDetail
         private readonly MainViewModel _mainViewModel;
         private readonly IErrorAggregator _errorAggregator;
         private readonly IIOAddressService _ioAddressService;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
 
-        public ProcessDetailBuilder(MainViewModel mainViewModel, IErrorAggregator errorAggregator, IIOAddressService ioAddressService, IAccessRepository repository)
+        public ProcessDetailBuilder(MainViewModel mainViewModel, IErrorAggregator errorAggregator, IIOAddressService ioAddressService, ISupabaseRepository repository)
         {
             _mainViewModel = mainViewModel; // MainViewModelのインスタンスを取得
             _errorAggregator = errorAggregator;
@@ -21,7 +20,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             _repository = repository;
         }
 
-        public List<LadderCsvRow> GenerateAllLadderCsvRows(
+        public async Task<List<LadderCsvRow>> GenerateAllLadderCsvRows(
             List<MnemonicDeviceWithProcess> processes,
             List<MnemonicDeviceWithProcessDetail> details,
             List<MnemonicDeviceWithOperation> operations,
@@ -32,9 +31,8 @@ namespace KdxDesigner.Utils.ProcessDetail
             LadderCsvRow.ResetKeyCounter();
             var allRows = new List<LadderCsvRow>();
 
-            // 1. BuildDetail のインスタンス化を修正
-            //    processes もコンストラクタに渡すようにする
-            BuildDetail buildDetail = new(
+            // BuildDetailCommon のインスタンスを作成
+            var buildDetail = new BuildDetailCommon(
                 _mainViewModel,
                 _ioAddressService,
                 _errorAggregator,
@@ -53,22 +51,22 @@ namespace KdxDesigner.Utils.ProcessDetail
                 switch (detail.Detail.CategoryId)
                 {
                     case 1:  // 通常工程
-                        allRows.AddRange(buildDetail.Normal(detail));
+                        allRows.AddRange(await buildDetail.Normal(detail));
                         break;
                     case 2:  // 工程まとめ
-                        allRows.AddRange(buildDetail.Summarize(detail));
+                        allRows.AddRange(await buildDetail.Summarize(detail));
                         break;
                     case 3:  // センサON確認
-                        allRows.AddRange(buildDetail.SensorON(detail));
+                        allRows.AddRange(await buildDetail.SensorON(detail));
                         break;
                     case 4:     // センサOFF確認
-                        allRows.AddRange(buildDetail.SensorOFF(detail));
+                        allRows.AddRange(await buildDetail.SensorOFF(detail));
                         break;
                     case 5:     // 工程分岐
-                        allRows.AddRange(buildDetail.Branch(detail));
+                        allRows.AddRange(await buildDetail.Branch(detail));
                         break;
                     case 6:     // 工程合流
-                        allRows.AddRange(buildDetail.Merge(detail));
+                        allRows.AddRange(await buildDetail.Merge(detail));
                         break;
                     case 7:     // サーボ座標指定
                         break;
@@ -77,26 +75,26 @@ namespace KdxDesigner.Utils.ProcessDetail
                     case 9:     // INV座標指定
                         break;
                     case 10:    // IL待ち
-                        allRows.AddRange(buildDetail.ILWait(detail));
+                        allRows.AddRange(await buildDetail.ILWait(detail));
                         break;
                     case 11:    // リセット工程開始
                         break;
                     case 12:    // リセット工程完了
                         break;
                     case 13:    // 工程OFF確認
-                        allRows.AddRange(buildDetail.ProcessOFF(detail));
+                        allRows.AddRange(await buildDetail.ProcessOFF(detail));
                         break;
                     case 15:    // 期間工程
-                        allRows.AddRange(buildDetail.Season(detail));
+                        allRows.AddRange(await buildDetail.Season(detail));
                         break;
                     case 16:    // タイマ工程
-                        allRows.AddRange(buildDetail.TimerProcess(detail, detailTimers));
-                        break;                    
+                        allRows.AddRange(await buildDetail.TimerProcess(detail, detailTimers));
+                        break;
                     case 17:    // タイマ
-                        allRows.AddRange(buildDetail.Timer(detail, detailTimers));
+                        allRows.AddRange(await buildDetail.Timer(detail, detailTimers));
                         break;
                     case 18:    // 複数工程
-                        allRows.AddRange(buildDetail.Module(detail));
+                        allRows.AddRange(await buildDetail.Module(detail));
                         break;
                     default:
                         break;

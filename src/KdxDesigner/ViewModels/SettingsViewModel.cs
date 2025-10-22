@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
-using KdxDesigner.Models.Define;
+using KdxDesigner.Models;
 using KdxDesigner.Services;
 using KdxDesigner.Utils;
 

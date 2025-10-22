@@ -57,9 +57,18 @@
     </Window.Icon>
     
     <Window.InputBindings>
-        <KeyBinding Key="Delete" Command="{Binding DeleteSelectedConnectionCommand}"/>
+        <!-- ファイル操作 -->
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveChangesCommand}"/>
         <KeyBinding Key="Escape" Command="{Binding CloseCommand}"/>
+        <!-- 削除操作 -->
+        <KeyBinding Key="Delete" Command="{Binding DeleteSelectedConnectionCommand}"/>
+        <!-- ズーム操作 -->
+        <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
+        <KeyBinding Key="Add" Modifiers="Ctrl" Command="{Binding ZoomInCommand}"/>
+        <KeyBinding Key="OemMinus" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
+        <KeyBinding Key="Subtract" Modifiers="Ctrl" Command="{Binding ZoomOutCommand}"/>
+        <KeyBinding Key="D0" Modifiers="Ctrl" Command="{Binding ResetZoomCommand}"/>
+        <KeyBinding Key="NumPad0" Modifiers="Ctrl" Command="{Binding ResetZoomCommand}"/>
     </Window.InputBindings>
     
     <Window.Resources>
@@ -73,30 +82,46 @@
     <DockPanel>
         <!-- メニューバー -->
         <Menu DockPanel.Dock="Top">
+            <!-- ファイル -->
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="保存" Command="{Binding SaveChangesCommand}" InputGestureText="Ctrl+S"/>
                 <Separator/>
                 <MenuItem Header="閉じる" Command="{Binding CloseCommand}" InputGestureText="Esc"/>
             </MenuItem>
+
+            <!-- 編集 -->
             <MenuItem Header="編集(_E)">
-                <MenuItem Header="新規ノード追加" Command="{Binding AddNewNodeCommand}"/>
-                <MenuItem Header="選択ノード削除" Command="{Binding DeleteSelectedNodeCommand}" 
-                          IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"/>
-                <Separator/>
-                <MenuItem Header="Operation編集" Command="{Binding EditOperationCommand}" 
-                          IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"/>
+                <!-- ProcessDetail操作 -->
+                <MenuItem Header="ProcessDetail">
+                    <MenuItem Header="新規追加" Command="{Binding AddNewNodeCommand}"/>
+                    <MenuItem Header="削除" Command="{Binding DeleteSelectedNodeCommand}"
+                              InputGestureText="Delete"
+                              IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"/>
+                    <MenuItem Header="Operation編集" Command="{Binding EditOperationCommand}"
+                              IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"/>
+                </MenuItem>
+                <!-- 接続操作 -->
+                <MenuItem Header="接続">
+                    <MenuItem Header="選択接続を削除" Command="{Binding DeleteSelectedConnectionCommand}"
+                              InputGestureText="Delete"
+                              IsEnabled="{Binding SelectedConnection, Converter={StaticResource NullToBooleanConverter}}"/>
+                </MenuItem>
             </MenuItem>
+
+            <!-- 表示 -->
             <MenuItem Header="表示(_V)">
+                <!-- フィルター -->
                 <MenuItem Header="フィルター">
-                    <MenuItem Header="選択工程の関連のみ表示" Command="{Binding FilterBySelectedNodeCommand}" 
+                    <MenuItem Header="選択工程の関連のみ表示" Command="{Binding FilterBySelectedNodeCommand}"
                               IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"/>
-                    <MenuItem Header="前後のみ表示" Command="{Binding FilterByDirectNeighborsCommand}" 
+                    <MenuItem Header="前後のみ表示" Command="{Binding FilterByDirectNeighborsCommand}"
                               IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"/>
-                    <MenuItem Header="すべて表示" Command="{Binding ResetFilterCommand}" 
+                    <MenuItem Header="すべて表示" Command="{Binding ResetFilterCommand}"
                               IsEnabled="{Binding IsFiltered}"/>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="表示オプション">
+                <!-- 表示項目 -->
+                <MenuItem Header="表示項目">
                     <MenuItem Header="IDを表示" IsCheckable="True" IsChecked="{Binding ShowNodeId}"/>
                     <MenuItem Header="ブロック番号を表示" IsCheckable="True" IsChecked="{Binding ShowBlockNumber}"/>
                     <Separator/>
@@ -105,120 +130,115 @@
                     <Separator/>
                     <MenuItem Header="全接続線を表示（他サイクル含む）" IsCheckable="True" IsChecked="{Binding ShowAllConnections}"/>
                 </MenuItem>
+                <Separator/>
+                <!-- ズーム -->
+                <MenuItem Header="ズーム">
+                    <MenuItem Header="拡大" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++"/>
+                    <MenuItem Header="縮小" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-"/>
+                    <MenuItem Header="リセット" Command="{Binding ResetZoomCommand}" InputGestureText="Ctrl+0"/>
+                </MenuItem>
             </MenuItem>
+
+            <!-- ヘルプ -->
             <MenuItem Header="ヘルプ(_H)">
                 <MenuItem Header="操作方法">
-                    <MenuItem Header="Ctrl+クリック: 通常接続" IsEnabled="False"/>
-                    <MenuItem Header="Ctrl+Shift+クリック: 終了条件接続" IsEnabled="False"/>
+                    <MenuItem Header="【ノード操作】" IsEnabled="False" FontWeight="Bold"/>
+                    <MenuItem Header="  シングルクリック: ノード選択" IsEnabled="False"/>
+                    <MenuItem Header="  ダブルクリック: プロパティウィンドウ表示" IsEnabled="False"/>
+                    <MenuItem Header="  ドラッグ: ノード移動" IsEnabled="False"/>
                     <Separator/>
-                    <MenuItem Header="終了条件接続は期間工程と工程OFF確認(CategoryId=13)で使用可能" IsEnabled="False"/>
+                    <MenuItem Header="【接続操作】" IsEnabled="False" FontWeight="Bold"/>
+                    <MenuItem Header="  Ctrl+クリック: 通常接続" IsEnabled="False"/>
+                    <MenuItem Header="  Ctrl+Shift+クリック: 終了条件接続" IsEnabled="False"/>
+                    <MenuItem Header="  ※終了条件接続は期間工程と工程OFF確認(CategoryId=13)で使用可能" IsEnabled="False"/>
+                    <Separator/>
+                    <MenuItem Header="【ズーム操作】" IsEnabled="False" FontWeight="Bold"/>
+                    <MenuItem Header="  Ctrl+マウスホイール: ズーム" IsEnabled="False"/>
+                    <MenuItem Header="  Ctrl++ / Ctrl+-: ズームイン/アウト" IsEnabled="False"/>
+                    <MenuItem Header="  Ctrl+0: ズームリセット" IsEnabled="False"/>
+                    <Separator/>
+                    <MenuItem Header="【その他】" IsEnabled="False" FontWeight="Bold"/>
+                    <MenuItem Header="  中ボタンドラッグ: キャンバスパン" IsEnabled="False"/>
+                    <MenuItem Header="  Delete: 選択した接続を削除" IsEnabled="False"/>
                 </MenuItem>
             </MenuItem>
         </Menu>
         
-        <!-- ツールバーコンテナ -->
-        <StackPanel DockPanel.Dock="Top">
-            <!-- ツールバー1行目: 基本操作とフィルター -->
-            <ToolBar>
-                <Label Content="サイクル:" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding CycleName}" 
-                          VerticalAlignment="Center" 
-                          FontWeight="Bold" 
-                          Margin="5,0,10,0"/>
-                <Separator/>
-                <Button Command="{Binding SaveChangesCommand}" 
-                        ToolTip="変更を保存 (Ctrl+S)" 
-                        Content="保存" Padding="10,2"/>
-                <Separator/>
-                <Button Command="{Binding AddNewNodeCommand}" 
-                        ToolTip="新規ノードを追加" 
-                        Content="新規ノード" Padding="10,2"/>
-                <Button Command="{Binding DeleteSelectedNodeCommand}" 
-                        IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"
-                        ToolTip="選択したノードを削除" 
-                        Content="削除" Padding="10,2"/>
-                <Button Command="{Binding EditOperationCommand}" 
-                        IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"
-                        ToolTip="Operationを編集" 
-                        Content="Operation編集" Padding="10,2"/>
-                <Separator/>
-                <Button Command="{Binding FilterBySelectedNodeCommand}" 
-                        IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"
-                        ToolTip="選択した工程の関連のみ表示" 
-                        Content="関連表示" Padding="10,2"/>
-                <Button Command="{Binding FilterByDirectNeighborsCommand}" 
-                        IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBooleanConverter}}"
-                        ToolTip="前後のノードのみ表示" 
-                        Content="前後表示" Padding="10,2"/>
-                <Button Command="{Binding ResetFilterCommand}" 
-                        IsEnabled="{Binding IsFiltered}"
-                        ToolTip="すべてのノードを表示" 
-                        Content="全表示" Padding="10,2"/>
-            </ToolBar>
-            
-            <!-- ツールバー2行目: 表示オプション -->
-            <ToolBar>
-                <Label Content="表示:" VerticalAlignment="Center" FontWeight="Bold"/>
-                <CheckBox IsChecked="{Binding ShowNodeId}" 
-                          VerticalAlignment="Center" 
-                          Margin="5,0"
-                          ToolTip="各ノードのIDを表示"
-                          Content="ID"/>
-                <CheckBox IsChecked="{Binding ShowBlockNumber}" 
-                          VerticalAlignment="Center" 
-                          Margin="5,0"
-                          ToolTip="各ノードのブロック番号を表示"
-                          Content="ブロック番号"/>
-                <Separator/>
-                <CheckBox IsChecked="{Binding HighlightStartSensor}" 
-                          VerticalAlignment="Center" 
-                          Margin="5,0"
-                          ToolTip="開始センサーが設定されているノードを強調"
-                          Content="開始センサー強調"/>
-                <CheckBox IsChecked="{Binding HighlightStartSensorWithoutTimer}" 
-                          VerticalAlignment="Center" 
-                          Margin="5,0"
-                          ToolTip="タイマーが未設定のノードを強調"
-                          Content="タイマー未設定強調"/>
-                <Separator/>
-                <CheckBox IsChecked="{Binding ShowAllConnections}" 
-                          VerticalAlignment="Center" 
-                          Margin="5,0"
-                          ToolTip="他サイクルへの接続も含めて表示"
-                          Content="全接続表示" FontWeight="Bold"/>
-                <Separator/>
-                <Label Content="ズーム:" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding ZoomScale, StringFormat='{}{0:P0}'}" 
-                          VerticalAlignment="Center" 
-                          Width="50"
-                          FontWeight="Bold"/>
-                <Button Content="リセット" Command="{Binding ResetZoomCommand}" 
-                        ToolTip="ズームをリセット (100%)" 
-                        Padding="5,2" Margin="2,0"/>
-                <Separator/>
-                <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="DarkGray" FontSize="11">
+        <!-- インフォメーションバー（情報表示のみ） -->
+        <ToolBar DockPanel.Dock="Top" ToolBarTray.IsLocked="True">
+            <!-- サイクル名 -->
+            <Label Content="サイクル:" VerticalAlignment="Center" FontWeight="Bold"/>
+            <Border Background="LightBlue" CornerRadius="3" Padding="8,2" Margin="0,0,15,0">
+                <TextBlock Text="{Binding CycleName}"
+                          VerticalAlignment="Center"
+                          FontWeight="Bold"
+                          FontSize="12"/>
+            </Border>
+
+            <Separator/>
+
+            <!-- フィルター状態 -->
+            <Label Content="フィルター:" VerticalAlignment="Center" FontWeight="Bold"/>
+            <Border CornerRadius="3" Padding="8,2" Margin="0,0,15,0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="LightGray"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFiltered}" Value="True">
+                                <Setter Property="Background" Value="Orange"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock VerticalAlignment="Center" FontSize="11">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="操作: Ctrl+クリックで接続、Ctrl+Shift+クリックで終了条件接続"/>
+                            <Setter Property="Text" Value="なし"/>
+                            <Setter Property="Foreground" Value="Gray"/>
+                            <Setter Property="FontWeight" Value="Normal"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFiltered}" Value="True">
-                                    <Setter Property="Text" Value="{Binding FilterNode.DisplayName, StringFormat='フィルター中: {0}'}"/>
-                                    <Setter Property="Foreground" Value="Orange"/>
+                                    <Setter Property="Text" Value="{Binding FilterNode.DisplayName}"/>
+                                    <Setter Property="Foreground" Value="White"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
-                                    <Setter Property="FontSize" Value="12"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
-            </ToolBar>
-        </StackPanel>
+            </Border>
+
+            <Separator/>
+
+            <!-- ズームレベル -->
+            <Label Content="ズーム:" VerticalAlignment="Center" FontWeight="Bold"/>
+            <Border Background="LightYellow" CornerRadius="3" Padding="8,2" Margin="0,0,15,0">
+                <TextBlock Text="{Binding ZoomScale, StringFormat='{}{0:P0}'}"
+                          VerticalAlignment="Center"
+                          FontWeight="Bold"
+                          FontSize="12"/>
+            </Border>
+
+            <Separator/>
+
+            <!-- 操作ガイド -->
+            <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="DarkGray" FontSize="11" FontStyle="Italic">
+                <Run Text="操作: "/>
+                <Run Text="Ctrl+クリック=接続" Foreground="DarkBlue"/>
+                <Run Text=" | "/>
+                <Run Text="Ctrl+Shift+クリック=終了条件接続" Foreground="Green"/>
+                <Run Text=" | "/>
+                <Run Text="ダブルクリック=プロパティ" Foreground="Purple"/>
+            </TextBlock>
+        </ToolBar>
         
-        <!-- メインキャンバス -->
-        <ScrollViewer x:Name="ProcessFlowScrollViewer" 
-                      HorizontalScrollBarVisibility="Auto" 
-                      VerticalScrollBarVisibility="Auto"
-                      CanContentScroll="True">
+        <!-- メインコンテンツとローディング画面を含むGrid -->
+        <Grid>
+            <!-- メインキャンバス -->
+            <ScrollViewer x:Name="ProcessFlowScrollViewer"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          CanContentScroll="True">
             <Grid MinWidth="{Binding CanvasWidth}" MinHeight="{Binding CanvasHeight}">
                 <Canvas x:Name="MainCanvas" 
                         Width="{Binding CanvasWidth}" 
@@ -452,9 +472,14 @@
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="{Binding NodeWidth}" 
+                                <Border Width="{Binding NodeWidth}"
                                         CornerRadius="5"
-                                        Opacity="{Binding Opacity}">
+                                        Opacity="{Binding Opacity}"
+                                        MouseDown="Node_MouseDown"
+                                        MouseUp="Node_MouseUp">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DataContext.EditSelectedNodeCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                    </Border.InputBindings>
                                     <Border.Height>
                                         <MultiBinding>
                                             <MultiBinding.Converter>
@@ -464,19 +489,6 @@
                                             <Binding Path="DataContext.ShowBlockNumber" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                         </MultiBinding>
                                     </Border.Height>
-                                    <i:Interaction.Triggers>
-                                        <i:EventTrigger EventName="MouseDown">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.NodeMouseDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                   CommandParameter="{Binding}"/>
-                                        </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseUp">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.NodeMouseUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                   CommandParameter="{Binding}"/>
-                                        </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseDoubleClick">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.EditSelectedNodeCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                        </i:EventTrigger>
-                                    </i:Interaction.Triggers>
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="{Binding CategoryId, Converter={StaticResource CategoryToColorConverter}}"/>
@@ -652,7 +664,63 @@
                 </Canvas>
             </Grid>
         </ScrollViewer>
-        
+
+            <!-- ローディング画面 -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Background="#80000000"
+                  Panel.ZIndex="1000">
+                <Border Background="White"
+                        CornerRadius="10"
+                        Padding="40,30"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" Opacity="0.5" BlurRadius="20" ShadowDepth="0"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- ローディングアニメーション -->
+                        <Viewbox Width="80" Height="80" Margin="0,0,0,20">
+                            <Grid>
+                                <Ellipse Width="60" Height="60"
+                                         Stroke="#4A90E2"
+                                         StrokeThickness="6"
+                                         StrokeDashArray="40,20"
+                                         RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform>
+                                        <RotateTransform x:Name="LoadingRotation" Angle="0"/>
+                                    </Ellipse.RenderTransform>
+                                    <Ellipse.Triggers>
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <DoubleAnimation Storyboard.TargetName="LoadingRotation"
+                                                                     Storyboard.TargetProperty="Angle"
+                                                                     From="0" To="360" Duration="0:0:1.5"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Ellipse.Triggers>
+                                </Ellipse>
+                            </Grid>
+                        </Viewbox>
+
+                        <!-- ローディングテキスト -->
+                        <TextBlock Text="データを読み込んでいます..."
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="#4A90E2"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,10"/>
+
+                        <TextBlock Text="しばらくお待ちください"
+                                   FontSize="12"
+                                   Foreground="Gray"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
         <!-- ノード選択時の接続線リスト表示 -->
         <Popup IsOpen="{Binding IsNodeSelected}" 
                PlacementTarget="{Binding ElementName=ProcessFlowScrollViewer}"

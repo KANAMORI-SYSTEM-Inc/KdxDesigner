@@ -1,5 +1,6 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 
 using System.Diagnostics;
 
@@ -11,9 +12,9 @@ namespace KdxDesigner.Services
     /// </summary>
     public static class MemoryServiceExtensions
     {
-        public static bool SaveMnemonicMemories(
+        public static async Task<bool> SaveMnemonicMemories(
             this IMemoryService memoryService,
-            IAccessRepository repository,
+            ISupabaseRepository repository,
             Kdx.Contracts.DTOs.MnemonicDevice device)
         {
             if (device?.PlcId == null) return false; // PlcId が必須
@@ -47,12 +48,12 @@ namespace KdxDesigner.Services
                     _ => "なし", // TODO: エラー処理または明確なデフォルト値
                 };
 
-                var difinitions = device.MnemonicId switch
+                var definitions = device.MnemonicId switch
                 {
-                    1 => repository.GetDifinitions("Process"),
-                    2 => repository.GetDifinitions("ProcessDetail"),
-                    3 => repository.GetDifinitions("Operation"),
-                    4 => repository.GetDifinitions("CY"),
+                    1 => await repository.GetDefinitionsAsync("Process"),
+                    2 => await repository.GetDefinitionsAsync("ProcessDetail"),
+                    3 => await repository.GetDefinitionsAsync("Operation"),
+                    4 => await repository.GetDefinitionsAsync("CY"),
                     _ => new List<Definitions>()
                 };
 
@@ -67,9 +68,9 @@ namespace KdxDesigner.Services
 
                     var deviceDefinitionString = "";
                     var numWithinMnemonic = num - startNum;
-                    if (numWithinMnemonic < difinitions.Count)
+                    if (numWithinMnemonic < definitions.Count)
                     {
-                        deviceDefinitionString = difinitions[numWithinMnemonic].DefName ?? "";
+                        deviceDefinitionString = definitions[numWithinMnemonic].DefName ?? "";
                     }
 
                     // 既存レコードをチェック
@@ -96,7 +97,7 @@ namespace KdxDesigner.Services
 
                 if (memoriesToSave.Any())
                 {
-                    repository.SaveOrUpdateMemoriesBatch(memoriesToSave);
+                    await repository.SaveOrUpdateMemoriesBatchAsync(memoriesToSave);
                     Debug.WriteLine($"保存されたメモリデバイス数: {memoriesToSave.Count} (Device: {device.DeviceLabel}, MnemonicId: {device.MnemonicId}, RecordId: {device.RecordId})");
                 }
 

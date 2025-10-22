@@ -1,43 +1,72 @@
-using System;
-using System.Collections.Generic;
+using Kdx.Contracts.DTOs;
+using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
+using System.Text;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
-using Kdx.Infrastructure.Supabase.Repositories;
-using KdxDesigner.Utils;
-using KdxDesigner.Views;
 
 namespace KdxDesigner.ViewModels
 {
+    // Cylinder用のラッパークラス
+    public class CylinderViewModel : INotifyPropertyChanged
+    {
+        private readonly Cylinder _cylinder;
+        private string? _machineNameFullName;
+
+        public CylinderViewModel(Cylinder cylinder)
+        {
+            _cylinder = cylinder;
+        }
+
+        // Cylinderのプロパティをプロキシ
+        public int Id => _cylinder.Id;
+        public int PlcId => _cylinder.PlcId;
+        public string? PUCO => _cylinder.PUCO;
+        public string CYNum => _cylinder.CYNum;
+        public string? Go => _cylinder.Go;
+        public string? Back => _cylinder.Back;
+        public string? OilNum => _cylinder.OilNum;
+        public int? MachineNameId => _cylinder.MachineNameId;
+
+        // MachineNameのFullNameを保持（表示用）
+        public string? MachineNameFullName
+        {
+            get => _machineNameFullName;
+            set
+            {
+                _machineNameFullName = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // 内部のCylinderオブジェクトを取得
+        public Cylinder GetCylinder() => _cylinder;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
     // ViewModel内で使用するラッパークラス
     public class InterlockViewModel : INotifyPropertyChanged
     {
         private readonly Interlock _interlock;
         private string? _conditionCylinderNum;
+        private string? _cylinderNum;
 
         public InterlockViewModel(Interlock interlock)
         {
             _interlock = interlock;
         }
 
-        // Interlockのプロパティをプロキシ
-        public int Id
-        {
-            get => _interlock.Id;
-            set
-            {
-                _interlock.Id = value;
-                OnPropertyChanged();
-            }
-        }
-
+        // Interlockのプロパティをプロキシ（Idプロパティは削除、複合キーを使用）
         public int PlcId
         {
             get => _interlock.PlcId;
@@ -98,7 +127,28 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        // 表示用のCYNumプロパティ
+        public int GoOrBack
+        {
+            get => _interlock.GoOrBack;
+            set
+            {
+                _interlock.GoOrBack = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // 表示用のCYNumプロパティ（このインターロックが属するシリンダーのCYNum）
+        public string? CylinderNum
+        {
+            get => _cylinderNum;
+            set
+            {
+                _cylinderNum = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // 表示用のCYNumプロパティ（条件シリンダーのCYNum）
         public string? ConditionCylinderNum
         {
             get => _conditionCylinderNum;
@@ -118,6 +168,12 @@ namespace KdxDesigner.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        // 外部からプロパティ変更を通知するためのpublicメソッド
+        public void NotifyPropertyChanged(string propertyName)
+        {
+            OnPropertyChanged(propertyName);
+        }
     }
 
     // InterlockIO用のラッパークラス
@@ -133,7 +189,17 @@ namespace KdxDesigner.ViewModels
             _isNew = isNew;
         }
 
-        // InterlockIOのプロパティをプロキシ
+        // InterlockIOのプロパティをプロキシ（複合キー対応）
+        public int InterlockId
+        {
+            get => _interlockIO.InterlockId;
+            set
+            {
+                _interlockIO.InterlockId = value;
+                OnPropertyChanged();
+            }
+        }
+
         public int PlcId
         {
             get => _interlockIO.PlcId;
@@ -154,12 +220,22 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        public int InterlockConditionId
+        public int InterlockSortId
         {
-            get => _interlockIO.InterlockConditionId;
+            get => _interlockIO.InterlockSortId;
             set
             {
-                _interlockIO.InterlockConditionId = value;
+                _interlockIO.InterlockSortId = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int ConditionNumber
+        {
+            get => _interlockIO.ConditionNumber;
+            set
+            {
+                _interlockIO.ConditionNumber = value;
                 OnPropertyChanged();
             }
         }
@@ -170,16 +246,6 @@ namespace KdxDesigner.ViewModels
             set
             {
                 _interlockIO.IsOnCondition = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public int ConditionUniqueKey
-        {
-            get => _interlockIO.ConditionUniqueKey;
-            set
-            {
-                _interlockIO.ConditionUniqueKey = value;
                 OnPropertyChanged();
             }
         }
@@ -220,23 +286,28 @@ namespace KdxDesigner.ViewModels
     public class InterlockSettingsViewModel : INotifyPropertyChanged
     {
         private readonly SupabaseRepository _supabaseRepository;
-        private readonly IAccessRepository _accessRepository;
+        private readonly ISupabaseRepository _accessRepository;
         private readonly Window _window;
         private readonly int _plcId;
-        private Cylinder? _selectedCylinder;
+        private readonly int _cycleId;
+        private CylinderViewModel? _selectedCylinder;
         private InterlockViewModel? _selectedInterlock;
         private InterlockConditionDTO? _selectedCondition;
         private InterlockIOViewModel? _selectedIO;
         private string? _cylinderSearchText;
 
         // Cylinder filtering
-        private readonly ObservableCollection<Cylinder> _allCylinders;
+        private readonly ObservableCollection<CylinderViewModel> _allCylinders;
         private readonly ICollectionView _filteredCylinders;
 
         // Track deleted items for database cleanup
-        private readonly List<InterlockIOViewModel> _deletedIOs = new List<InterlockIOViewModel>();
+        private readonly List<InterlockIO> _deletedIOs = new List<InterlockIO>();
         private readonly List<InterlockConditionDTO> _deletedConditions = new List<InterlockConditionDTO>();
         private readonly List<InterlockViewModel> _deletedInterlocks = new List<InterlockViewModel>();
+
+        // Cache all conditions and IOs for all interlocks (複合キーを使用)
+        private readonly Dictionary<(int cylinderId, int sortId), List<InterlockConditionDTO>> _allConditionsByInterlockKey = new Dictionary<(int, int), List<InterlockConditionDTO>>();
+        private readonly Dictionary<(int interlockId, int sortId, int conditionNumber), List<InterlockIOViewModel>> _allIOsByConditionKey = new Dictionary<(int, int, int), List<InterlockIOViewModel>>();
 
         public ObservableCollection<InterlockViewModel> Interlocks { get; set; }
         public ObservableCollection<InterlockConditionDTO> InterlockConditions { get; set; }
@@ -256,7 +327,7 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        public Cylinder? SelectedCylinder
+        public CylinderViewModel? SelectedCylinder
         {
             get => _selectedCylinder;
             set
@@ -318,11 +389,12 @@ namespace KdxDesigner.ViewModels
         public ICommand CancelCommand { get; }
         public ICommand ClearCylinderSearchCommand { get; }
 
-        public InterlockSettingsViewModel(SupabaseRepository supabaseRepository, IAccessRepository accessRepository, int plcId, Window window)
+        public InterlockSettingsViewModel(SupabaseRepository supabaseRepository, ISupabaseRepository accessRepository, int plcId, int cycleId, Window window)
         {
             _supabaseRepository = supabaseRepository;
             _accessRepository = accessRepository;
             _plcId = plcId;
+            _cycleId = cycleId;
             _window = window;
 
             // Initialize collections
@@ -332,7 +404,7 @@ namespace KdxDesigner.ViewModels
             ConditionTypes = new ObservableCollection<InterlockConditionType>();
 
             // Initialize cylinder list and filtering
-            _allCylinders = new ObservableCollection<Cylinder>();
+            _allCylinders = new ObservableCollection<CylinderViewModel>();
             _filteredCylinders = CollectionViewSource.GetDefaultView(_allCylinders);
             _filteredCylinders.Filter = FilterCylinder;
 
@@ -370,28 +442,51 @@ namespace KdxDesigner.ViewModels
             _ = LoadConditionTypesAsync();
         }
 
-        private void LoadCylinders()
+        private async Task LoadCylinders()
         {
-            var cylinders = _accessRepository.GetCyList(_plcId);
+            // 選択されたサイクルに紐づくCylinderのみを取得
+            var allCylinders = await _accessRepository.GetCyListAsync(_plcId);
+            var cylinderCycles = await _supabaseRepository.GetCylinderCyclesByPlcIdAsync(_plcId);
+
+            // 指定されたcycleIdに紐づくCylinderIdのセットを作成
+            var cylinderIdsInCycle = cylinderCycles
+                .Where(cc => cc.CycleId == _cycleId)
+                .Select(cc => cc.CylinderId)
+                .ToHashSet();
+
+            // MachineNameを取得してIDでマッピング
+            var machineNames = await _supabaseRepository.GetMachineNamesAsync();
+            var machineNameDict = machineNames.ToDictionary(mn => mn.Id, mn => mn.FullName);
+
             _allCylinders.Clear();
-            foreach (var cylinder in cylinders)
+            foreach (var cylinder in allCylinders.Where(c => cylinderIdsInCycle.Contains(c.Id)))
             {
-                _allCylinders.Add(cylinder);
+                // CylinderViewModelを作成
+                var cylinderViewModel = new CylinderViewModel(cylinder);
+
+                // MachineNameIdからFullNameを取得してViewModelに設定
+                if (cylinder.MachineNameId.HasValue && machineNameDict.TryGetValue(cylinder.MachineNameId.Value, out var fullName))
+                {
+                    cylinderViewModel.MachineNameFullName = fullName;
+                }
+
+                _allCylinders.Add(cylinderViewModel);
             }
         }
 
         private bool FilterCylinder(object obj)
         {
-            if (obj is not Cylinder cylinder) return false;
+            if (obj is not CylinderViewModel cylinderVm) return false;
             if (string.IsNullOrWhiteSpace(CylinderSearchText)) return true;
 
             var searchLower = CylinderSearchText.ToLower();
-            return (cylinder.CYNum?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.PUCO?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.Go?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.Back?.ToLower().Contains(searchLower) ?? false) ||
-                   (cylinder.OilNum?.ToLower().Contains(searchLower) ?? false) ||
-                   cylinder.Id.ToString().Contains(searchLower);
+            return (cylinderVm.CYNum?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.PUCO?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.Go?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.Back?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.OilNum?.ToLower().Contains(searchLower) ?? false) ||
+                   (cylinderVm.MachineNameFullName?.ToLower().Contains(searchLower) ?? false) ||
+                   cylinderVm.Id.ToString().Contains(searchLower);
         }
 
         private void OnConditionPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -416,7 +511,7 @@ namespace KdxDesigner.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"条件タイプの読み込みに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                ErrorDialog.Show($"条件タイプの読み込みに失敗しました: {ex.Message}\n\nスタックトレース:\n{ex.StackTrace}", "エラー", _window);
             }
         }
 
@@ -436,6 +531,12 @@ namespace KdxDesigner.ViewModels
                 {
                     var interlockViewModel = new InterlockViewModel(interlock);
 
+                    // CylinderIdに対応するCYNumを取得（このインターロックが属するシリンダー）
+                    if (_selectedCylinder != null)
+                    {
+                        interlockViewModel.CylinderNum = _selectedCylinder.CYNum;
+                    }
+
                     // ConditionCylinderIdに対応するCYNumを取得
                     var conditionCylinder = _allCylinders.FirstOrDefault(c => c.Id == interlock.ConditionCylinderId);
                     if (conditionCylinder != null)
@@ -448,7 +549,7 @@ namespace KdxDesigner.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"インターロックの読み込みに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                ErrorDialog.Show($"インターロックの読み込みに失敗しました: {ex.Message}\n\nスタックトレース:\n{ex.StackTrace}", "エラー", _window);
             }
         }
 
@@ -461,7 +562,19 @@ namespace KdxDesigner.ViewModels
 
             try
             {
-                var conditions = await _supabaseRepository.GetInterlockConditionsByInterlockIdAsync(SelectedInterlock.Id);
+                var interlockKey = (SelectedInterlock.CylinderId, SelectedInterlock.SortId);
+
+                // キャッシュから取得するか、データベースから読み込む
+                List<InterlockConditionDTO> conditions;
+                if (_allConditionsByInterlockKey.TryGetValue(interlockKey, out var cachedConditions))
+                {
+                    conditions = cachedConditions;
+                }
+                else
+                {
+                    conditions = await _supabaseRepository.GetInterlockConditionsByInterlockIdAsync(SelectedInterlock.CylinderId);
+                    _allConditionsByInterlockKey[interlockKey] = conditions;
+                }
 
                 // Populate the ConditionType navigation property for each condition
                 foreach (var condition in conditions)
@@ -475,7 +588,7 @@ namespace KdxDesigner.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"インターロック条件の読み込みに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                ErrorDialog.Show($"インターロック条件の読み込みに失敗しました: {ex.Message}\n\nスタックトレース:\n{ex.StackTrace}", "エラー", _window);
             }
         }
 
@@ -483,32 +596,54 @@ namespace KdxDesigner.ViewModels
         {
             InterlockIOs.Clear();
 
-            if (SelectedCondition == null) return;
+            if (SelectedCondition == null || SelectedInterlock == null) return;
 
             try
             {
-                var ios = await _supabaseRepository.GetInterlockIOsByInterlockIdAsync(SelectedCondition.Id);
-                foreach (var io in ios)
-                {
-                    var ioViewModel = new InterlockIOViewModel(io, false); // 既存データ
+                var conditionKey = (SelectedCondition.InterlockId, SelectedCondition.InterlockSortId, SelectedCondition.ConditionNumber);
 
-                    // PlcIdとIOAddressに対応するIONameを取得
-                    if (!string.IsNullOrEmpty(io.IOAddress))
+                // キャッシュから取得するか、データベースから読み込む
+                List<InterlockIOViewModel> ioViewModels;
+                if (_allIOsByConditionKey.TryGetValue(conditionKey, out var cachedIOs))
+                {
+                    ioViewModels = cachedIOs;
+                    System.Diagnostics.Debug.WriteLine($"キャッシュからIO読み込み: Key={conditionKey}, 件数={ioViewModels.Count}");
+                }
+                else
+                {
+                    var ios = await _supabaseRepository.GetInterlockIOsByInterlockIdAsync(SelectedCondition.InterlockId);
+                    ioViewModels = new List<InterlockIOViewModel>();
+
+                    foreach (var io in ios)
                     {
-                        var allIOs = _accessRepository.GetIoList();
-                        var ioData = allIOs.FirstOrDefault(i => i.Address == io.IOAddress && i.PlcId == io.PlcId);
-                        if (ioData != null)
+                        var ioViewModel = new InterlockIOViewModel(io, false); // 既存データ
+
+                        // PlcIdとIOAddressに対応するIONameを取得
+                        if (!string.IsNullOrEmpty(io.IOAddress))
                         {
-                            ioViewModel.IOName = ioData.IOName;
+                            var allIOs = await _accessRepository.GetIoListAsync();
+                            var ioData = allIOs.FirstOrDefault(i => i.Address == io.IOAddress && i.PlcId == io.PlcId);
+                            if (ioData != null)
+                            {
+                                ioViewModel.IOName = ioData.IOName;
+                            }
                         }
+
+                        ioViewModels.Add(ioViewModel);
                     }
 
+                    _allIOsByConditionKey[conditionKey] = ioViewModels;
+                    System.Diagnostics.Debug.WriteLine($"DBからIO読み込みしてキャッシュ: Key={conditionKey}, 件数={ioViewModels.Count}");
+                }
+
+                foreach (var ioViewModel in ioViewModels)
+                {
                     InterlockIOs.Add(ioViewModel);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"インターロックIOの読み込みに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                ErrorDialog.Show($"インターロックIOの読み込みに失敗しました: {ex.Message}\n\nスタックトレース:\n{ex.StackTrace}", "エラー", _window);
             }
         }
 
@@ -544,21 +679,21 @@ namespace KdxDesigner.ViewModels
             var result = MessageBox.Show("選択したインターロックを削除しますか？\n関連する条件とIOも削除されます。", "確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
-                // Track for deletion if it exists in database (has Id > 0)
-                if (SelectedInterlock.Id > 0)
-                {
-                    _deletedInterlocks.Add(SelectedInterlock);
+                // Track for deletion（複合キー対応）
+                _deletedInterlocks.Add(SelectedInterlock);
 
-                    // Also mark all related conditions and IOs for deletion
-                    var relatedConditions = InterlockConditions.Where(c => c.InterlockId == SelectedInterlock.Id).ToList();
+                // Also mark all related conditions and IOs for deletion
+                var interlockKey = (SelectedInterlock.CylinderId, SelectedInterlock.SortId);
+                if (_allConditionsByInterlockKey.TryGetValue(interlockKey, out var relatedConditions))
+                {
                     foreach (var condition in relatedConditions)
                     {
-                        if (condition.Id > 0)
-                        {
-                            _deletedConditions.Add(condition);
+                        _deletedConditions.Add(condition);
 
-                            var relatedIOs = InterlockIOs.Where(io => io.InterlockConditionId == condition.Id).ToList();
-                            _deletedIOs.AddRange(relatedIOs);
+                        var conditionKey = (condition.InterlockId, condition.InterlockSortId, condition.ConditionNumber);
+                        if (_allIOsByConditionKey.TryGetValue(conditionKey, out var relatedIOs))
+                        {
+                            _deletedIOs.AddRange(relatedIOs.Select(vm => vm.GetInterlockIO()));
                         }
                     }
                 }
@@ -578,12 +713,22 @@ namespace KdxDesigner.ViewModels
             var defaultTypeId = ConditionTypes.FirstOrDefault()?.Id ?? 1;
             var newCondition = new InterlockConditionDTO
             {
-                InterlockId = SelectedInterlock.Id,
+                InterlockId = SelectedInterlock.CylinderId,
+                InterlockSortId = SelectedInterlock.SortId,
                 ConditionNumber = InterlockConditions.Count + 1,
                 ConditionTypeId = defaultTypeId,
                 ConditionType = ConditionTypes.FirstOrDefault(ct => ct.Id == defaultTypeId)
             };
             InterlockConditions.Add(newCondition);
+
+            // キャッシュにも追加
+            var interlockKey = (SelectedInterlock.CylinderId, SelectedInterlock.SortId);
+            if (!_allConditionsByInterlockKey.ContainsKey(interlockKey))
+            {
+                _allConditionsByInterlockKey[interlockKey] = new List<InterlockConditionDTO>();
+            }
+            _allConditionsByInterlockKey[interlockKey].Add(newCondition);
+
             SelectedCondition = newCondition;
         }
 
@@ -596,17 +741,29 @@ namespace KdxDesigner.ViewModels
             var result = MessageBox.Show("選択した条件を削除しますか？\n関連するIOも削除されます。", "確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
-                // Track for deletion if it exists in database
-                if (SelectedCondition.Id > 0)
-                {
-                    _deletedConditions.Add(SelectedCondition);
+                // Track for deletion (複合キーに対応)
+                _deletedConditions.Add(SelectedCondition);
 
-                    // Also mark all related IOs for deletion
-                    var relatedIOs = InterlockIOs.Where(io => io.InterlockConditionId == SelectedCondition.Id).ToList();
-                    _deletedIOs.AddRange(relatedIOs);
+                // Also mark all related IOs for deletion
+                var conditionKey = (SelectedCondition.InterlockId, SelectedCondition.InterlockSortId, SelectedCondition.ConditionNumber);
+                if (_allIOsByConditionKey.TryGetValue(conditionKey, out var relatedIOs))
+                {
+                    _deletedIOs.AddRange(relatedIOs.Select(vm => vm.GetInterlockIO()));
+                    _allIOsByConditionKey.Remove(conditionKey);
                 }
 
                 InterlockConditions.Remove(SelectedCondition);
+
+                // キャッシュからも削除
+                if (SelectedInterlock != null)
+                {
+                    var interlockKey = (SelectedInterlock.CylinderId, SelectedInterlock.SortId);
+                    if (_allConditionsByInterlockKey.TryGetValue(interlockKey, out var conditions))
+                    {
+                        conditions.Remove(SelectedCondition);
+                    }
+                }
+
                 SelectedCondition = null;
             }
         }
@@ -648,11 +805,12 @@ namespace KdxDesigner.ViewModels
 
                 var newIO = new InterlockIO
                 {
-                    InterlockConditionId = SelectedCondition.Id,
+                    InterlockId = SelectedCondition.InterlockId,
+                    InterlockSortId = SelectedCondition.InterlockSortId,
+                    ConditionNumber = SelectedCondition.ConditionNumber,
                     PlcId = plcId,
                     IOAddress = ioAddress,
-                    IsOnCondition = false,
-                    ConditionUniqueKey = InterlockIOs.Count + 1
+                    IsOnCondition = false
                 };
 
                 var ioViewModel = new InterlockIOViewModel(newIO, true) // 新規作成
@@ -661,35 +819,53 @@ namespace KdxDesigner.ViewModels
                 };
 
                 InterlockIOs.Add(ioViewModel);
+
+                // キャッシュにも追加
+                var conditionKey = (SelectedCondition.InterlockId, SelectedCondition.InterlockSortId, SelectedCondition.ConditionNumber);
+                if (!_allIOsByConditionKey.ContainsKey(conditionKey))
+                {
+                    _allIOsByConditionKey[conditionKey] = new List<InterlockIOViewModel>();
+                }
+                _allIOsByConditionKey[conditionKey].Add(ioViewModel);
+
                 SelectedIO = ioViewModel;
             }
         }
 
         private bool CanDeleteIO(object? parameter) => SelectedIO != null;
 
-        private async void DeleteIO(object? parameter)
+        private void DeleteIO(object? parameter)
         {
             if (SelectedIO == null) return;
 
             var result = MessageBox.Show("選択したIOを削除しますか？", "確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
-                try
+                // Track for deletion (保存時に削除)
+                if (!SelectedIO.IsNew)
                 {
-                    // If IO exists in database, delete it immediately
-                    if (!string.IsNullOrEmpty(SelectedIO.IOAddress))
-                    {
-                        await _supabaseRepository.DeleteInterlockIOAsync(SelectedIO.GetInterlockIO());
-                        MessageBox.Show("IOを削除しました。", "削除完了", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    _deletedIOs.Add(SelectedIO.GetInterlockIO());
+                }
 
-                    InterlockIOs.Remove(SelectedIO);
-                    SelectedIO = null;
-                }
-                catch (Exception ex)
+                // UIから削除
+                InterlockIOs.Remove(SelectedIO);
+
+                // キャッシュからも削除
+                if (SelectedCondition != null)
                 {
-                    MessageBox.Show($"IOの削除に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    var conditionKey = (SelectedCondition.InterlockId, SelectedCondition.InterlockSortId, SelectedCondition.ConditionNumber);
+                    if (_allIOsByConditionKey.TryGetValue(conditionKey, out var ios))
+                    {
+                        var removed = ios.Remove(SelectedIO);
+                        System.Diagnostics.Debug.WriteLine($"キャッシュからIO削除: Key={conditionKey}, 削除成功={removed}, 残り={ios.Count}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"キャッシュにキーが見つかりません: {conditionKey}");
+                    }
                 }
+
+                SelectedIO = null;
             }
         }
 
@@ -699,11 +875,11 @@ namespace KdxDesigner.ViewModels
             {
                 // First, delete all tracked items from database
                 // Delete IOs first (due to foreign key constraints)
-                foreach (var ioVm in _deletedIOs)
+                foreach (var io in _deletedIOs)
                 {
                     try
                     {
-                        await _supabaseRepository.DeleteInterlockIOAsync(ioVm.GetInterlockIO());
+                        await _supabaseRepository.DeleteInterlockIOAsync(io);
                     }
                     catch (Exception ex)
                     {
@@ -739,24 +915,27 @@ namespace KdxDesigner.ViewModels
 
                 // Save Interlocks
                 var interlocksToSave = Interlocks.Select(vm => vm.GetInterlock()).ToList();
+
+                // Upsert前のIdとViewModelをマッピング
+                // Interlocksを保存（複合キー対応）
                 await _supabaseRepository.UpsertInterlocksAsync(interlocksToSave);
 
-                // Save InterlockConditions
-                var conditionsToSave = new List<InterlockConditionDTO>();
-                foreach (var interlockVm in Interlocks)
+                // キャッシュから全てのInterlockConditionsを収集して保存
+                var allConditionsToSave = new List<InterlockConditionDTO>();
+                foreach (var kvp in _allConditionsByInterlockKey)
                 {
-                    var conditions = InterlockConditions.Where(c => c.InterlockId == interlockVm.Id).ToList();
-                    conditionsToSave.AddRange(conditions);
-                }
-                if (conditionsToSave.Any())
-                {
-                    await _supabaseRepository.UpsertInterlockConditionsAsync(conditionsToSave);
+                    allConditionsToSave.AddRange(kvp.Value);
                 }
 
-                // Save InterlockIOs (新規作成されたもののみ)
-                foreach (var condition in conditionsToSave)
+                if (allConditionsToSave.Any())
                 {
-                    var iosToSave = InterlockIOs.Where(io => io.InterlockConditionId == condition.Id && io.IsNew).ToList();
+                    await _supabaseRepository.UpsertInterlockConditionsAsync(allConditionsToSave);
+                }
+
+                // キャッシュから全てのInterlockIOsを収集して保存 (新規作成されたもののみ)
+                foreach (var kvp in _allIOsByConditionKey)
+                {
+                    var iosToSave = kvp.Value.Where(io => io.IsNew).ToList();
 
                     foreach (var ioVm in iosToSave)
                     {
@@ -779,7 +958,21 @@ namespace KdxDesigner.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                var errorMessage = new StringBuilder();
+                errorMessage.AppendLine($"保存に失敗しました: {ex.Message}");
+                errorMessage.AppendLine();
+                errorMessage.AppendLine("スタックトレース:");
+                errorMessage.AppendLine(ex.StackTrace);
+
+                if (ex.InnerException != null)
+                {
+                    errorMessage.AppendLine();
+                    errorMessage.AppendLine("内部例外:");
+                    errorMessage.AppendLine(ex.InnerException.Message);
+                    errorMessage.AppendLine(ex.InnerException.StackTrace);
+                }
+
+                ErrorDialog.Show(errorMessage.ToString(), "エラー", _window);
             }
         }
 

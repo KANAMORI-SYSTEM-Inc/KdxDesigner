@@ -1,7 +1,4 @@
 using Supabase.Gotrue;
-using Supabase.Gotrue.Interfaces;
-using System;
-using System.Threading.Tasks;
 using SupabaseClient = Supabase.Client;
 
 namespace KdxDesigner.Services.Authentication
@@ -26,7 +23,7 @@ namespace KdxDesigner.Services.Authentication
         private Session? _currentSession;
 
         public event EventHandler<Session?> AuthStateChanged = delegate { };
-        
+
         public Session? CurrentSession => _currentSession;
         public bool IsAuthenticated => _currentSession != null;
 
@@ -34,20 +31,20 @@ namespace KdxDesigner.Services.Authentication
         {
             _supabaseClient = supabaseClient ?? throw new ArgumentNullException(nameof(supabaseClient));
             _sessionStorage = sessionStorage ?? throw new ArgumentNullException(nameof(sessionStorage));
-            
+
             System.Diagnostics.Debug.WriteLine($"AuthenticationService initialized");
-            
+
             // 認証状態の変更を監視
             _supabaseClient.Auth.AddStateChangedListener((sender, changed) =>
             {
                 System.Diagnostics.Debug.WriteLine($"Auth state changed: {changed}");
-                if (changed == Constants.AuthState.SignedIn || 
+                if (changed == Constants.AuthState.SignedIn ||
                     changed == Constants.AuthState.SignedOut ||
                     changed == Constants.AuthState.TokenRefreshed)
                 {
                     _currentSession = _supabaseClient.Auth.CurrentSession;
                     AuthStateChanged?.Invoke(this, _currentSession);
-                    
+
                     // セッションを保存
                     if (_currentSession != null && changed == Constants.AuthState.SignedIn)
                     {
@@ -63,7 +60,7 @@ namespace KdxDesigner.Services.Authentication
             // 初期セッションを取得
             _currentSession = _supabaseClient.Auth.CurrentSession;
             System.Diagnostics.Debug.WriteLine($"Initial session: {(_currentSession != null ? "Exists" : "None")}");
-            
+
             // 保存されたセッションを自動的に復元
             Task.Run(async () => await TryRestoreSessionAsync());
         }
@@ -73,7 +70,7 @@ namespace KdxDesigner.Services.Authentication
             try
             {
                 System.Diagnostics.Debug.WriteLine("Starting GitHub OAuth flow...");
-                
+
                 // GitHub OAuthのURLを生成
                 var providerAuthState = await _supabaseClient.Auth.SignIn(
                     Constants.Provider.Github,
@@ -82,12 +79,12 @@ namespace KdxDesigner.Services.Authentication
                         // リダイレクトURLを設定（ローカルホスト）
                         RedirectTo = "http://localhost:3000/"
                     });
-                
+
                 // ProviderAuthStateからURIを取得
                 var authUrl = providerAuthState?.Uri?.ToString();
-                
+
                 System.Diagnostics.Debug.WriteLine($"GitHub OAuth URL generated: {authUrl}");
-                
+
                 // ブラウザでGitHub認証ページを開く
                 if (!string.IsNullOrEmpty(authUrl))
                 {
@@ -99,7 +96,7 @@ namespace KdxDesigner.Services.Authentication
                     });
                     return authUrl;
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine("No OAuth URL was generated");
                 return null;
             }
@@ -120,13 +117,13 @@ namespace KdxDesigner.Services.Authentication
                 // PKCEは使用しないのでcodeVerifierは空文字列
                 var session = await _supabaseClient.Auth.ExchangeCodeForSession(code, string.Empty);
                 _currentSession = session;
-                
+
                 // セッションを保存
                 if (session != null)
                 {
                     await SaveSessionAsync(session);
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine($"Session exchanged successfully");
                 return session;
             }
@@ -143,10 +140,10 @@ namespace KdxDesigner.Services.Authentication
             {
                 await _supabaseClient.Auth.SignOut();
                 _currentSession = null;
-                
+
                 // セッションをクリア
                 await _sessionStorage.ClearSessionAsync();
-                
+
                 System.Diagnostics.Debug.WriteLine("Sign out successful");
             }
             catch (Exception ex)
@@ -169,33 +166,33 @@ namespace KdxDesigner.Services.Authentication
                 return null;
             }
         }
-        
+
         private async Task<bool> TryRestoreSessionAsync()
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine("Attempting to restore saved session...");
-                
+
                 // カスタムストレージからセッションを読み込み
                 var sessionData = await _sessionStorage.LoadSessionAsync();
-                
+
                 if (sessionData != null)
                 {
                     // Supabaseにセッションを設定
                     var session = await _supabaseClient.Auth.SetSession(sessionData.AccessToken, sessionData.RefreshToken);
-                    
+
                     if (session != null)
                     {
                         _currentSession = session;
                         System.Diagnostics.Debug.WriteLine("Session restored successfully");
                         System.Diagnostics.Debug.WriteLine($"User email: {sessionData.UserEmail}");
-                        
+
                         // セッション復元を通知
                         AuthStateChanged?.Invoke(this, _currentSession);
                         return true;
                     }
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine("No saved session found");
                 return false;
             }
@@ -205,7 +202,7 @@ namespace KdxDesigner.Services.Authentication
                 return false;
             }
         }
-        
+
         private async Task SaveSessionAsync(Session session)
         {
             try
@@ -227,26 +224,26 @@ namespace KdxDesigner.Services.Authentication
                 System.Diagnostics.Debug.WriteLine($"Failed to save session: {ex.Message}");
             }
         }
-        
+
         public async Task<bool> SignInWithEmailAsync(string email, string password)
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine($"Attempting email sign in for: {email}");
-                
+
                 var session = await _supabaseClient.Auth.SignIn(email, password);
-                
+
                 if (session != null)
                 {
                     _currentSession = session;
                     System.Diagnostics.Debug.WriteLine("Email sign in successful");
-                    
+
                     // セッションを保存
                     await SaveSessionAsync(session);
-                    
+
                     return true;
                 }
-                
+
                 return false;
             }
             catch (Exception ex)
@@ -255,22 +252,22 @@ namespace KdxDesigner.Services.Authentication
                 throw new InvalidOperationException($"メールサインインに失敗しました: {ex.Message}", ex);
             }
         }
-        
+
         public async Task<bool> SignUpWithEmailAsync(string email, string password)
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine($"Attempting email sign up for: {email}");
-                
+
                 var session = await _supabaseClient.Auth.SignUp(email, password);
-                
+
                 if (session != null)
                 {
                     _currentSession = session;
                     System.Diagnostics.Debug.WriteLine("Email sign up successful");
                     return true;
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine("Sign up failed - no session returned");
                 return false;
             }

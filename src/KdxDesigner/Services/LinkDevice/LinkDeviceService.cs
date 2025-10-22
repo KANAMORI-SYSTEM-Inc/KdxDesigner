@@ -1,6 +1,6 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Utils;
 using KdxDesigner.ViewModels;
 
@@ -11,18 +11,18 @@ namespace KdxDesigner.Services.LinkDevice
     /// </summary>
     public class LinkDeviceService : ILinkDeviceService
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         // エラー集約サービスもコンストラクタで受け取ることを推奨
         // private readonly IErrorAggregator _errorAggregator;
 
-        public LinkDeviceService(IAccessRepository repository)
+        public LinkDeviceService(ISupabaseRepository repository)
         {
             _repository = repository;
         }
 
-        public bool CreateLinkDeviceRecords(PLC mainPlc, List<PlcLinkSettingViewModel> selectedSettings)
+        public async Task<bool> CreateLinkDeviceRecords(PLC mainPlc, List<PlcLinkSettingViewModel> selectedSettings)
         {
-            var allIoData = _repository.GetIoList();
+            var allIoData = await _repository.GetIoListAsync();
             var ioRecordsToUpdate = new List<IO>();
 
             foreach (var setting in selectedSettings)
@@ -40,7 +40,7 @@ namespace KdxDesigner.Services.LinkDevice
 
             if (ioRecordsToUpdate.Any())
             {
-                _repository.UpdateIoLinkDevices(ioRecordsToUpdate);
+                await _repository.UpdateIoLinkDevicesAsync(ioRecordsToUpdate);
             }
 
             // TODO: Memoryテーブルへの転送ロジック
@@ -90,10 +90,10 @@ namespace KdxDesigner.Services.LinkDevice
             }
         }
 
-        public void ExportLinkDeviceCsv(string filePath)
+        public async Task ExportLinkDeviceCsv(string filePath)
         {
             // 1. IOテーブルからLinkDeviceが設定されているデータを取得
-            var allIo = _repository.GetIoList();
+            var allIo = await _repository.GetIoListAsync();
             var linkedIoList = allIo.Where(io => !string.IsNullOrWhiteSpace(io.LinkDevice)).ToList();
 
             if (!linkedIoList.Any())
@@ -149,11 +149,11 @@ namespace KdxDesigner.Services.LinkDevice
         /// </summary>
         /// <param name="plc"></param>
         /// <returns></returns>
-        public List<LadderCsvRow> CreateLadderCsvRows(PLC plc)
+        public async Task<List<LadderCsvRow>> CreateLadderCsvRows(PLC plc)
         {
             // 1. PLCに紐づくLinkDeviceが設定されているIOを取得
             var result = new List<LadderCsvRow>(); // 生成されるLadderCsvRowのリスト
-            var allIo = _repository.GetIoList();
+            var allIo = await _repository.GetIoListAsync();
             var linkedIoList = allIo.Where(io => !string.IsNullOrWhiteSpace(io.LinkDevice) && io.PlcId == plc.Id).ToList();
             string? previousWordPart = null;
 

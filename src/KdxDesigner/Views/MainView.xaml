@@ -86,10 +86,12 @@
             </MenuItem>
             <MenuItem Header="_ツール">
                 <MenuItem Header="IOテーブル管理" Command="{Binding OpenIoEditorCommand}" />
+                <MenuItem Header="IO割付表変換" Command="{Binding OpenIOConversionWindowCommand}" />
                 <MenuItem Header="リンクデバイス管理" Command="{Binding OpenLinkDeviceManagerCommand}" />
                 <MenuItem Header="タイマー設定" Command="{Binding OpenTimerEditorCommand}" />
                 <MenuItem Header="メモリプロファイル管理" Command="{Binding OpenMemoryProfileManagerCommand}" />
                 <MenuItem Header="操作盤選択" Command="{Binding OpenControllBoxViewCommand}" />
+                <MenuItem Header="シリンダー管理" Command="{Binding OpenCylinderManagementCommand}" />
 
                 <Separator/>
                 <MenuItem Header="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}" />
@@ -100,6 +102,8 @@
                 <MenuItem Header="すべての変更を保存" Command="{Binding SaveAllChangesCommand}" />
                 <Separator/>
                 <MenuItem Header="操作のみ保存" Command="{Binding SaveOperationCommand}" />
+                <Separator/>
+                <MenuItem Header="工程プロパティを編集" Command="{Binding EditProcessCommand}" />
             </MenuItem>
         </Menu>
 
@@ -214,27 +218,44 @@
                         
                         <!-- 追加ボタンヘッダー -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 工程追加" Command="{Binding AddNewProcessCommand}" 
+                            <Button Content="＋ 工程追加" Command="{Binding AddNewProcessCommand}"
                                     Width="100" Height="25" Margin="0,0,5,0"
                                     Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenProcessListWindowCommand}"
+                                    Width="120" Height="25" Margin="0,0,5,0"
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
-                        
+
                         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 詳細追加" Command="{Binding AddNewProcessDetailCommand}" 
+                            <Button Content="＋ 詳細追加" Command="{Binding AddNewProcessDetailCommand}"
                                     Width="100" Height="25" Margin="0,0,5,0"
                                     Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenProcessDetailListWindowCommand}"
+                                    Width="120" Height="25" Margin="0,0,5,0"
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
-                        
+
                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 操作追加" Command="{Binding AddNewOperationCommand}" 
+                            <Button Content="＋ 操作追加" Command="{Binding AddNewOperationCommand}"
                                     Width="100" Height="25" Margin="0,0,5,0"
                                     Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenOperationListWindowCommand}"
+                                    Width="120" Height="25" Margin="0,0,5,0"
+                                    Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
 
                         <DataGrid Grid.Row="1" Grid.Column="0" Margin="5" x:Name="ProcessGrid" ItemsSource="{Binding Processes}" AutoGenerateColumns="False"
                                   SelectedItem="{Binding SelectedProcess}"
                                   SelectionMode="Extended" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="False"
-                                  SelectionChanged="ProcessGrid_SelectionChanged" PreviewKeyDown="ProcessGrid_PreviewKeyDown">
+                                  SelectionChanged="ProcessGrid_SelectionChanged" PreviewKeyDown="ProcessGrid_PreviewKeyDown"
+                                  MouseDoubleClick="ProcessGrid_MouseDoubleClick">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="プロパティを編集(_E)" Command="{Binding EditProcessCommand}"/>
+                                    <Separator/>
+                                    <MenuItem Header="工程フロー詳細を開く" Command="{Binding OpenProcessFlowDetailCommand}"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="工程名" Binding="{Binding ProcessName}" Width="150"/>
@@ -309,8 +330,8 @@
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <DataGrid Grid.Row="1" Grid.Column="2" Margin="5" x:Name="OperationGrid" ItemsSource="{Binding SelectedOperations}" AutoGenerateColumns="False" 
-                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" PreviewKeyDown="OperationGrid_PreviewKeyDown">
+                        <DataGrid Grid.Row="1" Grid.Column="2" Margin="5" x:Name="OperationGrid" ItemsSource="{Binding SelectedOperations}" AutoGenerateColumns="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" PreviewKeyDown="OperationGrid_PreviewKeyDown" MouseDoubleClick="OperationGrid_MouseDoubleClick">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="操作名" Binding="{Binding OperationName}" Width="150"/>
@@ -330,7 +351,6 @@
                                     </DataGridComboBoxColumn.EditingElementStyle>
                                 </DataGridComboBoxColumn>
                                 <DataGridTextColumn Header="CY ID" Binding="{Binding CYId}" Width="60"/>
-                                <DataGridTextColumn Header="Stay" Binding="{Binding Stay}" Width="60"/>
                                 <DataGridTextColumn Header="GoBack" Binding="{Binding GoBack}" Width="60"/>
                                 <DataGridTextColumn Header="Start" Binding="{Binding Start}" Width="80"/>
                                 <DataGridTextColumn Header="Finish" Binding="{Binding Finish}" Width="80"/>

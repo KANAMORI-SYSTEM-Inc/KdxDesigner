@@ -153,7 +153,7 @@ namespace KdxDesigner.Utils.Operation
             result.Add(LadderRow.AddOR(_label + (_outNum + 2).ToString()));
 
             // SCが設定されている場合
-            if (_operation.Operation.SC != null && _operation.Operation.SC != 0)
+            if (!string.IsNullOrEmpty(_operation.Operation.SC) && _operation.Operation.SC != "0")
             {
                 var ioSensorMulti = _ioAddressService.GetAddressRange(
                     _ioList,
@@ -407,7 +407,7 @@ namespace KdxDesigner.Utils.Operation
             result.Add(LadderRow.AddOR(_label + (_outNum + 2).ToString()));
             // ioの取得を共通コンポーネント化すること
             // SCが設定されている場合
-            if (_operation.Operation.FC != null && _operation.Operation.FC != 0)
+            if (!string.IsNullOrEmpty(_operation.Operation.FC) && _operation.Operation.FC != "0")
             {
                 var ioSensorMulti = _ioAddressService.GetAddressRange(
                     _ioList,

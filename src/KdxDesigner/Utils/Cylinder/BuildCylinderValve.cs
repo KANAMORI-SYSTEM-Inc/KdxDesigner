@@ -1,8 +1,8 @@
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.DTOs.MnemonicCommon;
-
 using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 
 namespace KdxDesigner.Utils.Cylinder
@@ -12,12 +12,12 @@ namespace KdxDesigner.Utils.Cylinder
         private readonly MainViewModel _mainViewModel;
         private readonly IErrorAggregator _errorAggregator;
         private readonly IIOAddressService _ioAddressService;
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         public BuildCylinderValve(
             MainViewModel mainViewModel,
             IErrorAggregator errorAggregator,
             IIOAddressService ioAddressService,
-            IAccessRepository accessRepository)
+            ISupabaseRepository accessRepository)
         {
             _mainViewModel = mainViewModel;
             _errorAggregator = errorAggregator;
@@ -25,7 +25,7 @@ namespace KdxDesigner.Utils.Cylinder
             _repository = accessRepository;
         }
 
-        public List<LadderCsvRow> Valve1(
+        public async Task<List<LadderCsvRow>> Valve1(
                 MnemonicDeviceWithCylinder cylinder,
                 List<MnemonicDeviceWithProcessDetail> details,
                 List<MnemonicDeviceWithOperation> operations,
@@ -66,11 +66,11 @@ namespace KdxDesigner.Utils.Cylinder
                                             && cylinder.Cylinder.CYNum != null
                                             && i.IOName.Contains(cylinder.Cylinder.CYNum)).ToList();
 
-            // 行間ステートメント  
+            // 行間ステートメント
             string id = cylinder.Cylinder.Id.ToString();
-            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
-            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
+            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得
+            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + " シングルバルブ"));
 
@@ -121,7 +121,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 保持出力
             if (cylinder.Cylinder.MachineNameId == null || cylinder.Cylinder.DriveSubId == null) return result;
 
-            Machine? machine = _repository.GetMachineById(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
+            Machine? machine = await _repository.GetMachineByIdAsync(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
 
             if (machine == null) return result;
 
@@ -145,9 +145,10 @@ namespace KdxDesigner.Utils.Cylinder
             result.Add(LadderRow.AddNOP());
 
             // 出力検索
-            if (cylinder.Cylinder.CYNameSub != null)
+            int? cyNameSub = int.TryParse(cylinder.Cylinder.CYNameSub, out int cyNameSubValue) ? cyNameSubValue : (int?)null;
+            if (cyNameSub != null)
             {
-                result.AddRange(functions.SingleValve(sensors, cylinder.Cylinder.CYNameSub));
+                result.AddRange(functions.SingleValve(sensors, cyNameSub));
             }
             else
             {
@@ -199,10 +200,10 @@ namespace KdxDesigner.Utils.Cylinder
                                             && cylinder.Cylinder.CYNum != null
                                             && i.IOName.Contains(cylinder.Cylinder.CYNum)).ToList();
 
-            // 行間ステートメント  
+            // 行間ステートメント
             string id = cylinder.Cylinder.Id.ToString();
-            string cyNum = cylinder.Cylinder.CYNum ?? "";                   // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNum = cylinder.Cylinder.CYNum ?? "";                   // シリンダー名の取得
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得
             string cyName = cyNum + cyNumSub;                               // シリンダー名の組み合わせ  
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + " ダブルバルブ"));
@@ -258,9 +259,10 @@ namespace KdxDesigner.Utils.Cylinder
             result.Add(LadderRow.AddNOP());
 
             // 出力検索
-            if (cylinder.Cylinder.CYNameSub != null)
+            int? cyNameSub = int.TryParse(cylinder.Cylinder.CYNameSub, out int cyNameSubValue) ? cyNameSubValue : (int?)null;
+            if (cyNameSub != null)
             {
-                result.AddRange(functions.DoubleValve(sensors, cylinder.Cylinder.CYNameSub));
+                result.AddRange(functions.DoubleValve(sensors, cyNameSub));
 
             }
             else
@@ -273,7 +275,7 @@ namespace KdxDesigner.Utils.Cylinder
 
         }
 
-        public List<LadderCsvRow> Motor(
+        public async Task<List<LadderCsvRow>> Motor(
                 MnemonicDeviceWithCylinder cylinder,
                 List<MnemonicDeviceWithProcessDetail> details,
                 List<MnemonicDeviceWithOperation> operations,
@@ -314,11 +316,11 @@ namespace KdxDesigner.Utils.Cylinder
                                             && cylinder.Cylinder.CYNum != null
                                             && i.IOName.Contains(cylinder.Cylinder.CYNum)).ToList();
 
-            // 行間ステートメント  
+            // 行間ステートメント
             string id = cylinder.Cylinder.Id.ToString();
-            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
-            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
+            string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得
+            string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + "モーター"));
 
@@ -371,7 +373,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 保持出力
             if (cylinder.Cylinder.MachineNameId == null || cylinder.Cylinder.DriveSubId == null) return result;
 
-            Machine? machine = _repository.GetMachineById(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
+            Machine? machine = await _repository.GetMachineByIdAsync(cylinder.Cylinder.MachineNameId!.Value, cylinder.Cylinder.DriveSubId!.Value);
 
             if (machine == null) return result;
 
@@ -395,9 +397,10 @@ namespace KdxDesigner.Utils.Cylinder
             result.Add(LadderRow.AddNOP());
 
             // 出力検索
-            if (cylinder.Cylinder.CYNameSub != null)
+            int? cyNameSub = int.TryParse(cylinder.Cylinder.CYNameSub, out int cyNameSubValue) ? cyNameSubValue : (int?)null;
+            if (cyNameSub != null)
             {
-                result.AddRange(functions.Motor(sensors, cylinder.Cylinder.CYNameSub));
+                result.AddRange(functions.Motor(sensors, cyNameSub));
 
             }
             else

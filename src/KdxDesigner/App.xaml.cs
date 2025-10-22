@@ -1,7 +1,6 @@
-using Kdx.Contracts.Interfaces;
-using Kdx.Infrastructure.Adapters;
 using Kdx.Infrastructure.Configuration;
 using Kdx.Infrastructure.Supabase.Repositories;
+using Kdx.Contracts.Interfaces;
 
 using KdxDesigner.Services;
 using KdxDesigner.Services.Authentication;
@@ -73,7 +72,7 @@ namespace KdxDesigner
 
             // Repository層の登録
             services.AddScoped<ISupabaseRepository, SupabaseRepository>();
-            services.AddScoped<IAccessRepository, SupabaseRepositoryAdapter>();
+            // v2.0: IAccessRepository は削除され、ISupabaseRepository を直接使用
 
             // Service層の登録（Infrastructure）
             services.AddScoped<IProsTimeDeviceService, Kdx.Infrastructure.Services.ProsTimeDeviceService>();

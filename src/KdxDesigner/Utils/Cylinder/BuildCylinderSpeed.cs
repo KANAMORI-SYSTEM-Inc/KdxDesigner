@@ -86,7 +86,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 行間ステートメント  
             string id = cylinder.Cylinder.Id.ToString();
             string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得  
             string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + "比例流量弁"));
@@ -203,9 +203,9 @@ namespace KdxDesigner.Utils.Cylinder
             // バルブ指令
             if (speedDevice != null)
             {
-                if (cylinder.Cylinder.FlowCount != null)
+                if (cylinder.Cylinder.FlowCount != null && int.TryParse(cylinder.Cylinder.FlowCount, out int flowCount))
                 {
-                    for (int i = 1; i <= cylinder.Cylinder.FlowCount; i++)
+                    for (int i = 1; i <= flowCount; i++)
                     {
                         string countFlowName = cyName + i.ToString();
                         var flowSensors = sensors.Where(i => i.IOName!.Contains(countFlowName)).ToList();
@@ -289,7 +289,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 行間ステートメント  
             string id = cylinder.Cylinder.Id.ToString();
             string cyNum = cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNumSub = cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得  
             string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
 
             result.Add(LadderRow.AddStatement(id + ":" + cyName + " インバータ"));

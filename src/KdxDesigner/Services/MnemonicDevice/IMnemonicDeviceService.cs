@@ -15,7 +15,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// </summary>
         /// <param name="plcId">PLC ID</param>
         /// <returns>ニーモニックデバイスのリスト</returns>
-        List<Kdx.Contracts.DTOs.MnemonicDevice> GetMnemonicDevice(int plcId);
+        Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDevice(int plcId);
 
         /// <summary>
         /// 指定されたPLC IDとニーモニックIDのニーモニックデバイスを取得する
@@ -23,19 +23,19 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <param name="plcId">PLC ID</param>
         /// <param name="mnemonicId">ニーモニックID</param>
         /// <returns>ニーモニックデバイスのリスト</returns>
-        List<Kdx.Contracts.DTOs.MnemonicDevice> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId);
+        Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId);
 
         /// <summary>
         /// 指定されたPLC IDとニーモニックIDのニーモニックデバイスを削除する
         /// </summary>
         /// <param name="plcId">PLC ID</param>
         /// <param name="mnemonicId">ニーモニックID</param>
-        void DeleteMnemonicDevice(int plcId, int mnemonicId);
+        Task DeleteMnemonicDevice(int plcId, int mnemonicId);
 
         /// <summary>
         /// すべてのニーモニックデバイスを削除する
         /// </summary>
-        void DeleteAllMnemonicDevices();
+        Task DeleteAllMnemonicDevices();
 
         /// <summary>
         /// プロセスのニーモニックデバイスを保存する
@@ -51,7 +51,7 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <param name="processes">プロセス詳細リスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        void SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId);
+        Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId);
 
         /// <summary>
         /// 操作のニーモニックデバイスを保存する
@@ -67,6 +67,6 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <param name="cylinders">シリンダーリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        void SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId);
+        Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId);
     }
 }

@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Process = Kdx.Contracts.DTOs.Process;
@@ -10,7 +10,7 @@ namespace KdxDesigner.ViewModels
 {
     public partial class ProcessPropertiesViewModel : ObservableObject
     {
-        private readonly IAccessRepository _repository;
+        private readonly ISupabaseRepository _repository;
         private Process _process;
 
         [ObservableProperty] private int _id;
@@ -30,7 +30,7 @@ namespace KdxDesigner.ViewModels
         
         public bool DialogResult { get; private set; }
 
-        public ProcessPropertiesViewModel(IAccessRepository repository, Process process)
+        public ProcessPropertiesViewModel(ISupabaseRepository repository, Process process)
         {
             _repository = repository;
             _process = process;
@@ -54,14 +54,14 @@ namespace KdxDesigner.ViewModels
             LoadCategories();
         }
 
-        private void LoadCategories()
+        private async void LoadCategories()
         {
-            var categories = _repository.GetProcessCategories();
+            var categories = await _repository.GetProcessCategoriesAsync();
             ProcessCategories = new ObservableCollection<ProcessCategory>(categories);
         }
 
         [RelayCommand]
-        private void Save()
+        private async void Save()
         {
             // プロセスのプロパティを更新
             _process.ProcessName = ProcessName;
@@ -78,7 +78,7 @@ namespace KdxDesigner.ViewModels
             _process.SortNumber = SortNumber;
 
             // データベースに保存
-            _repository.UpdateProcess(_process);
+            await _repository.UpdateProcessAsync(_process);
 
             DialogResult = true;
             RequestClose?.Invoke();

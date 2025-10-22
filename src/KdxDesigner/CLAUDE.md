@@ -97,6 +97,80 @@ dotnet restore
 - Use ICollectionView for filtering large data sets
 - Modal dialogs receive repository and parent ViewModel in constructor
 
+### Loading Screen Implementation
+
+**Overview:**
+Process flow detail window implements an animated loading screen during initial data load.
+
+**Implementation Details:**
+
+1. **ViewModel (ProcessFlowDetailViewModel.cs)**
+   ```csharp
+   [ObservableProperty] private bool _isLoading = false;
+
+   public async void LoadNodesAsync()
+   {
+       IsLoading = true;
+       try
+       {
+           await LoadProcessDetailsInternal();
+       }
+       finally
+       {
+           IsLoading = false;
+       }
+   }
+   ```
+
+2. **View (ProcessFlowDetailWindow.xaml)**
+   - Semi-transparent overlay with `Panel.ZIndex="1000"`
+   - Animated spinning circle using `RotateTransform` and `Storyboard`
+   - Visibility bound to `IsLoading` property via `BooleanToVisibilityConverter`
+
+**IMPORTANT: WPF UI Thread Affinity**
+
+⚠️ **DO NOT use `Task.Run()` for methods that manipulate ObservableCollections**
+
+**Problem:**
+```csharp
+// ❌ WRONG - Causes cross-thread access violations
+await Task.Run(async () => {
+    await LoadProcessDetailsInternal();  // Manipulates ObservableCollections
+});
+```
+
+**Reason:**
+- WPF ObservableCollections must be accessed from the UI thread
+- `Task.Run()` executes code on a background thread pool thread
+- This causes "collection was modified from a different thread" errors
+
+**Solution:**
+```csharp
+// ✅ CORRECT - Execute on UI thread with async/await
+public async void LoadNodesAsync()
+{
+    IsLoading = true;
+    try
+    {
+        await LoadProcessDetailsInternal();  // Uses async/await, not Task.Run
+    }
+    finally
+    {
+        IsLoading = false;
+    }
+}
+```
+
+**Why This Works:**
+- Repository methods (`GetProcessDetailsAsync()`, etc.) already use proper async/await
+- When you `await` these methods, the UI thread is released to process other events
+- Database operations happen asynchronously without blocking UI
+- ObservableCollection modifications happen on the UI thread where they're safe
+- The loading screen displays immediately because the UI thread remains responsive
+
+**Key Takeaway:**
+In WPF MVVM applications, prefer `async/await` over `Task.Run()` for data loading operations that update UI-bound collections. The async repository pattern already provides non-blocking behavior without requiring explicit background threading.
+
 ## Testing and Validation
 
 ```bash

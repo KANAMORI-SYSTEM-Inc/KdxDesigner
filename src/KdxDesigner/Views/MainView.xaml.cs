@@ -1,15 +1,10 @@
-using KdxDesigner.Models;
-using KdxDesigner.Models.Define;
-using KdxDesigner.ViewModels;
 using Kdx.Contracts.DTOs;
-
-using System.Collections.Generic;
-using System.Linq;
+using KdxDesigner.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KdxDesigner.Views
 {
@@ -27,7 +22,7 @@ namespace KdxDesigner.Views
             {
                 var selected = ProcessGrid.SelectedItems.Cast<Process>().ToList();
                 vm.UpdateSelectedProcesses(selected);
-                
+
                 // 単一選択用のSelectedProcessもセット
                 if (ProcessGrid.SelectedItem is Process selectedProcess)
                 {
@@ -87,6 +82,41 @@ namespace KdxDesigner.Views
                 {
                     vm.DeleteSelectedOperationCommand.Execute(null);
                     e.Handled = true;
+                }
+            }
+        }
+
+        private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && vm.SelectedProcess != null)
+            {
+                // ヘッダーやスクロールバーをダブルクリックした場合は無視
+                var dataGrid = sender as DataGrid;
+                if (dataGrid?.SelectedItem != null)
+                {
+                    vm.EditProcessCommand.Execute(null);
+                }
+            }
+        }
+
+        private async void OperationGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                // ヘッダーやスクロールバーをダブルクリックした場合は無視
+                var dataGrid = sender as DataGrid;
+                if (dataGrid?.SelectedItem is Operation selectedOperation)
+                {
+                    var plcId = vm.SelectedPlc?.Id;
+                    var window = new OperationPropertiesWindow(vm.Repository!, selectedOperation, plcId)
+                    {
+                        Owner = this
+                    };
+                    if (window.ShowDialog() == true)
+                    {
+                        // 更新後にOperationリストを再読み込み
+                        await vm.ReloadOperationsAsync();
+                    }
                 }
             }
         }

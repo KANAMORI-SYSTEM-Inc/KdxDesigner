@@ -334,16 +334,17 @@ namespace KdxDesigner.Utils.Cylinder
                     var eachCycle = _mainViewModel.Cycles.FirstOrDefault(c => c.Id == startCycleId);
                     if (eachCycle != null)
                     {
-                        if (!isFirstCycleInLoop)
-                        {
-                            // 2つ目以降のサイクルの場合はORBを追加
-                            result.Add(LadderRow.AddORB());
-                        }
 
                         // Cycleに関連する処理をここに追加
                         result.Add(LadderRow.AddLDP(eachCycle.StartDevice));
                         result.Add(LadderRow.AddANI(_label + (_startNum + 0).ToString()));
                         result.Add(LadderRow.AddANI(_label + (_startNum + 1).ToString()));
+
+                        if (!isFirstCycleInLoop)
+                        {
+                            // 2つ目以降のサイクルの場合はORBを追加
+                            result.Add(LadderRow.AddORB());
+                        }
 
                         isFirstCycleInLoop = false; // フラグを更新
                     }
@@ -378,8 +379,11 @@ namespace KdxDesigner.Utils.Cylinder
         public List<LadderCsvRow> Retention(List<IO> sensors, string cycleDevice)
         {
             // ■■■ 1. ヘルパーメソッドを使って、Go/Backセンサーのアドレスリストをシンプルに取得 ■■■
-            var goSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorGo, _cylinder.Cylinder.GoSensorCount, false); // isOutput: false
-            var backSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorBack, _cylinder.Cylinder.BackSensorCount, false); // isOutput: false
+            int? goSensorCount = int.TryParse(_cylinder.Cylinder.GoSensorCount, out int goCount) ? goCount : (int?)null;
+            int? backSensorCount = int.TryParse(_cylinder.Cylinder.BackSensorCount, out int backCount) ? backCount : (int?)null;
+
+            var goSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorGo, goSensorCount, false); // isOutput: false
+            var backSensorAddresses = GetSensorAddresses(sensors, _cylinder.Cylinder.RetentionSensorBack, backSensorCount, false); // isOutput: false
 
             // ■■■ 2. ラダーロジックの生成 ■■■
             var result = new List<LadderCsvRow>();
@@ -586,7 +590,7 @@ namespace KdxDesigner.Utils.Cylinder
             // 操作盤「実行」ボタンと「各個」モードの対応デバイス
             // 「実行」ボタンを離した時と、「各個」がOFFになったときにリセットする。
             result.Add(LadderRow.AddLDF(_controlBox.ManualButton));
-            result.Add(LadderRow.AddLDF(_controlBox.ManualMode));
+            result.Add(LadderRow.AddORF(_controlBox.ManualMode));
 
             // JOGスイッチのリセット処理
             result.Add(LadderRow.AddRST(_bJogGo));
@@ -1017,7 +1021,7 @@ namespace KdxDesigner.Utils.Cylinder
             var result = new List<LadderCsvRow>();
 
             string cyNum = _cylinder.Cylinder.CYNum ?? ""; // シリンダー名の取得  
-            string cyNumSub = _cylinder.Cylinder.CYNameSub.ToString() ?? ""; // シリンダー名の取得  
+            string cyNumSub = _cylinder.Cylinder.CYNameSub?.ToString() ?? ""; // シリンダー名の取得  
             string cyName = cyNum + cyNumSub; // シリンダー名の組み合わせ  
 
             var stpIO = _ioAddressService.GetSingleAddress(sensors, "STP", true, cyNum + cyName, _cylinder.Cylinder.Id, null);

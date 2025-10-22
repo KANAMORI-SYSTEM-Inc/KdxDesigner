@@ -19,7 +19,8 @@
 
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
             <TextBlock Text="全文検索:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
-            <TextBox Width="400" Text="{Binding FullTextSearch, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBox Width="400" Text="{Binding FullTextSearch}"/>
+            <Button Content="検索" Width="80" Height="25" Margin="10,0,0,0" Command="{Binding SearchCommand}"/>
         </StackPanel>
 
         <DataGrid Grid.Row="1" Margin="5"

@@ -2,6 +2,7 @@ using Kdx.Contracts.DTOs;
 using KdxDesigner.Models;
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace KdxDesigner.Services.ErrorService
 {
@@ -13,7 +14,7 @@ namespace KdxDesigner.Services.ErrorService
         /// <summary>
         /// Errorテーブルのすべてのレコードを削除する
         /// </summary>
-        void DeleteErrorTable();
+        Task DeleteErrorTable();
 
         /// <summary>
         /// 指定された条件のエラー情報を取得する
@@ -22,7 +23,7 @@ namespace KdxDesigner.Services.ErrorService
         /// <param name="cycleId">サイクルID</param>
         /// <param name="mnemonicId">ニーモニックID</param>
         /// <returns>エラー情報のリスト</returns>
-        List<Kdx.Contracts.DTOs.ProcessError> GetErrors(int plcId, int cycleId, int mnemonicId);
+        Task<List<Kdx.Contracts.DTOs.ProcessError>> GetErrors(int plcId, int cycleId, int mnemonicId);
 
         /// <summary>
         /// 操作リストからエラー情報を生成し保存する
@@ -33,7 +34,7 @@ namespace KdxDesigner.Services.ErrorService
         /// <param name="startNumTimer">タイマー開始番号</param>
         /// <param name="plcId">PLC ID</param>
         /// <param name="cycleId">サイクルID</param>
-        void SaveMnemonicDeviceOperation(
+        Task SaveMnemonicDeviceOperation(
             List<Operation> operations,
             List<IO> iOs,
             int startNum,

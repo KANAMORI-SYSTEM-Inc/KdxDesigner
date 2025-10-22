@@ -1,4 +1,4 @@
-using Kdx.Contracts.Interfaces;
+using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
 using System.Windows;
 
@@ -9,10 +9,15 @@ namespace KdxDesigner.Views
     /// </summary>
     public partial class ControlBoxViews : Window
     {
-        public ControlBoxViews(IAccessRepository repo, int plcId)
+        public ControlBoxViews(ISupabaseRepository repo, int plcId)
         {
             InitializeComponent();
-            DataContext = new ControlBoxViewModel(repo, plcId);
+
+            // 非同期初期化を行う
+            Loaded += async (s, e) =>
+            {
+                DataContext = await ControlBoxViewModel.CreateAsync(repo, plcId);
+            };
         }
     }
 }
