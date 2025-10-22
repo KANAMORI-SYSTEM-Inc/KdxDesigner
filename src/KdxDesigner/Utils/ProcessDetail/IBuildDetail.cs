@@ -1054,7 +1054,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             if (!string.IsNullOrEmpty(manualReset) && !string.IsNullOrEmpty(manualOperate))
             {
                 result.Add(LadderRow.AddLDP(label + (outNum + 4).ToString()));
-                result.Add(LadderRow.AddLDP(manualReset));
+                result.Add(LadderRow.AddORP(manualReset));
                 result.Add(LadderRow.AddRST(manualOperate));
             }
             return result;
