@@ -90,6 +90,7 @@
                 <DataGridTextColumn Header="コメント" Binding="{Binding Comment}" Width="150"/>
                 <DataGridTextColumn Header="IL開始" Binding="{Binding ILStart}" Width="80"/>
                 <DataGridTextColumn Header="開始タイマ" Binding="{Binding StartTimerId}" Width="80"/>
+                <DataGridCheckBoxColumn Header="リセット後実行" Binding="{Binding IsResetAfter, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

@@ -504,6 +504,62 @@ namespace KdxDesigner.Utils.ProcessDetail
         }
 
         /// <summary>
+        /// 工程詳細：リセット工程開始のビルド
+        /// </summary>
+        /// <param name="detail">出力するProcessDetailのレコード</param>
+        /// <returns>工程詳細のニモニックリスト</returns>
+        public virtual async Task<List<LadderCsvRow>> ResetAfterStart(MnemonicDeviceWithProcessDetail detail)
+        {
+            var result = new List<LadderCsvRow>();
+            var label = detail.Mnemonic.DeviceLabel ?? string.Empty;
+            var outNum = detail.Mnemonic.StartNum;
+
+            // 行間ステートメントを追加
+            result.Add(CreateStatement(detail, "リセット工程開始"));
+
+            // L0 工程開始
+            result.AddRange(await AddL0StartRows(detail));
+
+            // L1 操作開始
+            var processDetailFinishDevices = await FinishProcessDevices(detail);
+
+            result.Add(LadderRow.AddLD(SettingsManager.Settings.PauseSignal));
+            result.Add(LadderRow.AddAND(label + (outNum + 0).ToString()));
+            result.Add(LadderRow.AddOR(label + (outNum + 1).ToString()));
+
+            // FinishSensorが設定されていない場合
+            // 終了工程のStartNum+5を出力
+            bool isFirst = true;
+            foreach (var d in processDetailFinishDevices)
+            {
+                if (isFirst)
+                {
+                    result.Add(LadderRow.AddLDI(d.Mnemonic.DeviceLabel + (d.Mnemonic.StartNum + 4).ToString()));
+                    isFirst = false;
+                }
+                else
+                {
+                    result.Add(LadderRow.AddOR(d.Mnemonic.DeviceLabel + (d.Mnemonic.StartNum + 4).ToString()));
+                }
+            }
+
+            result.Add(LadderRow.AddANB());
+            result.Add(LadderRow.AddANI(SettingsManager.Settings.SoftResetSignal));
+            result.Add(LadderRow.AddOUT(label + (outNum + 1).ToString()));
+
+            // L4 工程完了
+            result.Add(LadderRow.AddLD(SettingsManager.Settings.PauseSignal));
+            result.Add(LadderRow.AddOR(label + (outNum + 4).ToString()));
+            result.Add(LadderRow.AddAND(label + (outNum + 1).ToString()));
+            result.Add(LadderRow.AddOUT(label + (outNum + 4).ToString()));
+
+            // Manualリセット
+            result.AddRange(ManualReset(detail));
+
+            return result;
+        }
+
+        /// <summary>
         /// 工程詳細：期間工程のビルド
         /// </summary>
         /// <param name="detail">出力するProcessDetailのレコード</param>
@@ -550,7 +606,7 @@ namespace KdxDesigner.Utils.ProcessDetail
                 result.Add(LadderRow.AddLD(SettingsManager.Settings.PauseSignal));
             }
 
-            var processDetailFinishDevices = await FinishDevices(detail);
+            var processDetailFinishDevices = await FinishProcessDevices(detail);
             if (!string.IsNullOrEmpty(detail.Detail.FinishSensor))
             {
                 // FinishSensorが設定されている場合
@@ -745,7 +801,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             result.Add(LadderRow.AddLD(label + (outNum + 0).ToString()));
             result.Add(LadderRow.AddOUT(label + (outNum + 1).ToString()));
 
-            var processDetailFinishDevices = await FinishDevices(detail);
+            var processDetailFinishDevices = await FinishProcessDevices(detail);
             if (processDetailFinishDevices.Count == 0)
             {
                 DetailError(detail, "複数工程では終了工程が必須です");
@@ -1054,7 +1110,7 @@ namespace KdxDesigner.Utils.ProcessDetail
             if (!string.IsNullOrEmpty(manualReset) && !string.IsNullOrEmpty(manualOperate))
             {
                 result.Add(LadderRow.AddLDP(label + (outNum + 4).ToString()));
-                result.Add(LadderRow.AddLDP(manualReset));
+                result.Add(LadderRow.AddORP(manualReset));
                 result.Add(LadderRow.AddRST(manualOperate));
             }
             return result;
@@ -1216,7 +1272,17 @@ namespace KdxDesigner.Utils.ProcessDetail
                 }
 
             }
-            result.Add(LadderRow.AddLD(processDeviceLabel + (processDeviceStartNum + 1).ToString()));
+
+            // isResetAfter が true の場合、常時ONにする
+
+            if (detail.Detail.IsResetAfter == true)
+            {
+                result.Add(LadderRow.AddLD(SettingsManager.Settings.AlwaysON));
+            }
+            else
+            {
+                result.Add(LadderRow.AddLD(processDeviceLabel + (processDeviceStartNum + 1).ToString()));
+            }
 
             foreach (var d in processDetailStartDevices)
             {
@@ -1288,7 +1354,7 @@ namespace KdxDesigner.Utils.ProcessDetail
         /// </summary>
         /// <param name="detail">工程詳細</param>
         /// <returns>List<MnemonicDeviceWithProcessDetail>終了工程ID</returns>
-        protected async Task<List<MnemonicDeviceWithProcessDetail>> FinishDevices(MnemonicDeviceWithProcessDetail detail)
+        protected async Task<List<MnemonicDeviceWithProcessDetail>> FinishProcessDevices(MnemonicDeviceWithProcessDetail detail)
         {
             var finishes = await _repository.GetFinishesByProcessDetailIdAsync(detail.Detail.Id);
             var processDetailFinishIds = finishes.Select(f => f.FinishProcessDetailId).ToList();

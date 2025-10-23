@@ -29,6 +29,7 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty] private string? _comment;
         [ObservableProperty] private string? _iLStart;
         [ObservableProperty] private int? _startTimerId;
+        [ObservableProperty] private bool? _isResetAfter;
 
         [ObservableProperty] private ObservableCollection<Operation> _operations = new();
         [ObservableProperty] private ObservableCollection<ProcessDetailCategory> _processDetailCategories = new();
@@ -149,6 +150,7 @@ namespace KdxDesigner.ViewModels
             Comment = _processDetail.Comment;
             ILStart = _processDetail.ILStart;
             StartTimerId = _processDetail.StartTimerId;
+            IsResetAfter = _processDetail.IsResetAfter;
         }
 
         /// <summary>
@@ -172,6 +174,7 @@ namespace KdxDesigner.ViewModels
                 _processDetail.Comment = Comment;
                 _processDetail.ILStart = ILStart;
                 _processDetail.StartTimerId = StartTimerId;
+                _processDetail.IsResetAfter = IsResetAfter;
 
                 // データベースに保存
                 await _repository.UpdateProcessDetailAsync(_processDetail);
