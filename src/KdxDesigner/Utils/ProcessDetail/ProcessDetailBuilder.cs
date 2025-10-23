@@ -78,6 +78,7 @@ namespace KdxDesigner.Utils.ProcessDetail
                         allRows.AddRange(await buildDetail.ILWait(detail));
                         break;
                     case 11:    // リセット工程開始
+                        allRows.AddRange(await buildDetail.ResetAfterStart(detail));
                         break;
                     case 12:    // リセット工程完了
                         break;

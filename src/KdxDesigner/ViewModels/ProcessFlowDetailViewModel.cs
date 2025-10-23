@@ -59,6 +59,7 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty] private string _selectedNodeILStart = "";
         [ObservableProperty] private int? _selectedNodeId;
         [ObservableProperty] private int? _selectedNodeStartTimerId;
+        [ObservableProperty] private bool? _selectedNodeIsResetAfter;
         [ObservableProperty] private string _selectedNodeDisplayName = "";
         [ObservableProperty] private bool _isNodeSelected = false;
         [ObservableProperty] private int? _selectedNodeProcessId;
@@ -649,14 +650,20 @@ namespace KdxDesigner.ViewModels
             }
 
             // 接続に基づいてレベルを計算
+            // 最大反復回数を設定（DAGの場合、最大でノード数-1回の反復で完了する）
+            int maxIterations = details.Count;
+            int iteration = 0;
             bool changed = true;
-            while (changed)
+
+            while (changed && iteration < maxIterations)
             {
                 changed = false;
+                iteration++;
+
                 foreach (var conn in connections)
                 {
-                    if (conn.ToProcessDetailId.HasValue && 
-                        levels.ContainsKey(conn.FromProcessDetailId) && 
+                    if (conn.ToProcessDetailId.HasValue &&
+                        levels.ContainsKey(conn.FromProcessDetailId) &&
                         levels.ContainsKey(conn.ToProcessDetailId.Value))
                     {
                         int newLevel = levels[conn.FromProcessDetailId] + 1;
@@ -667,6 +674,18 @@ namespace KdxDesigner.ViewModels
                         }
                     }
                 }
+            }
+
+            // サイクル検出：最大反復回数に達した場合は警告を出力
+            if (iteration >= maxIterations && changed)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ 警告: ProcessDetail接続に循環参照（サイクル）が検出されました。レベル計算を中断しました。");
+                System.Diagnostics.Debug.WriteLine($"  反復回数: {iteration}, ノード数: {details.Count}");
+                MessageBox.Show(
+                    "工程詳細の接続に循環参照が検出されました。\nレイアウト計算が不完全な可能性があります。\n\n接続を確認してください。",
+                    "循環参照の警告",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
 
             return levels;
@@ -804,7 +823,8 @@ namespace KdxDesigner.ViewModels
                         SelectedNodeId = value.Process.Id;
                         SelectedNodeProcessId = value.Process.Id;
                         SelectedNodeStartTimerId = null;
-                        
+                        SelectedNodeIsResetAfter = null;
+
                         // TODO: Process用のプロパティウィンドウを開く
                         ShowProcessPropertiesWindow(value.Process);
                     }
@@ -827,6 +847,7 @@ namespace KdxDesigner.ViewModels
                         SelectedNodeId = value.ProcessDetail.Id;
                         SelectedNodeProcessId = value.ProcessDetail.ProcessId;
                         SelectedNodeStartTimerId = value.ProcessDetail.StartTimerId;
+                        SelectedNodeIsResetAfter = value.ProcessDetail.IsResetAfter;
                         SelectedNodeDisplayName = value.DisplayName;
                         IsNodeSelected = true;
 
@@ -850,6 +871,7 @@ namespace KdxDesigner.ViewModels
                 SelectedNodeId = null;
                 SelectedNodeProcessId = null;
                 SelectedNodeStartTimerId = null;
+                SelectedNodeIsResetAfter = null;
                 SelectedNodeDisplayName = "";
                 IsNodeSelected = false;
 
@@ -1896,6 +1918,7 @@ namespace KdxDesigner.ViewModels
                     SelectedNode.ProcessDetail.Comment = SelectedNodeComment;
                     SelectedNode.ProcessDetail.ILStart = SelectedNodeILStart;
                     SelectedNode.ProcessDetail.StartTimerId = SelectedNodeStartTimerId;
+                    SelectedNode.ProcessDetail.IsResetAfter = SelectedNodeIsResetAfter;
 
                     // データベースに保存
                     await _repository.UpdateProcessDetailAsync(SelectedNode.ProcessDetail);
@@ -1948,6 +1971,7 @@ namespace KdxDesigner.ViewModels
                         SelectedNode.ProcessDetail.Comment = updatedDetail.Comment;
                         SelectedNode.ProcessDetail.ILStart = updatedDetail.ILStart;
                         SelectedNode.ProcessDetail.StartTimerId = updatedDetail.StartTimerId;
+                        SelectedNode.ProcessDetail.IsResetAfter = updatedDetail.IsResetAfter;
 
                         // UIプロパティもリフレッシュ
                         SelectedNodeDetailName = updatedDetail.DetailName;
@@ -1962,6 +1986,7 @@ namespace KdxDesigner.ViewModels
                         SelectedNodeComment = updatedDetail.Comment;
                         SelectedNodeILStart = updatedDetail.ILStart;
                         SelectedNodeStartTimerId = updatedDetail.StartTimerId;
+                        SelectedNodeIsResetAfter = updatedDetail.IsResetAfter;
                     }
 
                     MessageBox.Show("工程詳細を更新しました。", "更新完了", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -2094,6 +2119,7 @@ namespace KdxDesigner.ViewModels
                 node.ProcessDetail.Comment = updatedProcessDetail.Comment;
                 node.ProcessDetail.ILStart = updatedProcessDetail.ILStart;
                 node.ProcessDetail.StartTimerId = updatedProcessDetail.StartTimerId;
+                node.ProcessDetail.IsResetAfter = updatedProcessDetail.IsResetAfter;
 
                 // カテゴリ名を更新
                 if (node.ProcessDetail.CategoryId.HasValue)
@@ -2134,6 +2160,7 @@ namespace KdxDesigner.ViewModels
                     SelectedNodeComment = node.ProcessDetail.Comment ?? "";
                     SelectedNodeILStart = node.ProcessDetail.ILStart ?? "";
                     SelectedNodeStartTimerId = node.ProcessDetail.StartTimerId;
+                    SelectedNodeIsResetAfter = node.ProcessDetail.IsResetAfter;
                     SelectedNodeDisplayName = node.DisplayName;
                 }
 
