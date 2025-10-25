@@ -18,10 +18,10 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Kdx.Contracts" Version="3.0.6" />
-    <PackageReference Include="Kdx.Core" Version="3.0.6" />
-    <PackageReference Include="Kdx.Infrastructure" Version="3.0.6" />
-    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="3.0.6" />
+    <PackageReference Include="Kdx.Contracts" Version="3.1.0" />
+    <PackageReference Include="Kdx.Core" Version="3.1.0" />
+    <PackageReference Include="Kdx.Infrastructure" Version="3.1.0" />
+    <PackageReference Include="Kdx.Infrastructure.Supabase" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.9" />

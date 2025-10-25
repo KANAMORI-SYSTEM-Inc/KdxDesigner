@@ -1,16 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
-using KdxDesigner.Models;
-using KdxDesigner.Services;
-using Kdx.Infrastructure.Supabase.Repositories;
 using Kdx.Contracts.DTOs;
-
-using System;
-using System.Collections.ObjectModel;
-using System.Linq;
+using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.Services;
 using System.Windows;
-using System.Collections.Generic;
 
 namespace KdxDesigner.ViewModels
 {
@@ -20,7 +13,7 @@ namespace KdxDesigner.ViewModels
         private readonly MainViewModel _mainViewModel;
         private readonly ISupabaseRepository _repository;
 
-        [ObservableProperty] private ObservableCollection<MemoryProfile> profiles = new();
+        [ObservableProperty] private List<MemoryProfile> profiles = new();
         [ObservableProperty] private MemoryProfile? selectedProfile;
         [ObservableProperty] private string newProfileName = string.Empty;
         [ObservableProperty] private string newProfileDescription = string.Empty;
@@ -30,15 +23,14 @@ namespace KdxDesigner.ViewModels
         public MemoryProfileViewModel(MainViewModel mainViewModel, ISupabaseRepository repository)
         {
             _mainViewModel = mainViewModel;
-            _profileManager = new MemoryProfileManager();
+            _profileManager = new MemoryProfileManager(repository);
             _repository = repository;
             LoadProfiles();
         }
 
-        private void LoadProfiles()
+        private async void LoadProfiles()
         {
-            var profileList = _profileManager.LoadProfiles();
-            Profiles = new ObservableCollection<MemoryProfile>(profileList);
+            Profiles = await _repository.GetMemoryProfilesAsync();
         }
 
         [RelayCommand]
@@ -58,8 +50,7 @@ namespace KdxDesigner.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                _profileManager.ApplyProfileToViewModel(SelectedProfile, _mainViewModel);
-                _mainViewModel.SaveLastUsedProfile(SelectedProfile.Id);
+                _mainViewModel.SaveLastUsedProfile(SelectedProfile.CycleId);
                 MessageBox.Show("プロファイルを読み込みました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -90,16 +81,16 @@ namespace KdxDesigner.ViewModels
 
             var newProfile = _profileManager.CreateProfileFromCurrent(_mainViewModel, NewProfileName, NewProfileDescription);
             _profileManager.SaveProfile(newProfile);
-            
+
             LoadProfiles();
             NewProfileName = string.Empty;
             NewProfileDescription = string.Empty;
-            
+
             MessageBox.Show("プロファイルを保存しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         [RelayCommand]
-        private void UpdateProfile()
+        private async void UpdateProfile()
         {
             if (SelectedProfile == null)
             {
@@ -123,10 +114,9 @@ namespace KdxDesigner.ViewModels
             {
                 // TextBoxにバインドされているSelectedProfileの値がすでに更新されているため、
                 // そのまま保存するだけで良い
-                SelectedProfile.UpdatedAt = DateTime.Now;
-                _profileManager.SaveProfile(SelectedProfile);
+                await _repository.UpdateMemoryProfileAsync(SelectedProfile);
                 LoadProfiles();
-                
+
                 MessageBox.Show("プロファイルを更新しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -186,11 +176,11 @@ namespace KdxDesigner.ViewModels
             int cylinderMemoryCount = cylinders.Count * 50; // 各シリンダーは50レコード
 
             // 合計レコード数
-            int totalMemoryCount = processMemoryCount + processDetailMemoryCount + 
+            int totalMemoryCount = processMemoryCount + processDetailMemoryCount +
                                  operationMemoryCount + cylinderMemoryCount;
 
             // 重複チェック
-            var overlaps = CheckDeviceOverlaps(profile, processes.Count, processDetails.Count, 
+            var overlaps = CheckDeviceOverlaps(profile, processes.Count, processDetails.Count,
                                               operations.Count, cylinders.Count);
 
             // サマリー文字列の生成
@@ -204,7 +194,7 @@ namespace KdxDesigner.ViewModels
             DeviceOverlaps = overlaps;
         }
 
-        private List<DeviceOverlapInfo> CheckDeviceOverlaps(MemoryProfile profile, 
+        private List<DeviceOverlapInfo> CheckDeviceOverlaps(MemoryProfile profile,
             int processCount, int processDetailCount, int operationCount, int cylinderCount)
         {
             var overlaps = new List<DeviceOverlapInfo>();

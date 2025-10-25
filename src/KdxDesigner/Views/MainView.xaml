@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="KDX Designer - ラダープログラム自動生成システム" Height="1000" Width="1920"
         WindowStartupLocation="CenterScreen">
-    
+
     <Window.Icon>
         <DrawingImage>
             <DrawingImage.Drawing>
@@ -72,7 +72,7 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <utils:BoolToColorConverter x:Key="BoolToColorConverter"/>
     </Window.Resources>
-    
+
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -120,7 +120,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    
+
                     <StackPanel Grid.Row="0" Orientation="Horizontal">
                         <TextBlock Text="Company:" VerticalAlignment="Center" FontWeight="Bold"/>
                         <ComboBox ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany}" DisplayMemberPath="CompanyName" Width="200" Margin="5,0,20,0"/>
@@ -130,7 +130,7 @@
                         <ComboBox ItemsSource="{Binding Plcs}" SelectedItem="{Binding SelectedPlc}" DisplayMemberPath="PlcName" Width="200" Margin="5,0,20,0"/>
                         <Button Content="メモリ編集" Command="{Binding OpenMemoryEditorCommand}" Width="100" VerticalAlignment="Center"/>
                     </StackPanel>
-                    
+
                     <!-- メモリ設定状態の表示 -->
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
                         <TextBlock Text="メモリ設定状態:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -166,13 +166,13 @@
                                 <TextBlock Text="{Binding MemoryConfigurationStatus}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
-                        
+
                         <TextBlock Text="デバイス数:" FontWeight="Bold" VerticalAlignment="Center" Margin="20,0,5,0"/>
                         <TextBlock Text="{Binding TotalMemoryDeviceCount}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        
+
                         <TextBlock Text="{Binding LastMemoryConfigTime}" VerticalAlignment="Center" Foreground="DarkGray" 
                                    Visibility="{Binding IsMemoryConfigured, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,10,0"/>
-                        
+
                         <!-- メモリデバイス一覧表示ボタン -->
                         <Button Command="{Binding ShowMemoryDeviceListCommand}" 
                                 IsEnabled="{Binding IsMemoryConfigured}"
@@ -192,7 +192,7 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
-                    
+
                 </Grid>
             </GroupBox>
 
@@ -215,7 +215,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        
+
                         <!-- 追加ボタンヘッダー -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="5,0,5,5">
                             <Button Content="＋ 工程追加" Command="{Binding AddNewProcessCommand}"
@@ -362,100 +362,6 @@
             </GroupBox>
 
             <TabControl Grid.Row="2" Margin="0,5,0,0">
-                <TabItem Header="デバイス設定 実行">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <GroupBox Header="デバイス開始番号設定" Padding="10">
-                            <UniformGrid Columns="3" Rows="5">
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Lデバイス [工程]" Width="150"/>
-                                    <TextBox Text="{Binding ProcessDeviceStartL}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsProcessMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Lデバイス [工程詳細]" Width="150"/>
-                                    <TextBox Text="{Binding DetailDeviceStartL}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsDetailMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Mデバイス [操作]" Width="150"/>
-                                    <TextBox Text="{Binding OperationDeviceStartM}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsOperationMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Mデバイス [シリンダ]" Width="150"/>
-                                    <TextBox Text="{Binding CylinderDeviceStartM}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsCylinderMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Mデバイス [エラー]" Width="150"/>
-                                    <TextBox Text="{Binding ErrorDeviceStartM}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsErrorMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Tデバイス [エラー]" Width="150"/>
-                                    <TextBox Text="{Binding ErrorDeviceStartT}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsErrorMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="Tデバイス [タイマ]" Width="150"/>
-                                    <TextBox Text="{Binding DeviceStartT}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsTimerMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="ZR [タイマ]" Width="150"/>
-                                    <TextBox Text="{Binding TimerStartZR}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="ZR [工程タイム現在]" Width="150"/>
-                                    <TextBox Text="{Binding ProsTimeStartZR}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsProsTimeMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="ZR [工程タイム前回]" Width="150"/>
-                                    <TextBox Text="{Binding ProsTimePreviousStartZR}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="ZR [CYタイム]" Width="150"/>
-                                    <TextBox Text="{Binding CyTimeStartZR}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsCyTimeMemory}" Margin="10,0"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="5">
-                                    <TextBlock Text="D [速度変化指令]" Width="150"/>
-                                    <TextBox Text="{Binding CylinderDeviceStartD}" Width="100" PreviewTextInput="NumberOnlyTextBox_PreviewTextInput"/>
-                                </StackPanel>
-
-                            </UniformGrid>
-                        </GroupBox>
-
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0">
-                            <Button Content="メモリ設定" Command="{Binding MemorySettingCommand}" Width="120" Height="30" Margin="5">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsMemoryConfigured}" Value="True">
-                                                <Setter Property="Background" Value="#90EE90"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button Content="工程出力" Command="{Binding ProcessOutputCommand}" Width="120" Height="30" Margin="5">
-                                <Button.IsEnabled>
-                                    <Binding Path="IsMemoryConfigured"/>
-                                </Button.IsEnabled>
-                            </Button>
-                            <Button Content="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}" Width="120" Height="30" Margin="5"/>
-                            <Button Content="インターロック設定" Command="{Binding OpenInterlockSettingsCommand}" Width="120" Height="30" Margin="5"/>
-                            <CheckBox Content="デバッグモード" IsChecked="{Binding IsDebug, Mode=TwoWay}" Margin="5" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Grid>
-                </TabItem>
                 <TabItem Header="出力エラー一覧">
                     <DataGrid ItemsSource="{Binding OutputErrors}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="300">
                         <DataGrid.Columns>

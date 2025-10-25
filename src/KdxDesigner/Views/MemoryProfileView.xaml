@@ -131,7 +131,7 @@
                                 <ItemsControl ItemsSource="{Binding DataContext.DeviceOverlaps, RelativeSource={RelativeSource AncestorType=Window}}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="Red" BorderThickness="1" CornerRadius="3" Padding="5" Margin="0,2" Background="#FFFEEEE">
+                                            <Border BorderBrush="Red" BorderThickness="1" CornerRadius="3" Padding="5" Margin="0,2" Background="#FFFEEE">
                                                 <StackPanel>
                                                     <TextBlock Text="{Binding Message}" Foreground="Red" FontWeight="Bold"/>
                                                     <TextBlock>

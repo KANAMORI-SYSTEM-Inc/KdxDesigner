@@ -6,7 +6,6 @@ using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
 using Kdx.Core.Application;
 using Kdx.Infrastructure.Supabase.Repositories;
-using KdxDesigner.Models;
 using KdxDesigner.Services;
 using KdxDesigner.Services.Authentication;
 using KdxDesigner.Services.ErrorService;
@@ -58,11 +57,41 @@ namespace KdxDesigner.ViewModels
             }
         }
 
+        /// <summary>
+        /// 同一PlcIdのOperationを再読み込み
+        /// </summary>
+        public async Task ReloadJoinedOperationListAsync()
+        {
+            if (SelectedPlc != null && _repository != null)
+            {
+                var allOperations = await _repository.GetOperationsAsync();
+                var allCycles = await _repository.GetCyclesAsync();
+
+                // 同一PlcIdのCycleを取得
+                var cycleIdsForPlc = allCycles
+                    .Where(c => c.PlcId == SelectedPlc.Id)
+                    .Select(c => c.Id)
+                    .ToHashSet();
+
+                // 同一PlcId配下のOperationを抽出
+                var operationsForPlc = allOperations
+                    .Where(o => o.CycleId.HasValue && cycleIdsForPlc.Contains(o.CycleId.Value))
+                    .OrderBy(o => o.CycleId)
+                    .ThenBy(o => o.SortNumber)
+                    .ToList();
+
+                JoinedOperationList = new ObservableCollection<Operation>(operationsForPlc);
+            }
+            else
+            {
+                JoinedOperationList = new ObservableCollection<Operation>();
+            }
+        }
+
         private readonly SupabaseConnectionHelper? _supabaseHelper;
 
         // マネージャークラス
         private SelectionStateManager _selectionManager = null!;
-        private DeviceConfigurationManager _deviceConfig = null!;
         private MemoryConfigurationManager _memoryConfig = null!;
         private ServiceInitializer _serviceInitializer = null!;
 
@@ -118,6 +147,9 @@ namespace KdxDesigner.ViewModels
             set { if (_selectionManager != null) _selectionManager.SelectedOperations = value; }
         }
 
+        // 同一PlcIdで抽出したOperation一覧
+        [ObservableProperty] private ObservableCollection<Operation> _joinedOperationList = new();
+
         public ObservableCollection<ProcessCategory> ProcessCategories
         {
             get => _selectionManager?.ProcessCategories ?? new();
@@ -166,134 +198,134 @@ namespace KdxDesigner.ViewModels
         }
 
         // デバイス設定プロパティ（DeviceConfigurationManagerから公開）
-        public int ProcessDeviceStartL
-        {
-            get => _deviceConfig?.ProcessDeviceStartL ?? 14000;
-            set { if (_deviceConfig != null) _deviceConfig.ProcessDeviceStartL = value; }
-        }
-        public int DetailDeviceStartL
-        {
-            get => _deviceConfig?.DetailDeviceStartL ?? 15000;
-            set { if (_deviceConfig != null) _deviceConfig.DetailDeviceStartL = value; }
-        }
-        public int OperationDeviceStartM
-        {
-            get => _deviceConfig?.OperationDeviceStartM ?? 20000;
-            set { if (_deviceConfig != null) _deviceConfig.OperationDeviceStartM = value; }
-        }
-        public int CylinderDeviceStartM
-        {
-            get => _deviceConfig?.CylinderDeviceStartM ?? 30000;
-            set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartM = value; }
-        }
-        public int CylinderDeviceStartD
-        {
-            get => _deviceConfig?.CylinderDeviceStartD ?? 5000;
-            set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartD = value; }
-        }
-        public int ErrorDeviceStartM
-        {
-            get => _deviceConfig?.ErrorDeviceStartM ?? 120000;
-            set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartM = value; }
-        }
-        public int ErrorDeviceStartT
-        {
-            get => _deviceConfig?.ErrorDeviceStartT ?? 2000;
-            set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartT = value; }
-        }
-        public int DeviceStartT
-        {
-            get => _deviceConfig?.DeviceStartT ?? 0;
-            set { if (_deviceConfig != null) _deviceConfig.DeviceStartT = value; }
-        }
-        public int TimerStartZR
-        {
-            get => _deviceConfig?.TimerStartZR ?? 3000;
-            set { if (_deviceConfig != null) _deviceConfig.TimerStartZR = value; }
-        }
-        public int ProsTimeStartZR
-        {
-            get => _deviceConfig?.ProsTimeStartZR ?? 12000;
-            set { if (_deviceConfig != null) _deviceConfig.ProsTimeStartZR = value; }
-        }
-        public int ProsTimePreviousStartZR
-        {
-            get => _deviceConfig?.ProsTimePreviousStartZR ?? 24000;
-            set { if (_deviceConfig != null) _deviceConfig.ProsTimePreviousStartZR = value; }
-        }
-        public int CyTimeStartZR
-        {
-            get => _deviceConfig?.CyTimeStartZR ?? 30000;
-            set { if (_deviceConfig != null) _deviceConfig.CyTimeStartZR = value; }
-        }
+        //public int ProcessDeviceStartL
+        //{
+        //    get => _deviceConfig?.ProcessDeviceStartL ?? 14000;
+        //    set { if (_deviceConfig != null) _deviceConfig.ProcessDeviceStartL = value; }
+        //}
+        //public int DetailDeviceStartL
+        //{
+        //    get => _deviceConfig?.DetailDeviceStartL ?? 15000;
+        //    set { if (_deviceConfig != null) _deviceConfig.DetailDeviceStartL = value; }
+        //}
+        //public int OperationDeviceStartM
+        //{
+        //    get => _deviceConfig?.OperationDeviceStartM ?? 20000;
+        //    set { if (_deviceConfig != null) _deviceConfig.OperationDeviceStartM = value; }
+        //}
+        //public int CylinderDeviceStartM
+        //{
+        //    get => _deviceConfig?.CylinderDeviceStartM ?? 30000;
+        //    set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartM = value; }
+        //}
+        //public int CylinderDeviceStartD
+        //{
+        //    get => _deviceConfig?.CylinderDeviceStartD ?? 5000;
+        //    set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartD = value; }
+        //}
+        //public int ErrorDeviceStartM
+        //{
+        //    get => _deviceConfig?.ErrorDeviceStartM ?? 120000;
+        //    set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartM = value; }
+        //}
+        //public int ErrorDeviceStartT
+        //{
+        //    get => _deviceConfig?.ErrorDeviceStartT ?? 2000;
+        //    set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartT = value; }
+        //}
+        //public int DeviceStartT
+        //{
+        //    get => _deviceConfig?.DeviceStartT ?? 0;
+        //    set { if (_deviceConfig != null) _deviceConfig.DeviceStartT = value; }
+        //}
+        //public int TimerStartZR
+        //{
+        //    get => _deviceConfig?.TimerStartZR ?? 3000;
+        //    set { if (_deviceConfig != null) _deviceConfig.TimerStartZR = value; }
+        //}
+        //public int ProsTimeStartZR
+        //{
+        //    get => _deviceConfig?.ProsTimeStartZR ?? 12000;
+        //    set { if (_deviceConfig != null) _deviceConfig.ProsTimeStartZR = value; }
+        //}
+        //public int ProsTimePreviousStartZR
+        //{
+        //    get => _deviceConfig?.ProsTimePreviousStartZR ?? 24000;
+        //    set { if (_deviceConfig != null) _deviceConfig.ProsTimePreviousStartZR = value; }
+        //}
+        //public int CyTimeStartZR
+        //{
+        //    get => _deviceConfig?.CyTimeStartZR ?? 30000;
+        //    set { if (_deviceConfig != null) _deviceConfig.CyTimeStartZR = value; }
+        //}
 
         // メモリ/出力フラグ
-        public bool IsProcessMemory
-        {
-            get => _deviceConfig?.IsProcessMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsProcessMemory = value; }
-        }
-        public bool IsDetailMemory
-        {
-            get => _deviceConfig?.IsDetailMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsDetailMemory = value; }
-        }
-        public bool IsOperationMemory
-        {
-            get => _deviceConfig?.IsOperationMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsOperationMemory = value; }
-        }
-        public bool IsCylinderMemory
-        {
-            get => _deviceConfig?.IsCylinderMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsCylinderMemory = value; }
-        }
-        public bool IsErrorMemory
-        {
-            get => _deviceConfig?.IsErrorMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsErrorMemory = value; }
-        }
-        public bool IsTimerMemory
-        {
-            get => _deviceConfig?.IsTimerMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsTimerMemory = value; }
-        }
-        public bool IsProsTimeMemory
-        {
-            get => _deviceConfig?.IsProsTimeMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsProsTimeMemory = value; }
-        }
-        public bool IsCyTimeMemory
-        {
-            get => _deviceConfig?.IsCyTimeMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsCyTimeMemory = value; }
-        }
+        //public bool IsProcessMemory
+        //{
+        //    get => _deviceConfig?.IsProcessMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsProcessMemory = value; }
+        //}
+        //public bool IsDetailMemory
+        //{
+        //    get => _deviceConfig?.IsDetailMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsDetailMemory = value; }
+        //}
+        //public bool IsOperationMemory
+        //{
+        //    get => _deviceConfig?.IsOperationMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsOperationMemory = value; }
+        //}
+        //public bool IsCylinderMemory
+        //{
+        //    get => _deviceConfig?.IsCylinderMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsCylinderMemory = value; }
+        //}
+        //public bool IsErrorMemory
+        //{
+        //    get => _deviceConfig?.IsErrorMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsErrorMemory = value; }
+        //}
+        //public bool IsTimerMemory
+        //{
+        //    get => _deviceConfig?.IsTimerMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsTimerMemory = value; }
+        //}
+        //public bool IsProsTimeMemory
+        //{
+        //    get => _deviceConfig?.IsProsTimeMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsProsTimeMemory = value; }
+        //}
+        //public bool IsCyTimeMemory
+        //{
+        //    get => _deviceConfig?.IsCyTimeMemory ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsCyTimeMemory = value; }
+        //}
 
-        public bool IsProcessOutput
-        {
-            get => _deviceConfig?.IsProcessOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsProcessOutput = value; }
-        }
-        public bool IsDetailOutput
-        {
-            get => _deviceConfig?.IsDetailOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsDetailOutput = value; }
-        }
-        public bool IsOperationOutput
-        {
-            get => _deviceConfig?.IsOperationOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsOperationOutput = value; }
-        }
-        public bool IsCylinderOutput
-        {
-            get => _deviceConfig?.IsCylinderOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsCylinderOutput = value; }
-        }
-        public bool IsDebug
-        {
-            get => _deviceConfig?.IsDebug ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsDebug = value; }
-        }
+        //public bool IsProcessOutput
+        //{
+        //    get => _deviceConfig?.IsProcessOutput ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsProcessOutput = value; }
+        //}
+        //public bool IsDetailOutput
+        //{
+        //    get => _deviceConfig?.IsDetailOutput ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsDetailOutput = value; }
+        //}
+        //public bool IsOperationOutput
+        //{
+        //    get => _deviceConfig?.IsOperationOutput ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsOperationOutput = value; }
+        //}
+        //public bool IsCylinderOutput
+        //{
+        //    get => _deviceConfig?.IsCylinderOutput ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsCylinderOutput = value; }
+        //}
+        //public bool IsDebug
+        //{
+        //    get => _deviceConfig?.IsDebug ?? false;
+        //    set { if (_deviceConfig != null) _deviceConfig.IsDebug = value; }
+        //}
 
         // メモリ設定状態プロパティ
         public int TotalMemoryDeviceCount
@@ -410,6 +442,7 @@ namespace KdxDesigner.ViewModels
                             break;
                         case nameof(SelectedPlc):
                             UpdateMemoryConfigurationStatus();
+                            _ = ReloadJoinedOperationListAsync(); // 同一PlcIdのOperation一覧を再読み込み
                             break;
                         case nameof(SelectedCycle):
                             if (_selectionManager.SelectedCycle != null)
@@ -426,18 +459,6 @@ namespace KdxDesigner.ViewModels
             // ServiceInitializer の初期化とサービス生成
             _serviceInitializer = new ServiceInitializer(_repository, this);
             _serviceInitializer.InitializeAll();
-
-            // DeviceConfigurationManager の初期化
-            _deviceConfig = new DeviceConfigurationManager();
-
-            // DeviceConfigurationManagerのプロパティ変更をMainViewModelに転送
-            _deviceConfig.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName != null)
-                {
-                    OnPropertyChanged(e.PropertyName);
-                }
-            };
 
             // MemoryConfigurationManager の初期化
             if (_serviceInitializer.MemoryStore != null)
@@ -534,20 +555,12 @@ namespace KdxDesigner.ViewModels
             // SelectionStateManagerを使ってマスターデータを読み込む
             await _selectionManager.LoadMasterDataAsync();
 
-            // 設定とプロファイルの読み込み
-            LoadSettings();
 
             // 前回の選択状態を復元
             RestoreLastSelection();
-        }
 
-        /// <summary>
-        /// 設定とプロファイルの読み込み
-        /// </summary>
-        private void LoadSettings()
-        {
-            SettingsManager.Load();
-            LoadMemoryProfile();
+            // 同一PlcIdのOperation一覧を読み込み
+            await ReloadJoinedOperationListAsync();
         }
 
         /// <summary>
@@ -1149,7 +1162,7 @@ namespace KdxDesigner.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to get SupabaseRepository: {ex.Message}");
+                Debug.WriteLine($"Failed to get SupabaseRepository: {ex.Message}");
                 MessageBox.Show("Supabase接続が利用できません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -1226,33 +1239,9 @@ namespace KdxDesigner.ViewModels
             view.ShowDialog();
         }
 
-        private void LoadMemoryProfile()
+        public void SaveLastUsedProfile(int profileId)
         {
-            var profileManager = new MemoryProfileManager();
-            MemoryProfile? profileToLoad = null;
-
-            // 前回使用したプロファイルを取得
-            if (!string.IsNullOrEmpty(SettingsManager.Settings.LastUsedMemoryProfileId))
-            {
-                profileToLoad = profileManager.GetProfile(SettingsManager.Settings.LastUsedMemoryProfileId);
-            }
-
-            // 前回のプロファイルがない場合はデフォルトプロファイルを使用
-            if (profileToLoad == null)
-            {
-                profileToLoad = profileManager.GetDefaultProfile();
-            }
-
-            // プロファイルを適用
-            if (profileToLoad != null)
-            {
-                profileManager.ApplyProfileToViewModel(profileToLoad, this);
-            }
-        }
-
-        public void SaveLastUsedProfile(string profileId)
-        {
-            SettingsManager.Settings.LastUsedMemoryProfileId = profileId;
+            SettingsManager.Settings.LastUsedMemoryProfileId = profileId.ToString();
             SettingsManager.Save();
         }
 
@@ -1311,10 +1300,18 @@ namespace KdxDesigner.ViewModels
                 // ProcessBuilder (out パラメータ方式を維持、または新しい方式に修正)
                 var pErrorAggregator = new ErrorAggregator((int)MnemonicType.Process);
 
+                var profile = await _repository.GetMemoryProfileByCycleIdAsync(SelectedPlc.Id);
+
+                if (profile == null)
+                {
+                    MessageBox.Show("選択されたPLCとサイクルに対応するメモリプロファイルが見つかりません。", "エラー");
+                    return;
+                }
+
                 var processRows = await ProcessBuilder.GenerateAllLadderCsvRows(
                     SelectedCycle!,
-                    ProcessDeviceStartL,
-                    DetailDeviceStartL,
+                    profile.ProcessDeviceStartL,
+                    profile.DetailDeviceStartL,
                     data.JoinedProcessList,
                     data.JoinedProcessDetailList,
                     data.IoList,
@@ -1367,6 +1364,25 @@ namespace KdxDesigner.ViewModels
                     data.ProsTime, data.IoList);
                 allOutputRows.AddRange(cylinderRows);
                 allGeneratedErrors.AddRange(cyErrorAggregator.GetAllErrors());
+
+                // TODO: Issue #6 [FEATURE] Cylinderロジックの扱い変更
+                //List<MnemonicDeviceWithOperation> joinedOperationAll = new List<MnemonicDeviceWithOperation>();
+                //List< MnemonicDeviceWithCylinder > joinedCylinderAll = new List<MnemonicDeviceWithCylinder>();
+                //List<Operation> operationsByPlcId = new List<Operation>();
+                //List<Cylinder> cylindersByPlcId = new List<Cylinder>();
+
+                //cylindersByPlcId = await _repository.GetCyListAsync(SelectedPlc.Id);
+                //operationsByPlcId = await _repository.GetOperationsAsync();
+
+                //List<Cycle> cycles = new List<Cycle>();
+                //cycles = await _repository.GetCyclesAsync();
+                //var cycleIds = cycles.Select(c => c.Id).ToHashSet();
+                //operationsByPlcId = operationsByPlcId.Where(op => cycleIds.Contains(op.CycleId ?? 0)).ToList();
+
+                //var devices = _mnemonicMemoryStore.GetMnemonicDevices(SelectedPlc.Id);
+                //var devicesO = devices.Where(m => m.MnemonicId == (int)MnemonicType.Operation).ToList().OrderBy(o => o.StartNum);
+                //var devicesC = devices.Where(m => m.MnemonicId == (int)MnemonicType.CY).ToList().OrderBy(c => c.StartNum);
+
 
                 // --- 3. 全てのエラーをUIに一度に反映 ---
                 OutputErrors = allGeneratedErrors.Distinct().ToList(); // 重複するエラーを除く場合
@@ -1705,20 +1721,33 @@ namespace KdxDesigner.ViewModels
             List<Operation> operations, List<IO> ioList, List<Timer> timers) prepData,
             MemoryProgressViewModel? progressViewModel = null)
         {
+            if (SelectedCycle != null && _repository != null)
+            {
+                return;
+            }
             progressViewModel?.UpdateStatus("既存のニーモニックデバイスを削除中...");
-            _mnemonicService!.DeleteAllMnemonicDevices();
+            await _mnemonicService!.DeleteAllMnemonicDevices();
+
+            // MemoryProfileからデバイス設定を読み込み
+            MemoryProfile? memoryProfile = await _repository!.GetMemoryProfileByCycleIdAsync(SelectedCycle!.Id);
+
+            if (memoryProfile == null)
+            {
+                progressViewModel?.UpdateStatus("メモリープロファイルが設定されていません。");
+                return;
+            }
 
             progressViewModel?.UpdateStatus($"工程デバイスを保存中... ({Processes.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceProcess(Processes.ToList(), ProcessDeviceStartL, SelectedPlc!.Id);
+            _mnemonicService!.SaveMnemonicDeviceProcess(Processes.ToList(), memoryProfile.ProcessDeviceStartL, SelectedPlc!.Id);
 
             progressViewModel?.UpdateStatus($"工程詳細デバイスを保存中... ({prepData.details.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceProcessDetail(prepData.details, DetailDeviceStartL, SelectedPlc!.Id);
+            await _mnemonicService!.SaveMnemonicDeviceProcessDetail(prepData.details, memoryProfile.DetailDeviceStartL, SelectedPlc!.Id);
 
             progressViewModel?.UpdateStatus($"操作デバイスを保存中... ({prepData.operations.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceOperation(prepData.operations, OperationDeviceStartM, SelectedPlc!.Id);
+            _mnemonicService!.SaveMnemonicDeviceOperation(prepData.operations, memoryProfile.OperationDeviceStartM, SelectedPlc!.Id);
 
             progressViewModel?.UpdateStatus($"シリンダーデバイスを保存中... ({prepData.cylinders.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceCY(prepData.cylinders, CylinderDeviceStartM, SelectedPlc!.Id);
+            await _mnemonicService!.SaveMnemonicDeviceCY(prepData.cylinders, memoryProfile.CylinderDeviceStartM, SelectedPlc!.Id);
 
             if (_repository == null || _timerService == null || _errorService == null || _prosTimeService == null || _speedService == null)
             {
@@ -1745,31 +1774,31 @@ namespace KdxDesigner.ViewModels
             await _repository.DeleteAllMnemonicTimerDeviceAsync();
 
             progressViewModel?.UpdateStatus("工程詳細のタイマーを保存中...");
-            timerCount += await _timerService.SaveWithDetail(timer, details, DeviceStartT, SelectedPlc!.Id, timerCount);
+            timerCount += await _timerService.SaveWithDetail(timer, details, memoryProfile.DeviceStartT, SelectedPlc!.Id, timerCount);
 
             progressViewModel?.UpdateStatus("操作のタイマーを保存中...");
-            timerCount += await _timerService.SaveWithOperation(timer, operations, DeviceStartT, SelectedPlc!.Id, timerCount);
+            timerCount += await _timerService.SaveWithOperation(timer, operations, memoryProfile.DeviceStartT, SelectedPlc!.Id, timerCount);
 
             progressViewModel?.UpdateStatus("シリンダーのタイマーを保存中...");
-            timerCount += await _timerService.SaveWithCY(timer, cylinders, DeviceStartT, SelectedPlc!.Id, timerCount);
+            timerCount += await _timerService.SaveWithCY(timer, cylinders, memoryProfile.DeviceStartT, SelectedPlc!.Id, timerCount);
             progressViewModel?.AddLog($"タイマーデバイス保存完了 (合計: {timerCount}件)");
 
             // Errorテーブルの保存
             progressViewModel?.UpdateStatus("エラーテーブルを保存中...");
             await _errorService!.DeleteErrorTable();
-            await _errorService!.SaveMnemonicDeviceOperation(prepData.operations, prepData.ioList, ErrorDeviceStartM, ErrorDeviceStartT, SelectedPlc!.Id, SelectedCycle!.Id);
+            await _errorService!.SaveMnemonicDeviceOperation(prepData.operations, prepData.ioList, memoryProfile.ErrorDeviceStartM, memoryProfile.ErrorDeviceStartT, SelectedPlc!.Id, SelectedCycle!.Id);
             progressViewModel?.AddLog("エラーテーブル保存完了");
 
             // ProsTimeテーブルの保存
             progressViewModel?.UpdateStatus("工程時間テーブルを保存中...");
             _prosTimeService!.DeleteProsTimeTable();
-            _prosTimeService!.SaveProsTime(prepData.operations, ProsTimeStartZR, ProsTimePreviousStartZR, CyTimeStartZR, SelectedPlc!.Id);
+            _prosTimeService!.SaveProsTime(prepData.operations, memoryProfile.ProsTimeStartZR, memoryProfile.ProsTimePreviousStartZR, memoryProfile.CyTimeStartZR, SelectedPlc!.Id);
             progressViewModel?.AddLog("工程時間テーブル保存完了");
 
             // Speedテーブルの保存
             progressViewModel?.UpdateStatus("速度テーブルを保存中...");
             _speedService!.DeleteSpeedTable();
-            _speedService!.Save(prepData.cylinders, CylinderDeviceStartD, SelectedPlc!.Id);
+            _speedService!.Save(prepData.cylinders, memoryProfile.CylinderDeviceStartD, SelectedPlc!.Id);
             progressViewModel?.AddLog("速度テーブル保存完了");
         }
 
@@ -1797,23 +1826,23 @@ namespace KdxDesigner.ViewModels
 
             progressViewModel?.AddLog($"取得したデバイス数 - 工程: {devicesP.Count}, 工程詳細: {devicesD.Count}, 操作: {devicesO.Count}, シリンダー: {devicesC.Count}, タイマー: {timerDevices.Count}");
 
-            int totalProgress = (IsProcessMemory ? devicesP.Count : 0) +
-                                (IsDetailMemory ? devicesD.Count : 0) +
-                                (IsOperationMemory ? devicesO.Count : 0) +
-                                (IsCylinderMemory ? devicesC.Count : 0) +
-                                (IsErrorMemory ? devicesC.Count : 0) +
-                                (IsTimerMemory ? timerDevices.Count * 2 : 0);
+            int totalProgress = devicesP.Count +
+                                devicesD.Count +
+                                devicesO.Count +
+                                devicesC.Count +
+                                devicesC.Count +
+                                timerDevices.Count * 2;
 
             progressViewModel?.SetProgressMax(totalProgress);
 
-            if (!await ProcessAndSaveMemoryAsync(IsErrorMemory, devicesC, async device => await _memoryService.SaveMnemonicMemories(_repository, device), "エラー", progressViewModel)) return;
+            if (!await ProcessAndSaveMemoryAsync(true, devicesC, async device => await _memoryService.SaveMnemonicMemories(_repository, device), "エラー", progressViewModel)) return;
             //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesT, "Timer (T)", progressViewModel)) return;
             //if (!await ProcessAndSaveMemoryAsync(true, timerDevices, _memoryService.SaveMnemonicTimerMemoriesZR, "Timer (ZR)", progressViewModel)) return;
 
             progressViewModel?.UpdateStatus("メモリ設定状態を更新中...");
 
             // メモリ設定状態を更新
-            UpdateMemoryConfigurationStatus();
+            await UpdateMemoryConfigurationStatus();
 
             MessageBox.Show("すべてのメモリ保存が完了しました。");
         }
