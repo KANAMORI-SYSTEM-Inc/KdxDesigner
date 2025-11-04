@@ -60,7 +60,6 @@ namespace KdxDesigner.Utils.Cylinder
 
             var functions = new CylinderFunction(_mainViewModel, _errorAggregator, cylinder, _ioAddressService, manualButton, null);
 
-
             // CYNumを含むIOの取得
             var sensors = ioList.Where(i => i.IOName != null
                                             && cylinder.Cylinder.CYNum != null
@@ -97,7 +96,6 @@ namespace KdxDesigner.Utils.Cylinder
             // 行き方向自動指令がない場合は、行き方向手動指令を使用
             else if (goOperation.Count == 0 && activeOperation.Count != 0)
             {
-
                 result.AddRange(functions.GoOperation(activeOperation));
                 // 帰り方向自動指令
                 result.AddRange(functions.BackOperation(backOperation));

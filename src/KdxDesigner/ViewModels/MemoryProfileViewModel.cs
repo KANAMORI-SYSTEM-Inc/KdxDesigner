@@ -1,16 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
-using KdxDesigner.Models;
-using KdxDesigner.Services;
 using Kdx.Infrastructure.Supabase.Repositories;
-using Kdx.Contracts.DTOs;
-
-using System;
+using KdxDesigner.Services;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows;
-using System.Collections.Generic;
 
 namespace KdxDesigner.ViewModels
 {
@@ -20,8 +13,8 @@ namespace KdxDesigner.ViewModels
         private readonly MainViewModel _mainViewModel;
         private readonly ISupabaseRepository _repository;
 
-        [ObservableProperty] private ObservableCollection<MemoryProfile> profiles = new();
-        [ObservableProperty] private MemoryProfile? selectedProfile;
+        [ObservableProperty] private ObservableCollection<KdxDesigner.Models.MemoryProfile> profiles = new();
+        [ObservableProperty] private KdxDesigner.Models.MemoryProfile? selectedProfile;
         [ObservableProperty] private string newProfileName = string.Empty;
         [ObservableProperty] private string newProfileDescription = string.Empty;
         [ObservableProperty] private string? memoryRecordSummary;
@@ -38,7 +31,7 @@ namespace KdxDesigner.ViewModels
         private void LoadProfiles()
         {
             var profileList = _profileManager.LoadProfiles();
-            Profiles = new ObservableCollection<MemoryProfile>(profileList);
+            Profiles = new ObservableCollection<KdxDesigner.Models.MemoryProfile>(profileList);
         }
 
         [RelayCommand]
@@ -90,11 +83,11 @@ namespace KdxDesigner.ViewModels
 
             var newProfile = _profileManager.CreateProfileFromCurrent(_mainViewModel, NewProfileName, NewProfileDescription);
             _profileManager.SaveProfile(newProfile);
-            
+
             LoadProfiles();
             NewProfileName = string.Empty;
             NewProfileDescription = string.Empty;
-            
+
             MessageBox.Show("プロファイルを保存しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -126,7 +119,7 @@ namespace KdxDesigner.ViewModels
                 SelectedProfile.UpdatedAt = DateTime.Now;
                 _profileManager.SaveProfile(SelectedProfile);
                 LoadProfiles();
-                
+
                 MessageBox.Show("プロファイルを更新しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -160,7 +153,7 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        partial void OnSelectedProfileChanged(MemoryProfile? value)
+        partial void OnSelectedProfileChanged(KdxDesigner.Models.MemoryProfile? value)
         {
             if (value != null)
             {
@@ -169,7 +162,7 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        private async void CalculateMemoryUsage(MemoryProfile profile)
+        private async void CalculateMemoryUsage(KdxDesigner.Models.MemoryProfile profile)
         {
             if (_mainViewModel.SelectedPlc == null) return;
 
@@ -186,11 +179,11 @@ namespace KdxDesigner.ViewModels
             int cylinderMemoryCount = cylinders.Count * 50; // 各シリンダーは50レコード
 
             // 合計レコード数
-            int totalMemoryCount = processMemoryCount + processDetailMemoryCount + 
+            int totalMemoryCount = processMemoryCount + processDetailMemoryCount +
                                  operationMemoryCount + cylinderMemoryCount;
 
             // 重複チェック
-            var overlaps = CheckDeviceOverlaps(profile, processes.Count, processDetails.Count, 
+            var overlaps = CheckDeviceOverlaps(profile, processes.Count, processDetails.Count,
                                               operations.Count, cylinders.Count);
 
             // サマリー文字列の生成
@@ -204,7 +197,7 @@ namespace KdxDesigner.ViewModels
             DeviceOverlaps = overlaps;
         }
 
-        private List<DeviceOverlapInfo> CheckDeviceOverlaps(MemoryProfile profile, 
+        private List<DeviceOverlapInfo> CheckDeviceOverlaps(KdxDesigner.Models.MemoryProfile profile,
             int processCount, int processDetailCount, int operationCount, int cylinderCount)
         {
             var overlaps = new List<DeviceOverlapInfo>();

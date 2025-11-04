@@ -732,6 +732,7 @@ namespace KdxDesigner.Utils.Cylinder
                         _cylinder.Cylinder.Id,
                         null);
 
+
                     if (foundValve != null)
                     {
                         goValveAddresses.Add(foundValve);

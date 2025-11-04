@@ -6,7 +6,6 @@ using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
 using Kdx.Core.Application;
 using Kdx.Infrastructure.Supabase.Repositories;
-using KdxDesigner.Models;
 using KdxDesigner.Services;
 using KdxDesigner.Services.Authentication;
 using KdxDesigner.Services.ErrorService;
@@ -1229,7 +1228,7 @@ namespace KdxDesigner.ViewModels
         private void LoadMemoryProfile()
         {
             var profileManager = new MemoryProfileManager();
-            MemoryProfile? profileToLoad = null;
+            KdxDesigner.Models.MemoryProfile? profileToLoad = null;
 
             // 前回使用したプロファイルを取得
             if (!string.IsNullOrEmpty(SettingsManager.Settings.LastUsedMemoryProfileId))
@@ -1542,8 +1541,9 @@ namespace KdxDesigner.ViewModels
                 .Join(operations, m => m.RecordId, o => o.Id, (m, o)
                 => new MnemonicDeviceWithOperation { Mnemonic = m, Operation = o })
                 .OrderBy(x => x.Mnemonic.StartNum).ToList();
+
             var joinedCylinderList = devicesC
-                .Join(cylinders, m => m.RecordId, c => c.Id, (m, c)
+                .Join(cylindersForPlc, m => m.RecordId, c => c.Id, (m, c)
                 => new MnemonicDeviceWithCylinder { Mnemonic = m, Cylinder = c })
                 .OrderBy(x => x.Mnemonic.StartNum).ToList();
 
@@ -1555,7 +1555,7 @@ namespace KdxDesigner.ViewModels
 
             var timerDevicesCY = timerDevices.Where(t => t.MnemonicId == (int)MnemonicType.CY).ToList();
             var joinedCylinderWithTimerList = timerDevicesCY
-                .Join(cylinders, m => m.RecordId, o => o.Id, (m, o)
+                .Join(cylindersForPlc, m => m.RecordId, o => o.Id, (m, o)
                 => new MnemonicTimerDeviceWithCylinder { Timer = m, Cylinder = o })
                 .OrderBy(x => x.Cylinder.Id).ToList();
 
@@ -1666,6 +1666,7 @@ namespace KdxDesigner.ViewModels
             List<ProcessDetail> details = (await _repository
                 .GetProcessDetailsAsync())
                 .Where(d => d.CycleId == SelectedCycle.Id).OrderBy(d => d.SortNumber).ToList();
+
             List<Cylinder> cylinders = (await _repository.GetCYsAsync())
                 .Where(o => o.PlcId == SelectedPlc.Id).OrderBy(c => c.SortNumber).ToList();
             _selectedCylinderCycles = await _repository.GetCylinderCyclesByPlcIdAsync(SelectedPlc.Id);
@@ -1678,12 +1679,14 @@ namespace KdxDesigner.ViewModels
             }
             else
             {
-                filteredCylinders = cylinders.Join(
-                    _selectedCylinderCycles,
-                    c => c.Id,
-                    cc => cc.CylinderId,
-                    (c, cc) => new { Cylinder = c, CylinderCycle = cc }
-                ).Where(cc => cc.CylinderCycle.CycleId == SelectedCycle.Id).Select(cc => cc.Cylinder).ToList();
+                //filteredCylinders = cylinders.Join(
+                //    _selectedCylinderCycles,
+                //    c => c.Id,
+                //    cc => cc.CylinderId,
+                //    (c, cc) => new { Cylinder = c, CylinderCycle = cc }
+                //).Where(cc => cc.CylinderCycle.CycleId == SelectedCycle.Id).Select(cc => cc.Cylinder).ToList();
+
+                filteredCylinders = cylinders.ToList();
             }
 
             var operationIds = details.Select(c => c.OperationId).ToHashSet();
@@ -1693,9 +1696,20 @@ namespace KdxDesigner.ViewModels
                 .Where(o => o.CycleId == SelectedCycle.Id)
                 .OrderBy(o => o.SortNumber).ToList();
             var ioList = await _repository.GetIoListAsync();
-            var timers = await _repository.GetTimersByCycleIdAsync(SelectedCycle.Id);
+            var timers = await _repository.GetTimersAsync();
+            var Cycles = await _repository.GetCyclesAsync();
 
-            return (details, filteredCylinders, op, ioList, timers);
+            Cycles = Cycles.Where(c => c.PlcId == SelectedPlc.Id).ToList();
+
+            List<Timer> filteredTimers = new List<Timer>();
+
+            foreach (var cycle in Cycles)
+            {
+                filteredTimers.AddRange(timers.Where(t => t.CycleId == cycle.Id).ToList());
+
+            }
+
+            return (details, filteredCylinders, op, ioList, filteredTimers);
         }
 
         // Mnemonic* と Timer* テーブルへのデータ保存をまとめたヘルパー
