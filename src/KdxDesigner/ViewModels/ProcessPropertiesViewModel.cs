@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
 using System.Collections.ObjectModel;
-using System.Linq;
 using Process = Kdx.Contracts.DTOs.Process;
 
 namespace KdxDesigner.ViewModels
@@ -27,7 +26,7 @@ namespace KdxDesigner.ViewModels
         [ObservableProperty] private string? _comment2;
         [ObservableProperty] private int? _sortNumber;
         [ObservableProperty] private ObservableCollection<ProcessCategory> _processCategories = new();
-        
+
         public bool DialogResult { get; private set; }
 
         public ProcessPropertiesViewModel(ISupabaseRepository repository, Process process)
@@ -61,7 +60,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private async void Save()
+        private void Save()
         {
             // プロセスのプロパティを更新
             _process.ProcessName = ProcessName;
@@ -78,7 +77,7 @@ namespace KdxDesigner.ViewModels
             _process.SortNumber = SortNumber;
 
             // データベースに保存
-            await _repository.UpdateProcessAsync(_process);
+            _ = _repository.UpdateProcessAsync(_process);
 
             DialogResult = true;
             RequestClose?.Invoke();
@@ -92,11 +91,11 @@ namespace KdxDesigner.ViewModels
         }
 
         public event Action? RequestClose;
-        
+
         public void UpdateProcess(Process process)
         {
             _process = process;
-            
+
             // プロセスのプロパティを読み込み
             Id = process.Id;
             ProcessName = process.ProcessName ?? "";
@@ -112,7 +111,7 @@ namespace KdxDesigner.ViewModels
             Comment2 = process.Comment2;
             SortNumber = process.SortNumber;
         }
-        
+
         public void ClearEventHandlers()
         {
             // イベントハンドラをクリア

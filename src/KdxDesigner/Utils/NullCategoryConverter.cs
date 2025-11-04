@@ -1,7 +1,6 @@
-using System;
+using Kdx.Contracts.DTOs;
 using System.Globalization;
 using System.Windows.Data;
-using Kdx.Contracts.DTOs;
 
 namespace KdxDesigner.Utils
 {
@@ -11,10 +10,10 @@ namespace KdxDesigner.Utils
         {
             if (value == null)
                 return "(なし)";
-            
+
             if (value is TimerCategory category)
-                return category.CategoryName;
-                
+                return category.CategoryName ?? string.Empty;
+
             return value;
         }
 

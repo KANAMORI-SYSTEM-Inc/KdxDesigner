@@ -3,16 +3,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
-using Kdx.Contracts.Interfaces;
 using Kdx.Core.Application;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Services;
 using KdxDesigner.Services.Authentication;
-using KdxDesigner.Services.ErrorService;
-using KdxDesigner.Services.IOSelector;
-using KdxDesigner.Services.MemonicTimerDevice;
 using KdxDesigner.Services.MnemonicDevice;
-using KdxDesigner.Services.MnemonicSpeedDevice;
 using KdxDesigner.Utils;
 using KdxDesigner.Utils.Cylinder;
 using KdxDesigner.Utils.Operation;
@@ -20,311 +15,15 @@ using KdxDesigner.Utils.ProcessDetail;
 using KdxDesigner.ViewModels.Managers;
 using KdxDesigner.Views;
 using Microsoft.Extensions.DependencyInjection;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using Process = Kdx.Contracts.DTOs.Process;
 using Timer = Kdx.Contracts.DTOs.Timer;
 
 namespace KdxDesigner.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
-        // リポジトリと認証サービス
-        protected private readonly ISupabaseRepository _repository = null!;
-        private readonly IAuthenticationService _authService = null!;
-
-        // Repositoryを公開（ViewからOperationPropertiesWindowにアクセスするため）
-        public ISupabaseRepository? Repository => _repository;
-
-        // Operationsを再読み込みするメソッド（Operation編集後に呼び出す）
-        public async Task ReloadOperationsAsync()
-        {
-            if (SelectedCycle != null && _repository != null)
-            {
-                var operations = await _repository.GetOperationsAsync();
-                var cycleOperations = operations
-                    .Where(o => o.CycleId == SelectedCycle.Id)
-                    .OrderBy(o => o.SortNumber)
-                    .ToList();
-
-                // DataGridの更新を確実にするため、ObservableCollectionを新しく作成
-                _selectionManager.SelectedOperations = new ObservableCollection<Operation>(cycleOperations);
-
-                // プロパティ変更通知を発火
-                OnPropertyChanged(nameof(SelectedOperations));
-            }
-        }
-
-        private readonly SupabaseConnectionHelper? _supabaseHelper;
-
-        // マネージャークラス
-        private SelectionStateManager _selectionManager = null!;
-        private DeviceConfigurationManager _deviceConfig = null!;
-        private MemoryConfigurationManager _memoryConfig = null!;
-        private ServiceInitializer _serviceInitializer = null!;
-
-        // 開いているProcessFlowDetailWindowのリスト
-        private readonly List<Window> _openProcessFlowWindows = new();
-
-        // その他の選択リスト
-        public List<Servo> _selectedServo = new();
-        public List<CylinderCycle>? _selectedCylinderCycles = new();
-        public List<ControlBox> _selectedControlBoxes = new();
-        public List<CylinderControlBox> _selectedCylinderControlBoxes = new();
-
-        // 出力エラー
-        [ObservableProperty] private List<OutputError> _outputErrors = new();
-
-        // 認証関連
-        [ObservableProperty] private string _currentUserEmail = string.Empty;
-
-        // マネージャーからのプロパティ公開（バインディング用）
-        public ObservableCollection<Company> Companies
-        {
-            get => _selectionManager?.Companies ?? new();
-            set { if (_selectionManager != null) _selectionManager.Companies = value; }
-        }
-        public ObservableCollection<Model> Models
-        {
-            get => _selectionManager?.Models ?? new();
-            set { if (_selectionManager != null) _selectionManager.Models = value; }
-        }
-        public ObservableCollection<PLC> Plcs
-        {
-            get => _selectionManager?.Plcs ?? new();
-            set { if (_selectionManager != null) _selectionManager.Plcs = value; }
-        }
-        public ObservableCollection<Cycle> Cycles
-        {
-            get => _selectionManager?.Cycles ?? new();
-            set { if (_selectionManager != null) _selectionManager.Cycles = value; }
-        }
-        public ObservableCollection<Process> Processes
-        {
-            get => _selectionManager?.Processes ?? new();
-            set { if (_selectionManager != null) _selectionManager.Processes = value; }
-        }
-        public ObservableCollection<ProcessDetail> ProcessDetails
-        {
-            get => _selectionManager?.ProcessDetails ?? new();
-            set { if (_selectionManager != null) _selectionManager.ProcessDetails = value; }
-        }
-        public ObservableCollection<Operation> SelectedOperations
-        {
-            get => _selectionManager?.SelectedOperations ?? new();
-            set { if (_selectionManager != null) _selectionManager.SelectedOperations = value; }
-        }
-
-        public ObservableCollection<ProcessCategory> ProcessCategories
-        {
-            get => _selectionManager?.ProcessCategories ?? new();
-            set { if (_selectionManager != null) _selectionManager.ProcessCategories = value; }
-        }
-        public ObservableCollection<ProcessDetailCategory> ProcessDetailCategories
-        {
-            get => _selectionManager?.ProcessDetailCategories ?? new();
-            set { if (_selectionManager != null) _selectionManager.ProcessDetailCategories = value; }
-        }
-        public ObservableCollection<OperationCategory> OperationCategories
-        {
-            get => _selectionManager?.OperationCategories ?? new();
-            set { if (_selectionManager != null) _selectionManager.OperationCategories = value; }
-        }
-
-        public Company? SelectedCompany
-        {
-            get => _selectionManager?.SelectedCompany;
-            set { if (_selectionManager != null) _selectionManager.SelectedCompany = value; }
-        }
-        public Model? SelectedModel
-        {
-            get => _selectionManager?.SelectedModel;
-            set { if (_selectionManager != null) _selectionManager.SelectedModel = value; }
-        }
-        public PLC? SelectedPlc
-        {
-            get => _selectionManager?.SelectedPlc;
-            set { if (_selectionManager != null) _selectionManager.SelectedPlc = value; }
-        }
-        public Cycle? SelectedCycle
-        {
-            get => _selectionManager?.SelectedCycle;
-            set { if (_selectionManager != null) _selectionManager.SelectedCycle = value; }
-        }
-        public Process? SelectedProcess
-        {
-            get => _selectionManager?.SelectedProcess;
-            set { if (_selectionManager != null) _selectionManager.SelectedProcess = value; }
-        }
-        public ProcessDetail? SelectedProcessDetail
-        {
-            get => _selectionManager?.SelectedProcessDetail;
-            set { if (_selectionManager != null) _selectionManager.SelectedProcessDetail = value; }
-        }
-
-        // デバイス設定プロパティ（DeviceConfigurationManagerから公開）
-        public int ProcessDeviceStartL
-        {
-            get => _deviceConfig?.ProcessDeviceStartL ?? 14000;
-            set { if (_deviceConfig != null) _deviceConfig.ProcessDeviceStartL = value; }
-        }
-        public int DetailDeviceStartL
-        {
-            get => _deviceConfig?.DetailDeviceStartL ?? 15000;
-            set { if (_deviceConfig != null) _deviceConfig.DetailDeviceStartL = value; }
-        }
-        public int OperationDeviceStartM
-        {
-            get => _deviceConfig?.OperationDeviceStartM ?? 20000;
-            set { if (_deviceConfig != null) _deviceConfig.OperationDeviceStartM = value; }
-        }
-        public int CylinderDeviceStartM
-        {
-            get => _deviceConfig?.CylinderDeviceStartM ?? 30000;
-            set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartM = value; }
-        }
-        public int CylinderDeviceStartD
-        {
-            get => _deviceConfig?.CylinderDeviceStartD ?? 5000;
-            set { if (_deviceConfig != null) _deviceConfig.CylinderDeviceStartD = value; }
-        }
-        public int ErrorDeviceStartM
-        {
-            get => _deviceConfig?.ErrorDeviceStartM ?? 120000;
-            set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartM = value; }
-        }
-        public int ErrorDeviceStartT
-        {
-            get => _deviceConfig?.ErrorDeviceStartT ?? 2000;
-            set { if (_deviceConfig != null) _deviceConfig.ErrorDeviceStartT = value; }
-        }
-        public int DeviceStartT
-        {
-            get => _deviceConfig?.DeviceStartT ?? 0;
-            set { if (_deviceConfig != null) _deviceConfig.DeviceStartT = value; }
-        }
-        public int TimerStartZR
-        {
-            get => _deviceConfig?.TimerStartZR ?? 3000;
-            set { if (_deviceConfig != null) _deviceConfig.TimerStartZR = value; }
-        }
-        public int ProsTimeStartZR
-        {
-            get => _deviceConfig?.ProsTimeStartZR ?? 12000;
-            set { if (_deviceConfig != null) _deviceConfig.ProsTimeStartZR = value; }
-        }
-        public int ProsTimePreviousStartZR
-        {
-            get => _deviceConfig?.ProsTimePreviousStartZR ?? 24000;
-            set { if (_deviceConfig != null) _deviceConfig.ProsTimePreviousStartZR = value; }
-        }
-        public int CyTimeStartZR
-        {
-            get => _deviceConfig?.CyTimeStartZR ?? 30000;
-            set { if (_deviceConfig != null) _deviceConfig.CyTimeStartZR = value; }
-        }
-
-        // メモリ/出力フラグ
-        public bool IsProcessMemory
-        {
-            get => _deviceConfig?.IsProcessMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsProcessMemory = value; }
-        }
-        public bool IsDetailMemory
-        {
-            get => _deviceConfig?.IsDetailMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsDetailMemory = value; }
-        }
-        public bool IsOperationMemory
-        {
-            get => _deviceConfig?.IsOperationMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsOperationMemory = value; }
-        }
-        public bool IsCylinderMemory
-        {
-            get => _deviceConfig?.IsCylinderMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsCylinderMemory = value; }
-        }
-        public bool IsErrorMemory
-        {
-            get => _deviceConfig?.IsErrorMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsErrorMemory = value; }
-        }
-        public bool IsTimerMemory
-        {
-            get => _deviceConfig?.IsTimerMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsTimerMemory = value; }
-        }
-        public bool IsProsTimeMemory
-        {
-            get => _deviceConfig?.IsProsTimeMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsProsTimeMemory = value; }
-        }
-        public bool IsCyTimeMemory
-        {
-            get => _deviceConfig?.IsCyTimeMemory ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsCyTimeMemory = value; }
-        }
-
-        public bool IsProcessOutput
-        {
-            get => _deviceConfig?.IsProcessOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsProcessOutput = value; }
-        }
-        public bool IsDetailOutput
-        {
-            get => _deviceConfig?.IsDetailOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsDetailOutput = value; }
-        }
-        public bool IsOperationOutput
-        {
-            get => _deviceConfig?.IsOperationOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsOperationOutput = value; }
-        }
-        public bool IsCylinderOutput
-        {
-            get => _deviceConfig?.IsCylinderOutput ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsCylinderOutput = value; }
-        }
-        public bool IsDebug
-        {
-            get => _deviceConfig?.IsDebug ?? false;
-            set { if (_deviceConfig != null) _deviceConfig.IsDebug = value; }
-        }
-
-        // メモリ設定状態プロパティ
-        public int TotalMemoryDeviceCount
-        {
-            get => _memoryConfig?.TotalMemoryDeviceCount ?? 0;
-            set { if (_memoryConfig != null) _memoryConfig.TotalMemoryDeviceCount = value; }
-        }
-        public string MemoryConfigurationStatus
-        {
-            get => _memoryConfig?.MemoryConfigurationStatus ?? "未設定";
-            set { if (_memoryConfig != null) _memoryConfig.MemoryConfigurationStatus = value; }
-        }
-        public bool IsMemoryConfigured
-        {
-            get => _memoryConfig?.IsMemoryConfigured ?? false;
-            set { if (_memoryConfig != null) _memoryConfig.IsMemoryConfigured = value; }
-        }
-        public string LastMemoryConfigTime
-        {
-            get => _memoryConfig?.LastMemoryConfigTime ?? string.Empty;
-            set { if (_memoryConfig != null) _memoryConfig.LastMemoryConfigTime = value; }
-        }
-
-        // サービスへのアクセス（後方互換性のため）
-        protected private IMnemonicDeviceService? _mnemonicService => _serviceInitializer?.MnemonicService;
-        protected private IMnemonicTimerDeviceService? _timerService => _serviceInitializer?.TimerService;
-        protected private IProsTimeDeviceService? _prosTimeService => _serviceInitializer?.ProsTimeService;
-        protected private IMnemonicSpeedDeviceService? _speedService => _serviceInitializer?.SpeedService;
-        protected private IMemoryService? _memoryService => _serviceInitializer?.MemoryService;
-        protected private IMnemonicDeviceMemoryStore? _mnemonicMemoryStore => _serviceInitializer?.MemoryStore;
-        protected private ErrorService? _errorService => _serviceInitializer?.ErrorService;
-        protected private WpfIOSelectorService? _ioSelectorService => _serviceInitializer?.IOSelectorService;
 
         /// <summary>
         /// DIコンテナ用コンストラクタ（推奨）
@@ -364,9 +63,9 @@ namespace KdxDesigner.ViewModels
         /// <summary>
         /// 共通初期化処理
         /// </summary>
-        private void Initialize()
+        private async void Initialize()
         {
-            InitializeManagers();
+            await InitializeManagers();
             _ = LoadInitialDataAsync();
 
             if (_supabaseHelper != null)
@@ -378,7 +77,7 @@ namespace KdxDesigner.ViewModels
         /// <summary>
         /// マネージャークラスの初期化
         /// </summary>
-        private void InitializeManagers()
+        private async Task InitializeManagers()
         {
             // SelectionStateManager の初期化
             _selectionManager = new SelectionStateManager(_repository);
@@ -560,47 +259,6 @@ namespace KdxDesigner.ViewModels
                 SettingsManager.Settings.LastSelectedCycleId);
         }
 
-        #region Selection Change Handlers
-
-        /// <summary>
-        /// 会社が選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
-        /// </summary>
-        public async Task OnCompanyChangedAsync(Company? value)
-        {
-            if (!CanExecute() || value == null) return;
-            SelectedCompany = value;
-            await Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// モデルが選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
-        /// </summary>
-        public async Task OnModelChangedAsync(Model? value)
-        {
-            if (!CanExecute() || value == null) return;
-            SelectedModel = value;
-            await Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// PLCが選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
-        /// </summary>
-        public async Task OnPlcChangedAsync(PLC? value)
-        {
-            if (!CanExecute() || value == null) return;
-            SelectedPlc = value;
-            await Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// サイクルが選択されたときのハンドラ（互換性のため残す、実際の処理はSelectionStateManagerで実行）
-        /// </summary>
-        public async Task OnCycleChangedAsync(Cycle? value)
-        {
-            if (!CanExecute() || value == null) return;
-            SelectedCycle = value;
-            await Task.CompletedTask;
-        }
         public void OnProcessDetailSelected(ProcessDetail selected)
         {
             if (_repository == null || _ioSelectorService == null)
@@ -618,612 +276,9 @@ namespace KdxDesigner.ViewModels
             }
         }
 
-        #endregion
 
         // その他ボタン処理
         #region Properties for Process Details
-        [RelayCommand]
-        public void OpenControllBoxView()
-        {
-            if (SelectedPlc == null)
-            {
-                MessageBox.Show("PLCを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            var window = new KdxDesigner.Views.ControlBoxViews(_repository, SelectedPlc.Id)
-            {
-                Owner = Application.Current.MainWindow // 親ウィンドウ設定
-            };
-            window.ShowDialog();
-        }
-
-        [RelayCommand]
-        public void UpdateSelectedProcesses(List<Process> selectedProcesses)
-        {
-            var selectedIds = selectedProcesses.Select(p => p.Id).ToHashSet();
-            var filtered = _selectionManager.GetAllDetails()
-                .Where(d => selectedIds.Contains(d.ProcessId))
-                .ToList();
-
-            ProcessDetails = new ObservableCollection<ProcessDetail>(filtered);
-        }
-
-        [RelayCommand]
-        private void OpenIoEditor()
-        {
-            if (_repository == null || _ioSelectorService == null)
-            {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
-                return;
-            }
-
-            // Viewにリポジトリのインスタンスを渡して生成
-            var view = new IoEditorView(_repository, this);
-            view.Show(); // モードレスダイアログとして表示
-        }
-
-        [RelayCommand]
-        private void OpenIOConversionWindow()
-        {
-            if (_repository == null)
-            {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
-                return;
-            }
-
-            var window = new IOConversionWindow();
-            var viewModel = new IOConversionViewModel(_repository);
-            window.DataContext = viewModel;
-            window.ShowDialog(); // モーダルダイアログとして表示
-        }
-
-        [RelayCommand]
-        private async Task AddNewProcess()
-        {
-            if (!CanExecute() || SelectedCycle == null)
-            {
-                MessageBox.Show("サイクルを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                // 新しいProcessオブジェクトを作成
-                var newProcess = new Process
-                {
-                    ProcessName = "新規工程",
-                    CycleId = SelectedCycle.Id,
-                    SortNumber = Processes.Count > 0 ? Processes.Max(p => p.SortNumber ?? 0) + 1 : 1
-                };
-
-                // データベースに追加
-                int newId = await _repository!.AddProcessAsync(newProcess);
-                newProcess.Id = newId;
-
-                // コレクションとローカルリストに追加
-                Processes.Add(newProcess);
-                _selectionManager.AddProcessToCache(newProcess);
-
-                MessageBox.Show("新しい工程を追加しました。", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"工程の追加中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private async Task AddNewProcessDetail()
-        {
-            if (!CanExecute() || SelectedProcess == null)
-            {
-                MessageBox.Show("工程を選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                // 新しいProcessDetailオブジェクトを作成
-                var newDetail = new ProcessDetail
-                {
-                    ProcessId = SelectedProcess.Id,
-                    DetailName = "新規詳細",
-                    CycleId = SelectedCycle?.Id,
-                    SortNumber = ProcessDetails.Count > 0 ? ProcessDetails.Max(d => d.SortNumber ?? 0) + 1 : 1
-                };
-
-                // データベースに追加
-                int newId = await _repository!.AddProcessDetailAsync(newDetail);
-                newDetail.Id = newId;
-
-                // コレクションとローカルリストに追加
-                ProcessDetails.Add(newDetail);
-                _selectionManager.AddDetailToCache(newDetail);
-
-                MessageBox.Show("新しい工程詳細を追加しました。", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"工程詳細の追加中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// 工程プロパティを編集
-        /// </summary>
-        [RelayCommand]
-        private void EditProcess()
-        {
-            if (!CanExecute() || SelectedProcess == null)
-            {
-                MessageBox.Show("編集する工程を選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                // ProcessPropertiesWindowを開く
-                var window = new ProcessPropertiesWindow(_repository, SelectedProcess)
-                {
-                    Owner = Application.Current.MainWindow
-                };
-
-                if (window.ShowDialog() == true)
-                {
-                    // プロセスの更新をUIに反映
-                    var index = Processes.IndexOf(SelectedProcess);
-                    if (index >= 0)
-                    {
-                        Processes[index] = SelectedProcess;
-                        OnPropertyChanged(nameof(Processes));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"工程の編集中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private async Task AddNewOperation()
-        {
-            if (!CanExecute() || SelectedCycle == null)
-            {
-                MessageBox.Show("サイクルを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                // 新しいOperationオブジェクトを作成
-                var newOperation = new Operation
-                {
-                    OperationName = "新規操作",
-                    CycleId = SelectedCycle.Id,
-                    SortNumber = SelectedOperations.Count > 0 ? SelectedOperations.Max(o => o.SortNumber ?? 0) + 1 : 1
-                };
-
-                // データベースに追加
-                int newId = await _repository!.AddOperationAsync(newOperation);
-                newOperation.Id = newId;
-
-                // コレクションに追加
-                SelectedOperations.Add(newOperation);
-
-                MessageBox.Show("新しい操作を追加しました。", "追加完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"操作の追加中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private void OpenCylinderManagement()
-        {
-            if (!CanExecute() || SelectedPlc == null)
-            {
-                MessageBox.Show("PLCを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                var window = new CylinderManagementWindow(_repository!, SelectedPlc.Id)
-                {
-                    Owner = Application.Current.MainWindow
-                };
-                window.Show();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"シリンダー管理ウィンドウを開く際にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private void SaveAllChanges()
-        {
-            if (!CanExecute()) return;
-
-            try
-            {
-                // Processの保存
-                foreach (var process in Processes)
-                {
-                    _repository!.UpdateProcessAsync(process);
-                }
-
-                // ProcessDetailの保存
-                foreach (var detail in ProcessDetails)
-                {
-                    _repository!.UpdateProcessDetailAsync(detail);
-                }
-
-                // Operationの保存
-                foreach (var operation in SelectedOperations)
-                {
-                    _repository!.UpdateOperationAsync(operation);
-                }
-
-                MessageBox.Show("すべての変更を保存しました。", "保存完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"保存中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private async Task DeleteSelectedProcess()
-        {
-            if (SelectedProcess == null) return;
-
-            var result = MessageBox.Show($"工程 '{SelectedProcess.ProcessName}' を削除しますか？\n関連する工程詳細も削除されます。",
-                "削除確認", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    await _repository!.DeleteProcessAsync(SelectedProcess.Id);
-                    Processes.Remove(SelectedProcess);
-                    _selectionManager.RemoveProcessFromCache(SelectedProcess);
-
-                    // 関連するProcessDetailも削除
-                    var detailsToRemove = ProcessDetails.Where(d => d.ProcessId == SelectedProcess.Id).ToList();
-                    foreach (var detail in detailsToRemove)
-                    {
-                        ProcessDetails.Remove(detail);
-                        _selectionManager.RemoveDetailFromCache(detail);
-                    }
-
-                    SelectedProcess = null;
-                    MessageBox.Show("工程を削除しました。", "削除完了", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"削除中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        [RelayCommand]
-        private async Task DeleteSelectedProcessDetail()
-        {
-            if (SelectedProcessDetail == null) return;
-
-            var result = MessageBox.Show($"工程詳細 '{SelectedProcessDetail.DetailName}' を削除しますか？",
-                "削除確認", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    await _repository!.DeleteProcessDetailAsync(SelectedProcessDetail.Id);
-                    ProcessDetails.Remove(SelectedProcessDetail);
-                    _selectionManager.RemoveDetailFromCache(SelectedProcessDetail);
-                    SelectedProcessDetail = null;
-                    MessageBox.Show("工程詳細を削除しました。", "削除完了", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"削除中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        [RelayCommand]
-        private async Task DeleteSelectedOperation()
-        {
-            if (SelectedOperations.Count == 0) return;
-
-            var operation = SelectedOperations.FirstOrDefault();
-            if (operation == null) return;
-
-            var result = MessageBox.Show($"操作 '{operation.OperationName}' を削除しますか？",
-                "削除確認", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    await _repository!.DeleteOperationAsync(operation.Id);
-                    SelectedOperations.Remove(operation);
-                    MessageBox.Show("操作を削除しました。", "削除完了", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"削除中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        [RelayCommand]
-        private void SaveOperation()
-        {
-            if (!CanExecute()) return;
-
-            foreach (var op in SelectedOperations)
-            {
-                _repository!.UpdateOperationAsync(op);
-            }
-            MessageBox.Show("保存しました。");
-        }
-
-        [RelayCommand]
-        private void OpenSettings()
-        {
-            var view = new SettingsView();
-            view.ShowDialog();
-        }
-
-        [RelayCommand]
-        private void OpenProcessFlowDetail()
-        {
-            if (SelectedCycle == null)
-            {
-                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (_repository == null)
-            {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
-                return;
-            }
-
-            // MainViewModelで既に取得しているデータを渡してパフォーマンスを改善
-            var allProcesses = _selectionManager.GetAllProcesses();
-            var allProcessDetails = _selectionManager.GetAllDetails();
-            var categories = ProcessDetailCategories.ToList();
-            var plcId = SelectedPlc?.Id;
-
-            // 新しいウィンドウを作成（既存データを渡す）
-            var window = new ProcessFlowDetailWindow(
-                _repository,
-                SelectedCycle.Id,
-                SelectedCycle.CycleName ?? $"サイクル{SelectedCycle.Id}",
-                allProcesses,
-                allProcessDetails,
-                categories,
-                plcId);
-
-            // ウィンドウが閉じられたときにリストから削除
-            window.Closed += (s, e) =>
-            {
-                if (s is Window w)
-                {
-                    _openProcessFlowWindows.Remove(w);
-                }
-            };
-
-            // リストに追加して表示
-            _openProcessFlowWindows.Add(window);
-            window.Show();
-        }
-
-        [RelayCommand]
-        private void CloseAllProcessFlowWindows()
-        {
-            // すべてのProcessFlowDetailWindowを閉じる
-            var windowsToClose = _openProcessFlowWindows.ToList();
-            foreach (var window in windowsToClose)
-            {
-                window.Close();
-            }
-            _openProcessFlowWindows.Clear();
-        }
-
-        [RelayCommand]
-        private void OpenProcessListWindow()
-        {
-            if (SelectedCycle == null || _repository == null)
-            {
-                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // 動的にWindowを生成
-            var window = new Window
-            {
-                Title = $"Process一覧 - Cycle ID: {SelectedCycle.Id}",
-                Width = 1000,
-                Height = 600,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-
-            var control = new Controls.ProcessListControl
-            {
-                Repository = _repository,
-                Processes = Processes,
-                ProcessCategories = ProcessCategories,
-                CycleId = SelectedCycle.Id,
-                PlcId = SelectedPlc?.Id
-            };
-
-            window.Content = control;
-            window.Show();
-        }
-
-        [RelayCommand]
-        private void OpenProcessDetailListWindow()
-        {
-            if (SelectedProcess == null || _repository == null)
-            {
-                MessageBox.Show("工程を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // 動的にWindowを生成
-            var window = new Window
-            {
-                Title = $"ProcessDetail一覧 - Process ID: {SelectedProcess.Id}",
-                Width = 1200,
-                Height = 600,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-
-            var control = new Controls.ProcessDetailListControl
-            {
-                Repository = _repository,
-                ProcessDetails = ProcessDetails,
-                Operations = SelectedOperations,
-                ProcessDetailCategories = ProcessDetailCategories,
-                ProcessId = SelectedProcess.Id,
-                CycleId = SelectedCycle?.Id
-            };
-
-            window.Content = control;
-            window.Show();
-        }
-
-        [RelayCommand]
-        private void OpenOperationListWindow()
-        {
-            if (SelectedCycle == null || _repository == null)
-            {
-                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // 動的にWindowを生成
-            var window = new Window
-            {
-                Title = $"Operation一覧 - Cycle ID: {SelectedCycle.Id}",
-                Width = 1000,
-                Height = 600,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-
-            var control = new Controls.OperationListControl
-            {
-                Repository = _repository,
-                Operations = SelectedOperations,
-                OperationCategories = OperationCategories,
-                PlcId = SelectedPlc?.Id,
-                CycleId = SelectedCycle.Id
-            };
-
-            window.Content = control;
-            window.Show();
-        }
-
-        [RelayCommand]
-        private void OpenInterlockSettings()
-        {
-            // Supabaseリポジトリを取得
-            Kdx.Infrastructure.Supabase.Repositories.SupabaseRepository? supabaseRepo = null;
-            try
-            {
-                if (App.Services != null)
-                {
-                    var supabaseClient = App.Services.GetService<Supabase.Client>();
-                    if (supabaseClient != null)
-                    {
-                        supabaseRepo = new Kdx.Infrastructure.Supabase.Repositories.SupabaseRepository(supabaseClient);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to get SupabaseRepository: {ex.Message}");
-                MessageBox.Show("Supabase接続が利用できません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (supabaseRepo == null)
-            {
-                MessageBox.Show("Supabase接続が利用できません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // 選択されたサイクルを確認
-            if (SelectedCycle == null)
-            {
-                MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // インターロック設定ウィンドウを表示（シリンダー選択を含む）
-            var window = new InterlockSettingsWindow();
-            var viewModel = new InterlockSettingsViewModel(supabaseRepo, _repository!, SelectedPlc.Id, SelectedCycle.Id, window);
-            window.DataContext = viewModel;
-            window.ShowDialog();
-        }
-
-        [RelayCommand]
-        private void OpenMemoryEditor()
-        {
-            if (SelectedPlc == null)
-            {
-                MessageBox.Show("PLCを選択してください。");
-                return;
-            }
-
-            var view = new MemoryEditorView(SelectedPlc.Id, _repository);
-            view.ShowDialog();
-        }
-
-        [RelayCommand]
-        private void OpenLinkDeviceManager()
-        {
-            if (_repository == null || _ioSelectorService == null)
-            {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
-                return;
-            }
-
-            // Viewにリポジトリのインスタンスを渡す
-            var view = new LinkDeviceView(_repository);
-            view.ShowDialog(); // モーダルダイアログとして表示
-        }
-
-        [RelayCommand]
-        private void OpenTimerEditor()
-        {
-            if (_repository == null)
-            {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
-                return;
-            }
-
-            var view = new TimerEditorView(_repository, this);
-            view.ShowDialog();
-        }
-
-        [RelayCommand]
-        private void OpenMemoryProfileManager()
-        {
-            if (_repository == null)
-            {
-                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
-                return;
-            }
-            var view = new MemoryProfileView(this, _repository);
-            view.ShowDialog();
-        }
 
         private void LoadMemoryProfile()
         {
@@ -1679,13 +734,6 @@ namespace KdxDesigner.ViewModels
             }
             else
             {
-                //filteredCylinders = cylinders.Join(
-                //    _selectedCylinderCycles,
-                //    c => c.Id,
-                //    cc => cc.CylinderId,
-                //    (c, cc) => new { Cylinder = c, CylinderCycle = cc }
-                //).Where(cc => cc.CylinderCycle.CycleId == SelectedCycle.Id).Select(cc => cc.Cylinder).ToList();
-
                 filteredCylinders = cylinders.ToList();
             }
 
@@ -1720,19 +768,19 @@ namespace KdxDesigner.ViewModels
             MemoryProgressViewModel? progressViewModel = null)
         {
             progressViewModel?.UpdateStatus("既存のニーモニックデバイスを削除中...");
-            _mnemonicService!.DeleteAllMnemonicDevices();
+            await _mnemonicService!.DeleteAllMnemonicDevices();
 
             progressViewModel?.UpdateStatus($"工程デバイスを保存中... ({Processes.Count}件)");
             _mnemonicService!.SaveMnemonicDeviceProcess(Processes.ToList(), ProcessDeviceStartL, SelectedPlc!.Id);
 
             progressViewModel?.UpdateStatus($"工程詳細デバイスを保存中... ({prepData.details.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceProcessDetail(prepData.details, DetailDeviceStartL, SelectedPlc!.Id);
+            await _mnemonicService!.SaveMnemonicDeviceProcessDetail(prepData.details, DetailDeviceStartL, SelectedPlc!.Id);
 
             progressViewModel?.UpdateStatus($"操作デバイスを保存中... ({prepData.operations.Count}件)");
             _mnemonicService!.SaveMnemonicDeviceOperation(prepData.operations, OperationDeviceStartM, SelectedPlc!.Id);
 
             progressViewModel?.UpdateStatus($"シリンダーデバイスを保存中... ({prepData.cylinders.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceCY(prepData.cylinders, CylinderDeviceStartM, SelectedPlc!.Id);
+            await _mnemonicService!.SaveMnemonicDeviceCY(prepData.cylinders, CylinderDeviceStartM, SelectedPlc!.Id);
 
             if (_repository == null || _timerService == null || _errorService == null || _prosTimeService == null || _speedService == null)
             {
@@ -1874,7 +922,7 @@ namespace KdxDesigner.ViewModels
         /// </summary>
         private async Task UpdateMemoryConfigurationStatus()
         {
-            if (SelectedPlc == null || SelectedCycle == null)
+            if (SelectedPlc == null || SelectedCycle == null || _mnemonicService == null || _timerService == null || _speedService == null)
             {
                 MemoryConfigurationStatus = "未設定";
                 IsMemoryConfigured = false;
@@ -1885,9 +933,9 @@ namespace KdxDesigner.ViewModels
             try
             {
                 // メモリに保存されたデバイスの数をカウント
-                var devices = await _mnemonicService?.GetMnemonicDevice(SelectedPlc.Id) ?? new List<Kdx.Contracts.DTOs.MnemonicDevice>();
-                var timerDevices = await _timerService?.GetMnemonicTimerDevice(SelectedPlc.Id, SelectedCycle.Id) ?? new List<MnemonicTimerDevice>();
-                var speedDevices = _speedService?.GetMnemonicSpeedDevice(SelectedPlc.Id) ?? new List<Kdx.Contracts.DTOs.MnemonicSpeedDevice>();
+                var devices = await _mnemonicService.GetMnemonicDevice(SelectedPlc.Id) ?? new List<MnemonicDevice>();
+                var timerDevices = await _timerService.GetMnemonicTimerDevice(SelectedPlc.Id, SelectedCycle.Id) ?? new List<MnemonicTimerDevice>();
+                var speedDevices = _speedService.GetMnemonicSpeedDevice(SelectedPlc.Id) ?? new List<MnemonicSpeedDevice>();
 
                 int totalCount = devices.Count + timerDevices.Count + speedDevices.Count;
                 TotalMemoryDeviceCount = totalCount;
@@ -1937,41 +985,5 @@ namespace KdxDesigner.ViewModels
         }
 
         #endregion
-
-        // Authentication
-        #region Authentication Commands
-
-        [RelayCommand]
-        private async Task SignOutAsync()
-        {
-            try
-            {
-                await _authService.SignOutAsync();
-
-                // ログイン画面を表示
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    var loginWindow = new Views.LoginView();
-                    loginWindow.Show();
-
-                    // メインウィンドウを閉じる
-                    foreach (Window window in Application.Current.Windows)
-                    {
-                        if (window is Views.MainView)
-                        {
-                            window.Close();
-                            break;
-                        }
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"サインアウトに失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        #endregion
-
     }
 }

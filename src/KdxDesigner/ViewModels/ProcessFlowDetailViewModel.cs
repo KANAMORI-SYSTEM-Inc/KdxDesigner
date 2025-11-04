@@ -1,17 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-
 using Kdx.Contracts.DTOs;
-using Timer = Kdx.Contracts.DTOs.Timer;
-using Process = Kdx.Contracts.DTOs.Process;
-using KdxDesigner.Models;
 using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.Models;
 using KdxDesigner.Views;
-
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Process = Kdx.Contracts.DTOs.Process;
+using Timer = Kdx.Contracts.DTOs.Timer;
 
 namespace KdxDesigner.ViewModels
 {
@@ -148,9 +146,9 @@ namespace KdxDesigner.ViewModels
         private List<ProcessStartCondition> _processStartConditions = new();
         private List<ProcessFinishCondition> _processFinishConditions = new();
         private Dictionary<int, Point> _originalPositions = new();
-        
+
         private void CreateProcessConnections(
-            Dictionary<int, ProcessFlowNode> processNodeDict, 
+            Dictionary<int, ProcessFlowNode> processNodeDict,
             Dictionary<int, ProcessFlowNode> detailNodeDict,
             List<ProcessStartCondition> startConditions,
             List<ProcessFinishCondition> finishConditions)
@@ -161,35 +159,35 @@ namespace KdxDesigner.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"  Process node ID={kvp.Key}, Name={kvp.Value.Process?.ProcessName}");
             }
-            
+
             System.Diagnostics.Debug.WriteLine($"Detail nodes count: {detailNodeDict.Count}");
             foreach (var kvp in detailNodeDict.Take(5))  // 最初の5個だけ表示
             {
                 System.Diagnostics.Debug.WriteLine($"  Detail node ID={kvp.Key}, Name={kvp.Value.ProcessDetail?.DetailName}");
             }
-            
+
             System.Diagnostics.Debug.WriteLine($"Start conditions count: {startConditions.Count}");
             System.Diagnostics.Debug.WriteLine($"Finish conditions count: {finishConditions.Count}");
-            
+
             // Process -> ProcessDetail (開始条件)
             int startConnectionsCreated = 0;
             foreach (var startCondition in startConditions)
             {
                 System.Diagnostics.Debug.WriteLine($"Processing start condition: ProcessId={startCondition.ProcessId}, StartProcessDetailId={startCondition.StartProcessDetailId}, Sensor={startCondition.StartSensor}");
-                
-                if (processNodeDict.ContainsKey(startCondition.ProcessId) && 
+
+                if (processNodeDict.ContainsKey(startCondition.ProcessId) &&
                     detailNodeDict.ContainsKey(startCondition.StartProcessDetailId))
                 {
                     var fromNode = processNodeDict[startCondition.ProcessId];
                     var toNode = detailNodeDict[startCondition.StartProcessDetailId];
-                    
+
                     var connection = new ProcessFlowConnection(fromNode, toNode)
                     {
                         ConnectionType = ConnectionType.ProcessToDetail,
                         IsFinishConnection = false,  // 開始条件接続
                         DbStartSensor = startCondition.StartSensor
                     };
-                    
+
                     AllConnections.Add(connection);
                     Connections.Add(connection);
                     startConnectionsCreated++;
@@ -200,26 +198,26 @@ namespace KdxDesigner.ViewModels
                     System.Diagnostics.Debug.WriteLine($"✗ Skipped start condition: Process node exists={processNodeDict.ContainsKey(startCondition.ProcessId)}, Detail node exists={detailNodeDict.ContainsKey(startCondition.StartProcessDetailId)}");
                 }
             }
-            
+
             // ProcessDetail -> Process (終了条件)
             int finishConnectionsCreated = 0;
             foreach (var finishCondition in finishConditions)
             {
                 System.Diagnostics.Debug.WriteLine($"Processing finish condition: ProcessId={finishCondition.ProcessId}, FinishProcessDetailId={finishCondition.FinishProcessDetailId}, Sensor={finishCondition.FinishSensor}");
-                
-                if (detailNodeDict.ContainsKey(finishCondition.FinishProcessDetailId) && 
+
+                if (detailNodeDict.ContainsKey(finishCondition.FinishProcessDetailId) &&
                     processNodeDict.ContainsKey(finishCondition.ProcessId))
                 {
                     var fromNode = detailNodeDict[finishCondition.FinishProcessDetailId];
                     var toNode = processNodeDict[finishCondition.ProcessId];
-                    
+
                     var connection = new ProcessFlowConnection(fromNode, toNode)
                     {
                         ConnectionType = ConnectionType.ProcessToDetail,
                         IsFinishConnection = true,  // 終了条件接続
                         DbStartSensor = finishCondition.FinishSensor
                     };
-                    
+
                     AllConnections.Add(connection);
                     Connections.Add(connection);
                     finishConnectionsCreated++;
@@ -230,7 +228,7 @@ namespace KdxDesigner.ViewModels
                     System.Diagnostics.Debug.WriteLine($"✗ Skipped finish condition: Detail node exists={detailNodeDict.ContainsKey(finishCondition.FinishProcessDetailId)}, Process node exists={processNodeDict.ContainsKey(finishCondition.ProcessId)}");
                 }
             }
-            
+
             System.Diagnostics.Debug.WriteLine($"========== CreateProcessConnections SUMMARY ==========");
             System.Diagnostics.Debug.WriteLine($"Start connections created: {startConnectionsCreated}/{startConditions.Count}");
             System.Diagnostics.Debug.WriteLine($"Finish connections created: {finishConnectionsCreated}/{finishConditions.Count}");
@@ -550,7 +548,7 @@ namespace KdxDesigner.ViewModels
 
             // ProcessDetailノード間の接続を作成
             CreateConnections(nodeDict);
-            
+
             // ProcessとProcessDetailの接続を作成
             CreateProcessConnections(processNodeDict, nodeDict, _processStartConditions, _processFinishConditions);
 
@@ -697,8 +695,8 @@ namespace KdxDesigner.ViewModels
             foreach (var conn in _dbConnections)
             {
                 // ProcessDetail -> ProcessDetail の接続
-                if (conn.ToProcessDetailId.HasValue && 
-                    nodeDict.ContainsKey(conn.FromProcessDetailId) && 
+                if (conn.ToProcessDetailId.HasValue &&
+                    nodeDict.ContainsKey(conn.FromProcessDetailId) &&
                     nodeDict.ContainsKey(conn.ToProcessDetailId.Value))
                 {
                     var fromNode = nodeDict[conn.FromProcessDetailId];
@@ -808,7 +806,7 @@ namespace KdxDesigner.ViewModels
                         // Process専用のプロパティを設定
                         SelectedNodeDisplayName = value.DisplayName;
                         IsNodeSelected = true;
-                        
+
                         // ProcessDetailのプロパティをクリア
                         SelectedNodeDetailName = "";
                         SelectedNodeOperationId = null;
@@ -1125,7 +1123,7 @@ namespace KdxDesigner.ViewModels
             if (IsConnecting && _connectionStartNode != null && _connectionStartNode != node)
             {
                 // ProcessからProcessDetailへの接続は許可しない（自動生成のため）
-                if (_connectionStartNode.NodeType == ProcessFlowNodeType.Process && 
+                if (_connectionStartNode.NodeType == ProcessFlowNodeType.Process &&
                     node.NodeType == ProcessFlowNodeType.ProcessDetail)
                 {
                     // Process->ProcessDetail接続は自動的に作成されるため、手動での接続は不要
@@ -1135,7 +1133,7 @@ namespace KdxDesigner.ViewModels
                 }
 
                 // ProcessDetailからProcessへの接続を処理
-                if (_connectionStartNode.NodeType == ProcessFlowNodeType.ProcessDetail && 
+                if (_connectionStartNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
                     node.NodeType == ProcessFlowNodeType.Process)
                 {
                     // 同じ接続が既に存在するかチェック
@@ -1190,7 +1188,7 @@ namespace KdxDesigner.ViewModels
                 }
 
                 // ProcessDetail同士の接続処理
-                if (_connectionStartNode.NodeType == ProcessFlowNodeType.ProcessDetail && 
+                if (_connectionStartNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
                     node.NodeType == ProcessFlowNodeType.ProcessDetail)
                 {
                     // 同じ接続が既に存在するかチェック
@@ -1631,10 +1629,10 @@ namespace KdxDesigner.ViewModels
                 {
                     // 既存のイベントハンドラをクリア
                     existingVm.ClearEventHandlers();
-                    
+
                     // 新しいProcessを設定
                     existingVm.UpdateProcess(process);
-                    
+
                     // 保存が完了したときの処理を再設定
                     Action? saveHandler = null;
                     saveHandler = () =>
@@ -1649,25 +1647,25 @@ namespace KdxDesigner.ViewModels
                             }
                         }
                     };
-                    
+
                     existingVm.RequestClose += saveHandler;
                 }
-                
+
                 // ウィンドウが最小化されている場合は元に戻す
                 if (_openProcessWindow.WindowState == WindowState.Minimized)
                 {
                     _openProcessWindow.WindowState = WindowState.Normal;
                 }
-                
+
                 // ウィンドウをアクティブにしてフォーカスを与える
                 _openProcessWindow.Activate();
                 _openProcessWindow.Focus();
                 return;
             }
-            
+
             // 新しいウィンドウを作成
             var window = new ProcessPropertiesWindow(_repository, process);
-            
+
             // ViewModelを取得してイベントハンドラを設定
             if (window.DataContext is ProcessPropertiesViewModel vm)
             {
@@ -1685,20 +1683,20 @@ namespace KdxDesigner.ViewModels
                         }
                     }
                 };
-                
+
                 vm.RequestClose += saveHandler;
             }
-            
+
             // ウィンドウが閉じられたときの処理
             window.Closed += (s, e) =>
             {
                 // 参照をクリア
                 _openProcessWindow = null;
             };
-            
+
             // 参照を保持
             _openProcessWindow = window;
-            
+
             // 非モーダルで表示
             window.Show();
         }
@@ -1731,6 +1729,7 @@ namespace KdxDesigner.ViewModels
                 var currentIds = relatedNodeIds.ToList();
                 foreach (var id in currentIds)
                 {
+
                     var node = AllNodes.FirstOrDefault(n => n.ProcessDetail.Id == id);
                     if (node != null)
                     {
@@ -1829,7 +1828,7 @@ namespace KdxDesigner.ViewModels
         [RelayCommand]
         private async void EditOperation()
         {
-            if (SelectedNode == null || SelectedNode.ProcessDetail.OperationId == null) return;
+            if (SelectedNode == null || SelectedNode.ProcessDetail == null || SelectedNode.ProcessDetail.OperationId == null) return;
 
             try
             {
@@ -1891,7 +1890,7 @@ namespace KdxDesigner.ViewModels
         [RelayCommand]
         private async Task UpdateSelectedNodeProperties()
         {
-            if (SelectedNode != null)
+            if (SelectedNode != null && SelectedNode.ProcessDetail != null)
             {
                 try
                 {
@@ -1974,17 +1973,17 @@ namespace KdxDesigner.ViewModels
                         SelectedNode.ProcessDetail.IsResetAfter = updatedDetail.IsResetAfter;
 
                         // UIプロパティもリフレッシュ
-                        SelectedNodeDetailName = updatedDetail.DetailName;
+                        SelectedNodeDetailName = updatedDetail.DetailName ?? string.Empty;
                         SelectedNodeProcessId = updatedDetail.ProcessId;
                         SelectedNodeOperationId = updatedDetail.OperationId;
-                        SelectedNodeStartSensor = updatedDetail.StartSensor;
-                        SelectedNodeFinishSensor = updatedDetail.FinishSensor;
+                        SelectedNodeStartSensor = updatedDetail.StartSensor ?? string.Empty;
+                        SelectedNodeFinishSensor = updatedDetail.FinishSensor ?? string.Empty;
                         SelectedNodeCategoryId = updatedDetail.CategoryId;
                         SelectedNodeBlockNumber = updatedDetail.BlockNumber;
-                        SelectedNodeSkipMode = updatedDetail.SkipMode;
+                        SelectedNodeSkipMode = updatedDetail.SkipMode ?? string.Empty;
                         SelectedNodeSortNumber = updatedDetail.SortNumber;
-                        SelectedNodeComment = updatedDetail.Comment;
-                        SelectedNodeILStart = updatedDetail.ILStart;
+                        SelectedNodeComment = updatedDetail.Comment ?? string.Empty;
+                        SelectedNodeILStart = updatedDetail.ILStart ?? string.Empty;
                         SelectedNodeStartTimerId = updatedDetail.StartTimerId;
                         SelectedNodeIsResetAfter = updatedDetail.IsResetAfter;
                     }
@@ -2104,7 +2103,7 @@ namespace KdxDesigner.ViewModels
                 n.ProcessDetail != null &&
                 n.ProcessDetail.Id == updatedProcessDetail.Id);
 
-            if (node != null)
+            if (node != null && node.ProcessDetail != null)
             {
                 // ProcessDetailオブジェクトのプロパティを更新
                 node.ProcessDetail.DetailName = updatedProcessDetail.DetailName;
