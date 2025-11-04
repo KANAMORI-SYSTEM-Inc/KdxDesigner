@@ -10,6 +10,75 @@ namespace KdxDesigner.ViewModels
     public partial class MainViewModel
     {
         [RelayCommand]
+        private async Task MemorySetting()
+        {
+            // メモリ設定状態を「設定中」に更新
+            MemoryConfigurationStatus = "設定中...";
+            IsMemoryConfigured = false;
+            if (!ValidateMemorySettings()) return;
+
+            // 進捗ウィンドウを作成
+            var progressViewModel = new MemoryProgressViewModel();
+            var progressWindow = new MemoryProgressWindow
+            {
+                DataContext = progressViewModel,
+                Owner = Application.Current.MainWindow
+            };
+
+            // 進捗ウィンドウを非モーダルで表示
+            progressWindow.Show();
+
+            // UIスレッドをブロックしないようにTask.Runで実行
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    progressViewModel.UpdateStatus("メモリ設定を開始しています...");
+                    await Task.Delay(100); // UIの更新を待つ
+
+                    // 3. データ準備
+                    progressViewModel.UpdateStatus("データを準備しています...");
+                    var prepData = await PrepareDataForMemorySetting();
+
+                    // 4. Mnemonic/Timerテーブルへの事前保存
+                    if (prepData == null)
+                    {
+                        // データ準備に失敗した場合、ユーザーに通知して処理を中断
+                        progressViewModel.MarkError("データ準備に失敗しました");
+                        Application.Current.Dispatcher.Invoke(() =>
+                            MessageBox.Show("データ準備に失敗しました。CycleまたはPLCが選択されているか確認してください。", "エラー"));
+                        return;
+                    }
+
+                    await SaveMnemonicAndTimerDevices(prepData.Value, progressViewModel);
+                    await SaveMemoriesToMemoryTableAsync(prepData.Value, progressViewModel);
+
+                    progressViewModel.MarkCompleted();
+                }
+                catch (Exception ex)
+                {
+                    progressViewModel.MarkError(ex.Message);
+                    Application.Current.Dispatcher.Invoke(() =>
+                        MessageBox.Show($"メモリ設定中にエラーが発生しました: {ex.Message}", "エラー"));
+                }
+            });
+        }
+
+        private bool ValidateMemorySettings()
+        {
+            var errorMessages = new List<string>();
+            if (SelectedCycle == null) errorMessages.Add("Cycleが選択されていません。");
+            if (SelectedPlc == null) errorMessages.Add("PLCが選択されていません。");
+
+            if (errorMessages.Any())
+            {
+                MessageBox.Show(string.Join("\n", errorMessages), "入力エラー");
+                return false;
+            }
+            return true;
+        }
+
+        [RelayCommand]
         public void OpenControllBoxView()
         {
             if (SelectedPlc == null)
@@ -522,6 +591,8 @@ namespace KdxDesigner.ViewModels
         private void OpenInterlockSettings()
         {
             // Supabaseリポジトリを取得
+
+
             Kdx.Infrastructure.Supabase.Repositories.SupabaseRepository? supabaseRepo = null;
             try
             {
@@ -548,7 +619,7 @@ namespace KdxDesigner.ViewModels
             }
 
             // 選択されたサイクルを確認
-            if (SelectedCycle == null)
+            if (SelectedCycle == null || SelectedPlc == null)
             {
                 MessageBox.Show("サイクルを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;

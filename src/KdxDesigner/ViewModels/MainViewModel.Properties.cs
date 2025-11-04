@@ -61,9 +61,6 @@ namespace KdxDesigner.ViewModels
         public List<ControlBox> _selectedControlBoxes = new();
         public List<CylinderControlBox> _selectedCylinderControlBoxes = new();
 
-        // 出力エラー
-        [ObservableProperty] private List<OutputError> _outputErrors = new();
-
         // 認証関連
         [ObservableProperty] private string _currentUserEmail = string.Empty;
 
@@ -304,13 +301,13 @@ namespace KdxDesigner.ViewModels
         }
 
         // サービスへのアクセス（後方互換性のため）
-        protected private IMnemonicDeviceService? _mnemonicService => _serviceInitializer?.MnemonicService;
-        protected private IMnemonicTimerDeviceService? _timerService => _serviceInitializer?.TimerService;
-        protected private IProsTimeDeviceService? _prosTimeService => _serviceInitializer?.ProsTimeService;
-        protected private IMnemonicSpeedDeviceService? _speedService => _serviceInitializer?.SpeedService;
-        protected private IMemoryService? _memoryService => _serviceInitializer?.MemoryService;
-        protected private IMnemonicDeviceMemoryStore? _mnemonicMemoryStore => _serviceInitializer?.MemoryStore;
-        protected private ErrorService? _errorService => _serviceInitializer?.ErrorService;
-        protected private WpfIOSelectorService? _ioSelectorService => _serviceInitializer?.IOSelectorService;
+        internal IMnemonicDeviceService? _mnemonicService => _serviceInitializer?.MnemonicService;
+        internal IMnemonicTimerDeviceService? _timerService => _serviceInitializer?.TimerService;
+        internal IProsTimeDeviceService? _prosTimeService => _serviceInitializer?.ProsTimeService;
+        internal IMnemonicSpeedDeviceService? _speedService => _serviceInitializer?.SpeedService;
+        internal IMemoryService? _memoryService => _serviceInitializer?.MemoryService;
+        internal IMnemonicDeviceMemoryStore? _mnemonicMemoryStore => _serviceInitializer?.MemoryStore;
+        internal ErrorService? _errorService => _serviceInitializer?.ErrorService;
+        internal WpfIOSelectorService? _ioSelectorService => _serviceInitializer?.IOSelectorService;
     }
 }
