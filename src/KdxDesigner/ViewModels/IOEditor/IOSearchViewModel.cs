@@ -8,7 +8,7 @@ using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Utils;
 
-namespace KdxDesigner.ViewModels
+namespace KdxDesigner.ViewModels.IOEditor
 {
     public class IOSearchViewModel : INotifyPropertyChanged
     {

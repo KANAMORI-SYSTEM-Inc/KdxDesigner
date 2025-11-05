@@ -9,73 +9,24 @@ namespace KdxDesigner.ViewModels
 {
     public partial class MainViewModel
     {
+        /// <summary>
+        /// メモリ設定ウィンドウを開く
+        /// </summary>
         [RelayCommand]
-        private async Task MemorySetting()
+        private void MemorySetting()
         {
-            // メモリ設定状態を「設定中」に更新
-            MemoryConfigurationStatus = "設定中...";
-            IsMemoryConfigured = false;
-            if (!ValidateMemorySettings()) return;
-
-            // 進捗ウィンドウを作成
-            var progressViewModel = new MemoryProgressViewModel();
-            var progressWindow = new MemoryProgressWindow
+            if (_repository == null)
             {
-                DataContext = progressViewModel,
+                MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
+                return;
+            }
+
+            // MemorySettingWindowを開く
+            var window = new MemorySettingWindow(_repository, this)
+            {
                 Owner = Application.Current.MainWindow
             };
-
-            // 進捗ウィンドウを非モーダルで表示
-            progressWindow.Show();
-
-            // UIスレッドをブロックしないようにTask.Runで実行
-            await Task.Run(async () =>
-            {
-                try
-                {
-                    progressViewModel.UpdateStatus("メモリ設定を開始しています...");
-                    await Task.Delay(100); // UIの更新を待つ
-
-                    // 3. データ準備
-                    progressViewModel.UpdateStatus("データを準備しています...");
-                    var prepData = await PrepareDataForMemorySetting();
-
-                    // 4. Mnemonic/Timerテーブルへの事前保存
-                    if (prepData == null)
-                    {
-                        // データ準備に失敗した場合、ユーザーに通知して処理を中断
-                        progressViewModel.MarkError("データ準備に失敗しました");
-                        Application.Current.Dispatcher.Invoke(() =>
-                            MessageBox.Show("データ準備に失敗しました。CycleまたはPLCが選択されているか確認してください。", "エラー"));
-                        return;
-                    }
-
-                    await SaveMnemonicAndTimerDevices(prepData.Value, progressViewModel);
-                    await SaveMemoriesToMemoryTableAsync(prepData.Value, progressViewModel);
-
-                    progressViewModel.MarkCompleted();
-                }
-                catch (Exception ex)
-                {
-                    progressViewModel.MarkError(ex.Message);
-                    Application.Current.Dispatcher.Invoke(() =>
-                        MessageBox.Show($"メモリ設定中にエラーが発生しました: {ex.Message}", "エラー"));
-                }
-            });
-        }
-
-        private bool ValidateMemorySettings()
-        {
-            var errorMessages = new List<string>();
-            if (SelectedCycle == null) errorMessages.Add("Cycleが選択されていません。");
-            if (SelectedPlc == null) errorMessages.Add("PLCが選択されていません。");
-
-            if (errorMessages.Any())
-            {
-                MessageBox.Show(string.Join("\n", errorMessages), "入力エラー");
-                return false;
-            }
-            return true;
+            window.ShowDialog();
         }
 
         [RelayCommand]

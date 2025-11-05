@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Services;
+using KdxDesigner.Utils;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -52,7 +53,8 @@ namespace KdxDesigner.ViewModels
             if (result == MessageBoxResult.Yes)
             {
                 _profileManager.ApplyProfileToViewModel(SelectedProfile, _mainViewModel);
-                _mainViewModel.SaveLastUsedProfile(SelectedProfile.Id);
+                SettingsManager.Settings.LastUsedMemoryProfileId = SelectedProfile.Id;
+                SettingsManager.Save();
                 MessageBox.Show("プロファイルを読み込みました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }

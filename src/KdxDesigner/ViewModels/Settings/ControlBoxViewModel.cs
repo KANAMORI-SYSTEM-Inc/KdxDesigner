@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace KdxDesigner.ViewModels
+namespace KdxDesigner.ViewModels.Settings
 {
     // コンストラクタを async Task に分離
     public class ControlBoxViewModel : INotifyPropertyChanged

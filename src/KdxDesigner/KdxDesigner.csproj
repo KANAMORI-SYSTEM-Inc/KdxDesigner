@@ -73,9 +73,6 @@
   </ItemGroup>
 
   <ItemGroup>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.9" />
   </ItemGroup>
 

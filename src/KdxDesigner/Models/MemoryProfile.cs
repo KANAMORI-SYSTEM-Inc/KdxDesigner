@@ -1,5 +1,3 @@
-using System;
-
 namespace KdxDesigner.Models
 {
     public class MemoryProfile
@@ -9,6 +7,8 @@ namespace KdxDesigner.Models
         public string Description { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+        public int PlcId { get; set; } = 2;
 
         // デバイス開始アドレス設定
         public int ProcessDeviceStartL { get; set; }

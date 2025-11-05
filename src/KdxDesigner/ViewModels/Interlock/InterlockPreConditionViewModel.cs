@@ -1,16 +1,12 @@
-using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
-using KdxDesigner.Utils;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Input;
 
-namespace KdxDesigner.ViewModels
+namespace KdxDesigner.ViewModels.Interlock
 {
     public class InterlockPreConditionViewModel : INotifyPropertyChanged
     {

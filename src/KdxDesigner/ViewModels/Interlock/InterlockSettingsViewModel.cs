@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace KdxDesigner.ViewModels
+namespace KdxDesigner.ViewModels.Interlock
 {
     // Cylinder用のラッパークラス
     public class CylinderViewModel : INotifyPropertyChanged
