@@ -1,5 +1,7 @@
+using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
+using KdxDesigner.ViewModels.IOEditor;
 using KdxDesigner.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,7 +11,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace KdxDesigner.ViewModels.Interlock
+namespace KdxDesigner.ViewModels
 {
     // Cylinder用のラッパークラス
     public class CylinderViewModel : INotifyPropertyChanged
@@ -427,16 +429,16 @@ namespace KdxDesigner.ViewModels.Interlock
                 }
             };
 
-            AddInterlockCommand = new RelayCommand(AddInterlock, CanAddInterlock);
-            DeleteInterlockCommand = new RelayCommand(DeleteInterlock, CanDeleteInterlock);
-            EditPreConditionsCommand = new RelayCommand(EditPreConditions, CanEditPreConditions);
-            AddConditionCommand = new RelayCommand(AddCondition, CanAddCondition);
-            DeleteConditionCommand = new RelayCommand(DeleteCondition, CanDeleteCondition);
-            AddIOCommand = new RelayCommand(AddIO, CanAddIO);
-            DeleteIOCommand = new RelayCommand(DeleteIO, CanDeleteIO);
-            SaveCommand = new RelayCommand(async _ => await SaveAsync());
-            CancelCommand = new RelayCommand(Cancel);
-            ClearCylinderSearchCommand = new RelayCommand(_ => CylinderSearchText = string.Empty);
+            AddInterlockCommand = new RelayCommand(() => AddInterlock(null), () => CanAddInterlock(null));
+            DeleteInterlockCommand = new RelayCommand(() => DeleteInterlock(null), () => CanDeleteInterlock(null));
+            EditPreConditionsCommand = new RelayCommand(() => EditPreConditions(null), () => CanEditPreConditions(null));
+            AddConditionCommand = new RelayCommand(() => AddCondition(null), () => CanAddCondition(null));
+            DeleteConditionCommand = new RelayCommand(() => DeleteCondition(null), () => CanDeleteCondition(null));
+            AddIOCommand = new RelayCommand(() => AddIO(null), () => CanAddIO(null));
+            DeleteIOCommand = new RelayCommand(() => DeleteIO(null), () => CanDeleteIO(null));
+            SaveCommand = new RelayCommand(async () => await SaveAsync());
+            CancelCommand = new RelayCommand(() => Cancel(null));
+            ClearCylinderSearchCommand = new RelayCommand(() => CylinderSearchText = string.Empty);
 
             LoadCylinders();
             _ = LoadConditionTypesAsync();

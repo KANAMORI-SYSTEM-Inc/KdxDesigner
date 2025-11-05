@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
 using System.Collections.ObjectModel;
@@ -6,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 
-namespace KdxDesigner.ViewModels.Interlock
+namespace KdxDesigner.ViewModels
 {
     public class InterlockPreConditionViewModel : INotifyPropertyChanged
     {
@@ -88,12 +89,12 @@ namespace KdxDesigner.ViewModels.Interlock
             PreCondition1List = new ObservableCollection<InterlockPrecondition1>();
             PreCondition2List = new ObservableCollection<InterlockPrecondition2>();
 
-            AddPreCondition1Command = new RelayCommand(AddPreCondition1);
-            DeletePreCondition1Command = new RelayCommand(DeletePreCondition1, CanDeletePreCondition1);
-            AddPreCondition2Command = new RelayCommand(AddPreCondition2);
-            DeletePreCondition2Command = new RelayCommand(DeletePreCondition2, CanDeletePreCondition2);
-            SaveCommand = new RelayCommand(async _ => await SaveAsync());
-            CancelCommand = new RelayCommand(Cancel);
+            AddPreCondition1Command = new RelayCommand(() => AddPreCondition1(null));
+            DeletePreCondition1Command = new RelayCommand(() => DeletePreCondition1(null), () => CanDeletePreCondition1(null));
+            AddPreCondition2Command = new RelayCommand(() => AddPreCondition2(null));
+            DeletePreCondition2Command = new RelayCommand(() => DeletePreCondition2(null), () => CanDeletePreCondition2(null));
+            SaveCommand = new RelayCommand(async () => await SaveAsync());
+            CancelCommand = new RelayCommand(() => Cancel(null));
 
             _ = LoadDataAsync();
         }

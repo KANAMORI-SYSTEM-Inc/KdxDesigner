@@ -76,4 +76,8 @@
     <PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.9" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ViewModels\InterlockViewModels\" />
+  </ItemGroup>
+
 </Project>

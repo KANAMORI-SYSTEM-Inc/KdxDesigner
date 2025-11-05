@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Utils;
@@ -27,7 +28,7 @@ namespace KdxDesigner.ViewModels.IOEditor
             _filteredIOs = CollectionViewSource.GetDefaultView(_allIOs);
             _filteredIOs.Filter = FilterIO;
 
-            ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
+            ClearSearchCommand = new RelayCommand(() => SearchText = string.Empty);
 
             LoadIOs();
 
