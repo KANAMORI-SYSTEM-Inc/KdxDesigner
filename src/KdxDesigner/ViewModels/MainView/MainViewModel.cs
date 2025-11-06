@@ -1,19 +1,13 @@
 // ViewModel: PlcSelectionViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
-using Kdx.Contracts.Enums;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.Services;
 using KdxDesigner.Services.Authentication;
-using KdxDesigner.Services.MnemonicDevice;
 using KdxDesigner.Utils;
 using KdxDesigner.ViewModels.Managers;
-using KdxDesigner.Views;
-using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Windows;
-using Timer = Kdx.Contracts.DTOs.Timer;
 
 namespace KdxDesigner.ViewModels
 {
@@ -32,28 +26,6 @@ namespace KdxDesigner.ViewModels
             Initialize();
         }
 
-        /// <summary>
-        /// パラメータなしコンストラクタ（デザイナー/レガシーサポート用）
-        /// </summary>
-        public MainViewModel()
-        {
-            var repository = App.Services?.GetService<ISupabaseRepository>();
-            var authService = App.Services?.GetService<IAuthenticationService>();
-            var supabaseHelper = App.Services?.GetService<SupabaseConnectionHelper>();
-
-            if (repository == null || authService == null)
-            {
-                throw new InvalidOperationException(
-                    "MainViewModelはDIコンテナから取得してください。" +
-                    "App.Services.GetRequiredService<MainViewModel>()を使用してください。");
-            }
-
-            _repository = repository;
-            _authService = authService;
-            _supabaseHelper = supabaseHelper;
-
-            Initialize();
-        }
 
         /// <summary>
         /// 共通初期化処理
@@ -269,54 +241,6 @@ namespace KdxDesigner.ViewModels
                 // ただしSelectedOperationsコレクションは変更しない
             }
         }
-
-
-        // その他ボタン処理
-        #region Properties for Process Details
-
-        [RelayCommand]
-        private void ShowMemoryDeviceList()
-        {
-            try
-            {
-                // メモリストアを取得
-                var memoryStore = App.Services?.GetService<IMnemonicDeviceMemoryStore>()
-                    ?? new MnemonicDeviceMemoryStore();
-
-                // 現在選択中のPLCとCycleを渡してウィンドウを開く
-                var window = new MemoryDeviceListWindow(
-                    memoryStore,
-                    SelectedPlc?.Id,
-                    SelectedCycle?.Id);
-
-                window.Owner = Application.Current.MainWindow;
-                window.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"メモリデバイス一覧の表示に失敗しました。\n{ex.Message}",
-                    "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        #endregion
-
-        // 出力処理
-        #region ProcessOutput
-        /// <summary>
-        /// 出力ウィンドウを表示
-        /// </summary>
-        [RelayCommand]
-        private void ProcessOutput()
-        {
-            var outputWindow = new OutputWindow(this)
-            {
-                Owner = Application.Current.MainWindow
-            };
-            outputWindow.ShowDialog();
-        }
-        #endregion
-
 
     }
 }

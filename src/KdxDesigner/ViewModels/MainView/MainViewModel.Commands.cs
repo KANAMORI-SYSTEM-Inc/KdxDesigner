@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Kdx.Contracts.DTOs;
+using KdxDesigner.Services.MnemonicDevice;
 using KdxDesigner.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
@@ -9,6 +10,48 @@ namespace KdxDesigner.ViewModels
 {
     public partial class MainViewModel
     {
+        // その他ボタン処理
+
+        [RelayCommand]
+        private void ShowMemoryDeviceList()
+        {
+            try
+            {
+                // メモリストアを取得
+                var memoryStore = App.Services?.GetService<IMnemonicDeviceMemoryStore>()
+                    ?? new MnemonicDeviceMemoryStore();
+
+                // 現在選択中のPLCとCycleを渡してウィンドウを開く
+                var window = new MemoryDeviceListWindow(
+                    memoryStore,
+                    SelectedPlc?.Id,
+                    SelectedCycle?.Id);
+
+                window.Owner = Application.Current.MainWindow;
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"メモリデバイス一覧の表示に失敗しました。\n{ex.Message}",
+                    "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        // 出力処理
+        /// <summary>
+        /// 出力ウィンドウを表示
+        /// </summary>
+        [RelayCommand]
+        private void ProcessOutput()
+        {
+            var outputWindow = new OutputWindow(this)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            outputWindow.ShowDialog();
+        }
+
         /// <summary>
         /// メモリ設定ウィンドウを開く
         /// </summary>

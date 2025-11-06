@@ -1,7 +1,6 @@
 using Kdx.Contracts.DTOs;
 using KdxDesigner.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -41,12 +40,6 @@ namespace KdxDesigner.Views
                     vm.OnProcessDetailSelected(selected);
                 }
             }
-        }
-
-        private void NumberOnlyTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            // 数字（0～9）のみ許可  
-            e.Handled = !Regex.IsMatch(e.Text, "^[0-9]+$");
         }
 
         private void ProcessGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

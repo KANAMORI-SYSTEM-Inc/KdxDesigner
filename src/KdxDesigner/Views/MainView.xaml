@@ -8,74 +8,11 @@
         mc:Ignorable="d"
         Title="KDX Designer - ラダープログラム自動生成システム" Height="1000" Width="1920"
         WindowStartupLocation="CenterScreen">
-    
-    <Window.Icon>
-        <DrawingImage>
-            <DrawingImage.Drawing>
-                <DrawingGroup>
-                    <!-- Background -->
-                    <GeometryDrawing Brush="#1E3A8A">
-                        <GeometryDrawing.Geometry>
-                            <RectangleGeometry Rect="0,0,32,32" RadiusX="4" RadiusY="4"/>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                    <!-- Gear Symbol (representing automation) -->
-                    <GeometryDrawing Brush="White">
-                        <GeometryDrawing.Geometry>
-                            <PathGeometry>
-                                <PathFigure StartPoint="16,8" IsClosed="True">
-                                    <LineSegment Point="18,10"/>
-                                    <LineSegment Point="20,8"/>
-                                    <LineSegment Point="20,12"/>
-                                    <LineSegment Point="22,14"/>
-                                    <LineSegment Point="24,12"/>
-                                    <LineSegment Point="24,8"/>
-                                    <LineSegment Point="22,10"/>
-                                    <LineSegment Point="20,8"/>
-                                </PathFigure>
-                            </PathGeometry>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                    <!-- Ladder Rails (vertical lines) -->
-                    <GeometryDrawing Brush="White">
-                        <GeometryDrawing.Geometry>
-                            <RectangleGeometry Rect="8,12,2,12"/>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                    <GeometryDrawing Brush="White">
-                        <GeometryDrawing.Geometry>
-                            <RectangleGeometry Rect="22,12,2,12"/>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                    <!-- Ladder Rungs (horizontal lines) -->
-                    <GeometryDrawing Brush="White">
-                        <GeometryDrawing.Geometry>
-                            <RectangleGeometry Rect="10,14,12,1.5"/>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                    <GeometryDrawing Brush="White">
-                        <GeometryDrawing.Geometry>
-                            <RectangleGeometry Rect="10,18,12,1.5"/>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                    <GeometryDrawing Brush="White">
-                        <GeometryDrawing.Geometry>
-                            <RectangleGeometry Rect="10,22,12,1.5"/>
-                        </GeometryDrawing.Geometry>
-                    </GeometryDrawing>
-                </DrawingGroup>
-            </DrawingImage.Drawing>
-        </DrawingImage>
-    </Window.Icon>
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <utils:BoolToColorConverter x:Key="BoolToColorConverter"/>
     </Window.Resources>
-    
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
 
     <DockPanel>
         <Menu DockPanel.Dock="Top">
@@ -92,7 +29,6 @@
                 <MenuItem Header="メモリプロファイル管理" Command="{Binding OpenMemoryProfileManagerCommand}" />
                 <MenuItem Header="操作盤選択" Command="{Binding OpenControllBoxViewCommand}" />
                 <MenuItem Header="シリンダー管理" Command="{Binding OpenCylinderManagementCommand}" />
-
                 <Separator/>
                 <MenuItem Header="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}" />
                 <MenuItem Header="全ての工程フロー詳細を閉じる" Command="{Binding CloseAllProcessFlowWindowsCommand}" />
@@ -114,21 +50,42 @@
             </Grid.RowDefinitions>
 
             <GroupBox Header="プロジェクト選択" Grid.Row="0" Margin="0,0,0,5" Padding="5">
-                <Grid>
+                <Grid Margin="2" ShowGridLines="True">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <TextBlock Text="Company:" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <ComboBox ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany}" DisplayMemberPath="CompanyName" Width="200" Margin="5,0,20,0"/>
-                        <TextBlock Text="Model:" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <ComboBox ItemsSource="{Binding Models}" SelectedItem="{Binding SelectedModel}" DisplayMemberPath="ModelName" Width="200" Margin="5,0,20,0"/>
-                        <TextBlock Text="PLC:" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <ComboBox ItemsSource="{Binding Plcs}" SelectedItem="{Binding SelectedPlc}" DisplayMemberPath="PlcName" Width="200" Margin="5,0,20,0"/>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical">
+                        <StackPanel HorizontalAlignment="Left">
+                            <TextBlock Text="Company" VerticalAlignment="Center" FontWeight="Bold"/>
+                            <ComboBox ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany}" DisplayMemberPath="CompanyName" Width="200" Margin="0,5,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel HorizontalAlignment="Left">
+                            <TextBlock Text="Model" VerticalAlignment="Center" FontWeight="Bold" Margin="0,5,0,0"/>
+                            <ComboBox ItemsSource="{Binding Models}" SelectedItem="{Binding SelectedModel}" DisplayMemberPath="ModelName" Width="200" Margin="0,5,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel HorizontalAlignment="Left">
+                            <TextBlock Text="PLC" VerticalAlignment="Center" FontWeight="Bold" Margin="0,5,0,0"/>
+                            <ComboBox ItemsSource="{Binding Plcs}" SelectedItem="{Binding SelectedPlc}" DisplayMemberPath="PlcName" Width="200" Margin="0,5,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel HorizontalAlignment="Left">
+                            <TextBlock Text="Cycle" VerticalAlignment="Center" FontWeight="Bold" Margin="0,5,0,0"/>
+                            <ComboBox ItemsSource="{Binding Cycles}" SelectedItem="{Binding SelectedCycle}" DisplayMemberPath="CycleName" Width="200" Margin="0,5,0,0"/>
+                        </StackPanel>
+                        
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Orientation="Vertical">
                         <Button Content="メモリ編集" Command="{Binding OpenMemoryEditorCommand}" Width="100" VerticalAlignment="Center"/>
-                        <Button Content="メモリ設定" Command="{Binding MemorySettingCommand}" Width="100" VerticalAlignment="Center"  Margin="5">
+                        <Button Content="メモリ設定" Command="{Binding MemorySettingCommand}" Width="100" VerticalAlignment="Center" Margin="0,5,0,0">
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Style.Triggers>
@@ -139,16 +96,14 @@
                                 </Style>
                             </Button.Style>
                         </Button>
-                        <Button Content="工程出力" Command="{Binding ProcessOutputCommand}"  Width="100" VerticalAlignment="Center"  Margin="5">
+                        <Button Content="工程出力" Command="{Binding ProcessOutputCommand}"  Width="100" VerticalAlignment="Center" Margin="0,5,0,0">
                             <Button.IsEnabled>
                                 <Binding Path="IsMemoryConfigured"/>
                             </Button.IsEnabled>
                         </Button>
-                        <Button Content="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}"  Width="100" VerticalAlignment="Center"  Margin="5"/>
-                        <Button Content="インターロック設定" Command="{Binding OpenInterlockSettingsCommand}"  Width="100" VerticalAlignment="Center"  Margin="5"/>
-                        <CheckBox Content="デバッグモード" IsChecked="{Binding IsDebug, Mode=TwoWay}" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-
-                            
+                        <Button Content="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}"  Width="100" VerticalAlignment="Center" Margin="0,5,0,0"/>
+                        <Button Content="インターロック設定" Command="{Binding OpenInterlockSettingsCommand}"  Width="100" VerticalAlignment="Center" Margin="0,5,0,0"/>
+                        <CheckBox Content="デバッグモード" IsChecked="{Binding IsDebug, Mode=TwoWay}" Margin="0,5,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                     </StackPanel>
                     
                     <!-- メモリ設定状態の表示 -->
@@ -218,13 +173,6 @@
 
             <GroupBox Header="工程一覧" Grid.Row="1">
                 <DockPanel>
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
-                        <TextBlock Text="Cycle:" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <ComboBox ItemsSource="{Binding Cycles}" SelectedItem="{Binding SelectedCycle}" DisplayMemberPath="CycleName" Width="200" Margin="5,0"/>
-                        <Button Content="保存" Command="{Binding SaveAllChangesCommand}" Width="80" Height="25" Margin="10,0,0,0" 
-                                Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
-                    </StackPanel>
-
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -238,27 +186,21 @@
                         
                         <!-- 追加ボタンヘッダー -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 工程追加" Command="{Binding AddNewProcessCommand}"
-                                    Width="100" Height="25" Margin="0,0,5,0"
-                                    Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <TextBlock Text="工程" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenProcessListWindowCommand}"
                                     Width="120" Height="25" Margin="0,0,5,0"
                                     Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 詳細追加" Command="{Binding AddNewProcessDetailCommand}"
-                                    Width="100" Height="25" Margin="0,0,5,0"
-                                    Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <TextBlock Text="工程詳細" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenProcessDetailListWindowCommand}"
                                     Width="120" Height="25" Margin="0,0,5,0"
                                     Background="#FF9800" Foreground="White" FontWeight="Bold"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="5,0,5,5">
-                            <Button Content="＋ 操作追加" Command="{Binding AddNewOperationCommand}"
-                                    Width="100" Height="25" Margin="0,0,5,0"
-                                    Background="#2196F3" Foreground="White" FontWeight="Bold"/>
+                            <TextBlock Text="操作" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <Button Content="🗔 ウィンドウ表示" Command="{Binding OpenOperationListWindowCommand}"
                                     Width="120" Height="25" Margin="0,0,5,0"
                                     Background="#FF9800" Foreground="White" FontWeight="Bold"/>
