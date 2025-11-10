@@ -1,5 +1,6 @@
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
+using KdxDesigner.ViewModels.Settings;
 using System.Windows;
 
 namespace KdxDesigner.Views

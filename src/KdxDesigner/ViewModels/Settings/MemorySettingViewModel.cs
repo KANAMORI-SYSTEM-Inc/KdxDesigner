@@ -10,8 +10,8 @@ using KdxDesigner.Services.MemonicTimerDevice;
 using KdxDesigner.Services.MnemonicDevice;
 using KdxDesigner.Services.MnemonicSpeedDevice;
 using KdxDesigner.Utils;
-using KdxDesigner.ViewModels;
 using KdxDesigner.ViewModels.Managers;
+using KdxDesigner.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
@@ -19,7 +19,7 @@ using System.Windows;
 using MemoryProfile = KdxDesigner.Models.MemoryProfile;
 using Timer = Kdx.Contracts.DTOs.Timer;
 
-namespace KdxDesigner.Views
+namespace KdxDesigner.ViewModels.Settings
 {
     /// <summary>
     /// メモリ設定ウィンドウのViewModel
@@ -338,7 +338,7 @@ namespace KdxDesigner.Views
 
             // 進捗ウィンドウを作成
             var progressViewModel = new MemoryProgressViewModel();
-            var progressWindow = new MemoryProgressWindow
+            var progressWindow = new Views.MemoryProgressWindow
             {
                 DataContext = progressViewModel,
                 Owner = Application.Current.Windows.OfType<MemorySettingWindow>().FirstOrDefault()
