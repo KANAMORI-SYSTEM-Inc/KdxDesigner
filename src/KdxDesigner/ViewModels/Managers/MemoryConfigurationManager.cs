@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Kdx.Contracts.Interfaces;
 using KdxDesigner.Services.MnemonicDevice;
 
 namespace KdxDesigner.ViewModels.Managers

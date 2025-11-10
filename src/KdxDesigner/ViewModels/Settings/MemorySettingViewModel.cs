@@ -11,6 +11,8 @@ using KdxDesigner.Services.MnemonicDevice;
 using KdxDesigner.Services.MnemonicSpeedDevice;
 using KdxDesigner.Utils;
 using KdxDesigner.ViewModels;
+using KdxDesigner.ViewModels.Managers;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using System.Windows;
@@ -36,6 +38,29 @@ namespace KdxDesigner.Views
         private readonly IMnemonicSpeedDeviceService? _speedService;
         private readonly IMemoryService? _memoryService;
         private readonly ErrorService? _errorService;
+        private readonly MemoryConfigurationManager? _memoryConfig = null;
+
+        // メモリ設定状態プロパティ
+        public int TotalMemoryDeviceCount
+        {
+            get => _memoryConfig?.TotalMemoryDeviceCount ?? 0;
+            set { if (_memoryConfig != null) _memoryConfig.TotalMemoryDeviceCount = value; }
+        }
+        public string MemoryConfigurationStatus
+        {
+            get => _memoryConfig?.MemoryConfigurationStatus ?? "未設定";
+            set { if (_memoryConfig != null) _memoryConfig.MemoryConfigurationStatus = value; }
+        }
+        public bool IsMemoryConfigured
+        {
+            get => _memoryConfig?.IsMemoryConfigured ?? false;
+            set { if (_memoryConfig != null) _memoryConfig.IsMemoryConfigured = value; }
+        }
+        public string LastMemoryConfigTime
+        {
+            get => _memoryConfig?.LastMemoryConfigTime ?? string.Empty;
+            set { if (_memoryConfig != null) _memoryConfig.LastMemoryConfigTime = value; }
+        }
 
         // プロファイル関連
         [ObservableProperty]
@@ -134,6 +159,7 @@ namespace KdxDesigner.Views
             _speedService = mainViewModel._speedService;
             _memoryService = mainViewModel._memoryService;
             _errorService = mainViewModel._errorService;
+            _memoryConfig = mainViewModel._memoryConfig;
 
             // プロファイルの読み込み
             LoadProfiles();
@@ -306,8 +332,9 @@ namespace KdxDesigner.Views
             ApplySettingsToMainViewModel();
 
             // メモリ設定状態を「設定中」に更新
-            _mainViewModel.MemoryConfigurationStatus = "設定中...";
-            _mainViewModel.IsMemoryConfigured = false;
+            if (_memoryConfig == null) return;
+            _memoryConfig.MemoryConfigurationStatus = "設定中...";
+            _memoryConfig.IsMemoryConfigured = false;
 
             // 進捗ウィンドウを作成
             var progressViewModel = new MemoryProgressViewModel();
@@ -355,6 +382,31 @@ namespace KdxDesigner.Views
                         MessageBox.Show($"メモリ設定中にエラーが発生しました: {ex.Message}", "エラー"));
                 }
             });
+        }
+
+        [RelayCommand]
+        private void ShowMemoryDeviceList()
+        {
+            try
+            {
+                // メモリストアを取得
+                var memoryStore = App.Services?.GetService<IMnemonicDeviceMemoryStore>()
+                    ?? new MnemonicDeviceMemoryStore();
+
+                // 現在選択中のPLCとCycleを渡してウィンドウを開く
+                var window = new MemoryDeviceListWindow(
+                    memoryStore,
+                    SelectedPlc?.Id,
+                    SelectedCycle?.Id);
+
+                window.Owner = Application.Current.MainWindow;
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"メモリデバイス一覧の表示に失敗しました。\n{ex.Message}",
+                    "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         /// <summary>
@@ -617,11 +669,14 @@ namespace KdxDesigner.Views
         /// </summary>
         private async Task UpdateMemoryConfigurationStatus()
         {
-            if (SelectedPlc == null || SelectedCycle == null || _mnemonicService == null || _timerService == null || _speedService == null)
+            if (SelectedPlc == null || SelectedCycle == null || _mnemonicService == null || _timerService == null || _speedService == null || _memoryConfig == null)
             {
-                _mainViewModel.MemoryConfigurationStatus = "未設定";
-                _mainViewModel.IsMemoryConfigured = false;
-                _mainViewModel.TotalMemoryDeviceCount = 0;
+                if (_memoryConfig != null)
+                {
+                    _memoryConfig.MemoryConfigurationStatus = "未設定";
+                    _memoryConfig.IsMemoryConfigured = false;
+                    _memoryConfig.TotalMemoryDeviceCount = 0;
+                }
                 return;
             }
 
@@ -632,12 +687,12 @@ namespace KdxDesigner.Views
                 var speedDevices = _speedService.GetMnemonicSpeedDevice(SelectedPlc.Id) ?? new List<MnemonicSpeedDevice>();
 
                 int totalCount = devices.Count + timerDevices.Count + speedDevices.Count;
-                _mainViewModel.TotalMemoryDeviceCount = totalCount;
+                _memoryConfig.TotalMemoryDeviceCount = totalCount;
 
                 if (totalCount > 0)
                 {
-                    _mainViewModel.IsMemoryConfigured = true;
-                    _mainViewModel.LastMemoryConfigTime = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+                    _memoryConfig.IsMemoryConfigured = true;
+                    _memoryConfig.LastMemoryConfigTime = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
 
                     var statusBuilder = new System.Text.StringBuilder();
                     statusBuilder.AppendLine($"設定済み (合計: {totalCount} デバイス)");
@@ -661,19 +716,31 @@ namespace KdxDesigner.Views
                     if (speedDevices.Count > 0)
                         statusBuilder.AppendLine($"  速度: {speedDevices.Count}");
 
-                    _mainViewModel.MemoryConfigurationStatus = statusBuilder.ToString().TrimEnd();
+                    _memoryConfig.MemoryConfigurationStatus = statusBuilder.ToString().TrimEnd();
                 }
                 else
                 {
-                    _mainViewModel.MemoryConfigurationStatus = "未設定";
-                    _mainViewModel.IsMemoryConfigured = false;
+                    _memoryConfig.MemoryConfigurationStatus = "未設定";
+                    _memoryConfig.IsMemoryConfigured = false;
                 }
             }
             catch (Exception ex)
             {
-                _mainViewModel.MemoryConfigurationStatus = $"エラー: {ex.Message}";
-                _mainViewModel.IsMemoryConfigured = false;
-                _mainViewModel.TotalMemoryDeviceCount = 0;
+                _memoryConfig.MemoryConfigurationStatus = $"エラー: {ex.Message}";
+                _memoryConfig.IsMemoryConfigured = false;
+                _memoryConfig.TotalMemoryDeviceCount = 0;
+            }
+            finally
+            {
+                // MemorySettingViewModelのプロパティ変更を通知
+                OnPropertyChanged(nameof(TotalMemoryDeviceCount));
+                OnPropertyChanged(nameof(MemoryConfigurationStatus));
+                OnPropertyChanged(nameof(IsMemoryConfigured));
+                OnPropertyChanged(nameof(LastMemoryConfigTime));
+
+                // 注: MainViewModelのプロパティ変更通知は、
+                // _memoryConfigのPropertyChangedイベントを通じて自動的に転送されます
+                // （MainViewModel.cs:113-119行目参照）
             }
         }
 

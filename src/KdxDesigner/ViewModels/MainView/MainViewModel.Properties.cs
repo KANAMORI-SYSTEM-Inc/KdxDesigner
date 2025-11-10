@@ -49,7 +49,7 @@ namespace KdxDesigner.ViewModels
         // マネージャークラス
         private SelectionStateManager _selectionManager = null!;
         private DeviceConfigurationManager _deviceConfig = null!;
-        private MemoryConfigurationManager _memoryConfig = null!;
+        public MemoryConfigurationManager _memoryConfig = null!;
         private ServiceInitializer _serviceInitializer = null!;
 
         // 開いているProcessFlowDetailWindowのリスト
@@ -278,27 +278,7 @@ namespace KdxDesigner.ViewModels
             set { if (_deviceConfig != null) _deviceConfig.IsDebug = value; }
         }
 
-        // メモリ設定状態プロパティ
-        public int TotalMemoryDeviceCount
-        {
-            get => _memoryConfig?.TotalMemoryDeviceCount ?? 0;
-            set { if (_memoryConfig != null) _memoryConfig.TotalMemoryDeviceCount = value; }
-        }
-        public string MemoryConfigurationStatus
-        {
-            get => _memoryConfig?.MemoryConfigurationStatus ?? "未設定";
-            set { if (_memoryConfig != null) _memoryConfig.MemoryConfigurationStatus = value; }
-        }
-        public bool IsMemoryConfigured
-        {
-            get => _memoryConfig?.IsMemoryConfigured ?? false;
-            set { if (_memoryConfig != null) _memoryConfig.IsMemoryConfigured = value; }
-        }
-        public string LastMemoryConfigTime
-        {
-            get => _memoryConfig?.LastMemoryConfigTime ?? string.Empty;
-            set { if (_memoryConfig != null) _memoryConfig.LastMemoryConfigTime = value; }
-        }
+
 
         // サービスへのアクセス（後方互換性のため）
         internal IMnemonicDeviceService? _mnemonicService => _serviceInitializer?.MnemonicService;

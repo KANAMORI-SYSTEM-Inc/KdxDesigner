@@ -9,11 +9,6 @@
         Title="KDX Designer - ラダープログラム自動生成システム" Height="1000" Width="1920"
         WindowStartupLocation="CenterScreen">
 
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <utils:BoolToColorConverter x:Key="BoolToColorConverter"/>
-    </Window.Resources>
-
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_ファイル">
@@ -59,10 +54,10 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical">
                         <StackPanel HorizontalAlignment="Left">
-                            <TextBlock Text="Company" VerticalAlignment="Center" FontWeight="Bold"/>
+                            <TextBlock VerticalAlignment="Center" FontWeight="Bold"><Run Text="Compan"/><Run Language="ja-jp" Text="y"/></TextBlock>
                             <ComboBox ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany}" DisplayMemberPath="CompanyName" Width="200" Margin="0,5,0,0"/>
                         </StackPanel>
 
@@ -78,16 +73,16 @@
 
                         <StackPanel HorizontalAlignment="Left">
                             <TextBlock Text="Cycle" VerticalAlignment="Center" FontWeight="Bold" Margin="0,5,0,0"/>
-                            <ComboBox ItemsSource="{Binding Cycles}" SelectedItem="{Binding SelectedCycle}" DisplayMemberPath="CycleName" Width="200" Margin="0,5,0,0"/>
+                            <ComboBox ItemsSource="{Binding Cycles}" SelectedItem="{Binding SelectedCycle}" DisplayMemberPath="CycleName" Width="200" Margin="0,0,0,0"/>
                         </StackPanel>
-                        
+
                     </StackPanel>
 
-                    <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Orientation="Vertical">
-                        <Button Content="メモリ編集" Command="{Binding OpenMemoryEditorCommand}" Width="100" VerticalAlignment="Center"/>
-                        <Button Content="メモリ設定" Command="{Binding MemorySettingCommand}" Width="100" VerticalAlignment="Center" Margin="0,5,0,0">
+                    <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Orientation="Vertical" Margin="15,20,0,0" Grid.RowSpan="2">
+                        <Button Content="メモリ編集" Command="{Binding OpenMemoryEditorCommand}" Width="100"/>
+                        <Button Content="メモリ設定" Command="{Binding MemorySettingCommand}" Width="100" VerticalAlignment="Center" Margin="0,10,0,0">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style TargetType="{x:Type Button}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsMemoryConfigured}" Value="True">
                                             <Setter Property="Background" Value="#90EE90"/>
@@ -96,78 +91,11 @@
                                 </Style>
                             </Button.Style>
                         </Button>
-                        <Button Content="工程出力" Command="{Binding ProcessOutputCommand}"  Width="100" VerticalAlignment="Center" Margin="0,5,0,0">
-                            <Button.IsEnabled>
-                                <Binding Path="IsMemoryConfigured"/>
-                            </Button.IsEnabled>
-                        </Button>
-                        <Button Content="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}"  Width="100" VerticalAlignment="Center" Margin="0,5,0,0"/>
-                        <Button Content="インターロック設定" Command="{Binding OpenInterlockSettingsCommand}"  Width="100" VerticalAlignment="Center" Margin="0,5,0,0"/>
-                        <CheckBox Content="デバッグモード" IsChecked="{Binding IsDebug, Mode=TwoWay}" Margin="0,5,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        <Button Content="工程出力" Command="{Binding ProcessOutputCommand}"  Width="100" VerticalAlignment="Center" Margin="0,10,0,0" IsEnabled="{Binding IsMemoryConfigured}"/>
+                        <Button Content="工程フロー詳細" Command="{Binding OpenProcessFlowDetailCommand}"  Width="100" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                        <Button Content="インターロック設定" Command="{Binding OpenInterlockSettingsCommand}"  Width="100" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                        <CheckBox Content="デバッグモード" IsChecked="{Binding IsDebug, Mode=TwoWay}" Margin="0,10,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                     </StackPanel>
-                    
-                    <!-- メモリ設定状態の表示 -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
-                        <TextBlock Text="メモリ設定状態:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Border BorderBrush="{Binding IsMemoryConfigured, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Green|Gray'}" 
-                                BorderThickness="1" CornerRadius="3" Padding="5,2">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsMemoryConfigured}" Value="True">
-                                            <Setter Property="Background" Value="#E6FFE6"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsMemoryConfigured}" Value="False">
-                                            <Setter Property="Background" Value="#F0F0F0"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Margin="0,0,5,0">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsMemoryConfigured}" Value="True">
-                                                    <Setter Property="Fill" Value="Green"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsMemoryConfigured}" Value="False">
-                                                    <Setter Property="Fill" Value="Gray"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <TextBlock Text="{Binding MemoryConfigurationStatus}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <TextBlock Text="デバイス数:" FontWeight="Bold" VerticalAlignment="Center" Margin="20,0,5,0"/>
-                        <TextBlock Text="{Binding TotalMemoryDeviceCount}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        
-                        <TextBlock Text="{Binding LastMemoryConfigTime}" VerticalAlignment="Center" Foreground="DarkGray" 
-                                   Visibility="{Binding IsMemoryConfigured, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,10,0"/>
-                        
-                        <!-- メモリデバイス一覧表示ボタン -->
-                        <Button Command="{Binding ShowMemoryDeviceListCommand}" 
-                                IsEnabled="{Binding IsMemoryConfigured}"
-                                Padding="10,3" Margin="10,0,0,0">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Opacity" Value="0.5"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📋" FontSize="14" Margin="0,0,5,0"/>
-                                <TextBlock Text="一覧表示" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                    
                 </Grid>
             </GroupBox>
 
@@ -183,7 +111,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        
+
                         <!-- 追加ボタンヘッダー -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="5,0,5,5">
                             <TextBlock Text="工程" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -322,8 +250,6 @@
                     </Grid>
                 </DockPanel>
             </GroupBox>
-            
-            
         </Grid>
     </DockPanel>
 </Window>
