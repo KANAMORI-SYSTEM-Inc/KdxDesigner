@@ -38,35 +38,39 @@ namespace KdxDesigner.Services.MnemonicDevice
         Task DeleteAllMnemonicDevices();
 
         /// <summary>
-        /// プロセスのニーモニックデバイスを保存する
+        /// プロセスのニーモニックデバイスを保存する（Cycle用プロファイル）
         /// </summary>
         /// <param name="processes">プロセスリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId);
+        /// <param name="cycleId">Cycle ID（Cycle用プロファイル使用時に設定）</param>
+        void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId, int? cycleId = null);
 
         /// <summary>
-        /// プロセス詳細のニーモニックデバイスを保存する
+        /// プロセス詳細のニーモニックデバイスを保存する（Cycle用プロファイル）
         /// </summary>
         /// <param name="processes">プロセス詳細リスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId);
+        /// <param name="cycleId">Cycle ID（Cycle用プロファイル使用時に設定）</param>
+        Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId, int? cycleId = null);
 
         /// <summary>
-        /// 操作のニーモニックデバイスを保存する
+        /// 操作のニーモニックデバイスを保存する（Cycle用プロファイル）
         /// </summary>
         /// <param name="operations">操作リスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId);
+        /// <param name="cycleId">Cycle ID（Cycle用プロファイル使用時に設定）</param>
+        void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId, int? cycleId = null);
 
         /// <summary>
-        /// シリンダーのニーモニックデバイスを保存する
+        /// シリンダーのニーモニックデバイスを保存する（PLC用プロファイル - CycleIdはnull）
         /// </summary>
         /// <param name="cylinders">シリンダーリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId);
+        /// <param name="cycleId">Cycle ID（PLC用プロファイルなので常にnull）</param>
+        Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId, int? cycleId = null);
     }
 }

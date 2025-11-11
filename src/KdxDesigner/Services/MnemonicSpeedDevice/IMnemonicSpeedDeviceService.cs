@@ -20,11 +20,12 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
         List<Kdx.Contracts.DTOs.MnemonicSpeedDevice> GetMnemonicSpeedDevice(int plcId);
 
         /// <summary>
-        /// シリンダーリストから速度デバイス情報を生成し保存する
+        /// シリンダーリストから速度デバイス情報を生成し保存する（PLC用プロファイル - CycleIdはnull）
         /// </summary>
         /// <param name="cys">シリンダーリスト</param>
         /// <param name="startNum">開始番号</param>
         /// <param name="plcId">PLC ID</param>
-        void Save(List<Cylinder> cys, int startNum, int plcId);
+        /// <param name="cycleId">Cycle ID（PLC用プロファイルなので常にnull）</param>
+        void Save(List<Cylinder> cys, int startNum, int plcId, int? cycleId = null);
     }
 }

@@ -31,10 +31,11 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
 
         public void Save(
             List<Cylinder> cys,
-            int startNum, int plcId)
+            int startNum, int plcId, int? cycleId = null)
         {
             // TODO: Supabase対応実装
             // トランザクション処理をISupabaseRepository経由で実装する必要がある
+            // CycleIdはnullで保存する（PLC用プロファイル）
             throw new NotImplementedException("Supabase対応が必要です");
         }
     }

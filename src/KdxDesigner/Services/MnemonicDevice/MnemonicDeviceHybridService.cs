@@ -119,13 +119,13 @@ namespace KdxDesigner.Services.MnemonicDevice
         }
         
         /// <summary>
-        /// Process用のニーモニックデバイスを保存
+        /// Process用のニーモニックデバイスを保存（Cycle用プロファイル）
         /// </summary>
-        public void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId)
+        public void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId, int? cycleId = null)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
-            
+
             foreach (var process in processes)
             {
                 var device = new Kdx.Contracts.DTOs.MnemonicDevice
@@ -136,22 +136,23 @@ namespace KdxDesigner.Services.MnemonicDevice
                     StartNum = startNum,
                     OutCoilCount = 5,
                     PlcId = plcId,
+                    CycleId = cycleId,  // Cycle用プロファイル使用時に設定
                     Comment1 = process.Comment1,
                     Comment2 = process.Comment2
                 };
-                
+
                 devices.Add(device);
-                
+
                 // メモリデータも生成
                 for (int i = 0; i < device.OutCoilCount; i++)
                 {
                     var memory = GenerateMemoryForDevice(device, i);
                     memories.Add(memory);
                 }
-                
+
                 startNum += 5; // 次のプロセス用にオフセット
             }
-            
+
             // メモリストアに保存
             _memoryStore.BulkAddMnemonicDevices(devices, plcId);
             _memoryStore.CacheGeneratedMemories(memories, plcId);
@@ -160,14 +161,14 @@ namespace KdxDesigner.Services.MnemonicDevice
             // データベースにも保存（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                _dbService.SaveMnemonicDeviceProcess(processes, startNum, plcId);
+                _dbService.SaveMnemonicDeviceProcess(processes, startNum, plcId, cycleId);
             }
         }
         
         /// <summary>
-        /// ProcessDetail用のニーモニックデバイスを保存
+        /// ProcessDetail用のニーモニックデバイスを保存（Cycle用プロファイル）
         /// </summary>
-        public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> details, int startNum, int plcId)
+        public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> details, int startNum, int plcId, int? cycleId = null)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
@@ -245,6 +246,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                     StartNum = startNum,
                     OutCoilCount = 5,
                     PlcId = plcId,
+                    CycleId = cycleId,  // Cycle用プロファイル使用時に設定
                     Comment1 = comment1,
                     Comment2 = comment2
                 };
@@ -272,13 +274,13 @@ namespace KdxDesigner.Services.MnemonicDevice
         }
         
         /// <summary>
-        /// Operation用のニーモニックデバイスを保存
+        /// Operation用のニーモニックデバイスを保存（Cycle用プロファイル）
         /// </summary>
-        public void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId)
+        public void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId, int? cycleId = null)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
-            
+
             foreach (var operation in operations)
             {
                 var device = new Kdx.Contracts.DTOs.MnemonicDevice
@@ -289,25 +291,26 @@ namespace KdxDesigner.Services.MnemonicDevice
                     StartNum = startNum,
                     OutCoilCount = 20,
                     PlcId = plcId,
+                    CycleId = cycleId,  // Cycle用プロファイル使用時に設定
                     Comment1 = operation.OperationName,
                     Comment2 = operation.GoBack?.ToString() ?? ""
                 };
-                
+
                 devices.Add(device);
-                
+
                 // メモリデータも生成
                 for (int i = 0; i < device.OutCoilCount; i++)
                 {
                     var memory = GenerateMemoryForDevice(device, i);
                     memories.Add(memory);
                 }
-                
+
                 startNum += 20;
             }
-            
+
             // メモリストアに保存
             _memoryStore.BulkAddMnemonicDevices(devices, plcId);
-            
+
             // 既存のキャッシュに追加
             var existingMemories = _memoryStore.GetCachedMemories(plcId);
             existingMemories.AddRange(memories);
@@ -317,18 +320,18 @@ namespace KdxDesigner.Services.MnemonicDevice
             // データベースにも保存（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                _dbService.SaveMnemonicDeviceOperation(operations, startNum, plcId);
+                _dbService.SaveMnemonicDeviceOperation(operations, startNum, plcId, cycleId);
             }
         }
         
         /// <summary>
-        /// CY用のニーモニックデバイスを保存
+        /// CY用のニーモニックデバイスを保存（PLC用プロファイル - CycleIdはnull）
         /// </summary>
-        public async Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId)
+        public async Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId, int? cycleId = null)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
-            
+
             foreach (var cylinder in cylinders)
             {
                 if (cylinder == null)
@@ -353,25 +356,26 @@ namespace KdxDesigner.Services.MnemonicDevice
                     StartNum = startNum,
                     OutCoilCount = 50,
                     PlcId = plcId,
+                    CycleId = cycleId,  // PLC用プロファイルなので常にnull
                     Comment1 = cylinder.CYNum,
                     Comment2 = comment2 ?? "未設定"
                 };
-                
+
                 devices.Add(device);
-                
+
                 // メモリデータも生成
                 for (int i = 0; i < device.OutCoilCount; i++)
                 {
                     var memory = GenerateMemoryForDevice(device, i);
                     memories.Add(memory);
                 }
-                
+
                 startNum += 50;
             }
-            
+
             // メモリストアに保存
             _memoryStore.BulkAddMnemonicDevices(devices, plcId);
-            
+
             // 既存のキャッシュに追加
             var existingMemories = _memoryStore.GetCachedMemories(plcId);
             existingMemories.AddRange(memories);
@@ -381,7 +385,7 @@ namespace KdxDesigner.Services.MnemonicDevice
             // データベースにも保存（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                await _dbService.SaveMnemonicDeviceCY(cylinders, startNum, plcId);
+                await _dbService.SaveMnemonicDeviceCY(cylinders, startNum, plcId, cycleId);
 
             }
         }

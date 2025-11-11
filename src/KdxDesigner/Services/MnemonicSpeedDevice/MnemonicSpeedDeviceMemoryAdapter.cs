@@ -88,16 +88,16 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
         }
         
         /// <summary>
-        /// シリンダーリストからスピードデバイスを保存
+        /// シリンダーリストからスピードデバイスを保存（PLC用プロファイル - CycleIdはnull）
         /// </summary>
-        public void Save(List<Cylinder> cylinders, int startNum, int plcId)
+        public void Save(List<Cylinder> cylinders, int startNum, int plcId, int? cycleId = null)
         {
             // 既存のデータをクリア
             _memoryStore.ClearSpeedDevices(plcId);
-            
+
             var devices = new List<Kdx.Contracts.DTOs.MnemonicSpeedDevice>();
             int deviceNum = startNum;
-            
+
             foreach (var cylinder in cylinders)
             {
                 var device = new Kdx.Contracts.DTOs.MnemonicSpeedDevice
@@ -105,21 +105,22 @@ namespace KdxDesigner.Services.MnemonicSpeedDevice
                     ID = cylinder.Id,  // 一時的なID
                     CylinderId = cylinder.Id,
                     Device = $"D{deviceNum}",
-                    PlcId = plcId
+                    PlcId = plcId,
+                    CycleId = cycleId  // PLC用プロファイルなので常にnull
                 };
-                
+
                 devices.Add(device);
-                
+
                 // メモリストアに保存
                 _memoryStore.AddOrUpdateSpeedDevice(device, plcId);
-                
+
                 deviceNum += 10; // 次のデバイス番号
             }
-            
+
             // データベースにも保存（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                _dbService.Save(cylinders, startNum, plcId);
+                _dbService.Save(cylinders, startNum, plcId, cycleId);
             }
         }
         

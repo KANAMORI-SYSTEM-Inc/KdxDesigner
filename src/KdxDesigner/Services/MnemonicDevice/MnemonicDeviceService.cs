@@ -97,44 +97,62 @@ namespace KdxDesigner.Services.MnemonicDevice
         }
 
         /// <summary>
-        /// Processesのリストを受け取り、MnemonicDeviceテーブルに保存する。
+        /// Processesのリストを受け取り、MnemonicDeviceテーブルに保存する（Cycle用プロファイル）
         /// </summary>
         /// <param name="processes"></param>
         /// <param name="startNum"></param>
         /// <param name="plcId"></param>
-        public void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId)
+        /// <param name="cycleId">Cycle ID（Cycle用プロファイル使用時に設定）</param>
+        public void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId, int? cycleId = null)
         {
             // TODO: Supabase対応実装
             // トランザクション処理をISupabaseRepository経由で実装する必要がある
+            // CycleIdをMnemonicDeviceに設定する
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
         /// <summary>
-        /// processDetailのリストを受け取り、MnemonicDeviceテーブルに保存する。
+        /// processDetailのリストを受け取り、MnemonicDeviceテーブルに保存する（Cycle用プロファイル）
         /// </summary>
         /// <param name="processes"></param>
         /// <param name="startNum"></param>
         /// <param name="plcId"></param>
-        public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId)
+        /// <param name="cycleId">Cycle ID（Cycle用プロファイル使用時に設定）</param>
+        public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> processes, int startNum, int plcId, int? cycleId = null)
         {
             // TODO: Supabase対応実装
             // トランザクション処理をISupabaseRepository経由で実装する必要がある
+            // CycleIdをMnemonicDeviceに設定する
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
-        // Operationのリストを受け取り、MnemonicDeviceテーブルに保存する
-        public void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId)
+        /// <summary>
+        /// Operationのリストを受け取り、MnemonicDeviceテーブルに保存する（Cycle用プロファイル）
+        /// </summary>
+        /// <param name="operations"></param>
+        /// <param name="startNum"></param>
+        /// <param name="plcId"></param>
+        /// <param name="cycleId">Cycle ID（Cycle用プロファイル使用時に設定）</param>
+        public void SaveMnemonicDeviceOperation(List<Operation> operations, int startNum, int plcId, int? cycleId = null)
         {
             // TODO: Supabase対応実装
             // トランザクション処理をISupabaseRepository経由で実装する必要がある
+            // CycleIdをMnemonicDeviceに設定する
             throw new NotImplementedException("Supabase対応が必要です");
         }
 
-        // Cylinderのリストを受け取り、MnemonicDeviceテーブルに保存する
-        public async Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId)
+        /// <summary>
+        /// Cylinderのリストを受け取り、MnemonicDeviceテーブルに保存する（PLC用プロファイル - CycleIdはnull）
+        /// </summary>
+        /// <param name="cylinders"></param>
+        /// <param name="startNum"></param>
+        /// <param name="plcId"></param>
+        /// <param name="cycleId">Cycle ID（PLC用プロファイルなので常にnull）</param>
+        public async Task SaveMnemonicDeviceCY(List<Cylinder> cylinders, int startNum, int plcId, int? cycleId = null)
         {
             // TODO: Supabase対応実装
             // トランザクション処理をISupabaseRepository経由で実装する必要がある
+            // CycleIdはnullで保存する（PLC用プロファイル）
             throw new NotImplementedException("Supabase対応が必要です");
         }
     }

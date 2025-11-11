@@ -37,66 +37,91 @@
 
         <!-- プロファイル選択エリア -->
         <GroupBox Header="プロファイル選択" Grid.Row="0" Padding="10" Margin="0,0,0,10">
-            <StackPanel>
-                <!-- 既存プロファイル選択 -->
-                <StackPanel Orientation="Vertical" Margin="0,0,0,10" x:Name="ExistingProfilePanel">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Setter Property="Visibility" Value="Visible"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsNewProfile}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="プロファイル:" Width="100" FontWeight="Bold"/>
-                        <ComboBox ItemsSource="{Binding Profiles}"
-          SelectedItem="{Binding SelectedProfile}"
-          DisplayMemberPath="Name"
-          Width="300" Margin="5,0"/>
-                        <Button Content="新規作成" Command="{Binding CreateNewProfileCommand}"
-        Width="100" Margin="10,0,0,0" Padding="5"/>
-                        <TextBlock Text="{Binding SelectedProfile.Description}"
-           Margin="20,0,0,0"
-           FontStyle="Italic"
-           Foreground="Gray"/>
-                    </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
+                <!-- PLC用プロファイル選択 (左列) -->
+                <Border Grid.Column="0" BorderBrush="#2196F3" BorderThickness="2" Padding="10" Margin="0,0,5,0" CornerRadius="5">
+                    <StackPanel>
+                        <TextBlock Text="PLC用プロファイル" FontWeight="Bold" FontSize="14" Foreground="#2196F3" Margin="0,0,0,10"/>
+                        <TextBlock Text="Cylinder/Error/Timer/工程時間デバイス設定" FontSize="10" Foreground="Gray" Margin="0,0,0,5"/>
+                        <TextBlock Text="※PLC全体に1回のみ適用" FontSize="10" FontStyle="Italic" Foreground="DarkOrange" Margin="0,0,0,10"/>
 
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="プロファイル:" Width="90" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <ComboBox ItemsSource="{Binding PlcProfiles}"
+                                     SelectedItem="{Binding SelectedPlcProfile}"
+                                     DisplayMemberPath="Name"
+                                     Width="250" Margin="0,0,0,5">
+                                <ComboBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="編集" Command="{Binding EditPlcProfileCommand}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Text="✏️" FontSize="14"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="削除" Command="{Binding DeletePlcProfileCommand}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Text="🗑️" FontSize="14"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </ComboBox.ContextMenu>
+                            </ComboBox>
+                        </StackPanel>
 
-                </StackPanel>
+                        <Button Content="新規PLC用プロファイル作成" Command="{Binding CreateNewPlcProfileCommand}"
+                                Width="200" Margin="0,10,0,0" Padding="5"
+                                Background="#2196F3" Foreground="White" FontSize="11"/>
+                    </StackPanel>
+                </Border>
 
-                <!-- 新規プロファイル作成 -->
-                <StackPanel x:Name="NewProfilePanel">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsNewProfile}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <TextBlock Text="プロファイル名:" Width="100" FontWeight="Bold"/>
-                        <TextBox Text="{Binding NewProfileName, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                <!-- Cycle用プロファイル選択 (右列) -->
+                <Border Grid.Column="1" BorderBrush="#4CAF50" BorderThickness="2" Padding="10" Margin="5,0,0,0" CornerRadius="5">
+                    <StackPanel>
+                        <TextBlock Text="Cycle用プロファイル" FontWeight="Bold" FontSize="14" Foreground="#4CAF50" Margin="0,0,0,10"/>
+                        <TextBlock Text="Process/ProcessDetail/Operationデバイス設定" FontSize="10" Foreground="Gray" Margin="0,0,0,5"/>
+                        <TextBlock Text="※Cycleごとに複数選択可能" FontSize="10" FontStyle="Italic" Foreground="DarkOrange" Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="プロファイル:" Width="90" VerticalAlignment="Top" Margin="0,5,5,0"/>
+                            <ListBox ItemsSource="{Binding CycleProfiles}"
+                                     x:Name="CycleProfileListBox"
+                                     SelectionMode="Multiple"
+                                     DisplayMemberPath="Name"
+                                     Width="250" Height="100" Margin="0,0,0,5"
+                                     SelectionChanged="ProfileListBox_SelectionChanged">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="編集" Command="{Binding EditCycleProfileCommand}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Text="✏️" FontSize="14"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="削除" Command="{Binding DeleteCycleProfileCommand}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Text="🗑️" FontSize="14"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="5,2"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </StackPanel>
+
+                        <Button Content="新規Cycle用プロファイル作成" Command="{Binding CreateNewCycleProfileCommand}"
+                                Width="200" Margin="0,10,0,0" Padding="5"
+                                Background="#4CAF50" Foreground="White" FontSize="11"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="説明:" Width="100" FontWeight="Bold"/>
-                        <TextBox Text="{Binding NewProfileDescription, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="保存" Command="{Binding SaveNewProfileCommand}"
-                                Width="100" Margin="0,0,10,0" Padding="5"
-                                Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
-                        <Button Content="キャンセル" Command="{Binding CancelNewProfileCommand}"
-                                Width="100" Padding="5"/>
-                    </StackPanel>
-                </StackPanel>
-            </StackPanel>
+                </Border>
+            </Grid>
         </GroupBox>
 
         <!-- デバイス設定エリア -->
@@ -108,114 +133,129 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左列 -->
-                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <!-- 工程デバイス -->
-                        <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="工程デバイス" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
+                    <!-- 左列: PLC用デバイス -->
+                    <Border Grid.Column="0" BorderBrush="#2196F3" BorderThickness="2" Padding="10" Margin="0,0,5,0" CornerRadius="5">
+                        <StackPanel>
+                            <TextBlock Text="PLC用デバイス (PLC全体に1回適用)" FontWeight="Bold" FontSize="14" Foreground="#2196F3" Margin="0,0,0,10"/>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Lデバイス [工程]" Width="180"/>
-                                    <TextBox Text="{Binding ProcessDeviceStartL}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsProcessMemory}"/>
+                            <!-- シリンダデバイス -->
+                            <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="シリンダデバイス" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Mデバイス [シリンダ]" Width="160"/>
+                                        <TextBox Text="{Binding CylinderDeviceStartM}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsCylinderMemory}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Dデバイス [速度変化指令]" Width="160"/>
+                                        <TextBox Text="{Binding CylinderDeviceStartD}" Width="100"/>
+                                    </StackPanel>
                                 </StackPanel>
+                            </Border>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Lデバイス [工程詳細]" Width="180"/>
-                                    <TextBox Text="{Binding DetailDeviceStartL}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsDetailMemory}"/>
+                            <!-- エラーデバイス -->
+                            <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="エラーデバイス" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Mデバイス [エラー]" Width="160"/>
+                                        <TextBox Text="{Binding ErrorDeviceStartM}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsErrorMemory}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Tデバイス [エラー]" Width="160"/>
+                                        <TextBox Text="{Binding ErrorDeviceStartT}" Width="100"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
+                            </Border>
 
-                        <!-- 操作デバイス -->
-                        <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="操作・シリンダデバイス" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
+                            <!-- タイマーデバイス -->
+                            <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="タイマーデバイス" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Mデバイス [操作]" Width="180"/>
-                                    <TextBox Text="{Binding OperationDeviceStartM}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsOperationMemory}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Tデバイス [タイマ]" Width="160"/>
+                                        <TextBox Text="{Binding DeviceStartT}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsTimerMemory}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="ZR [タイマ]" Width="160"/>
+                                        <TextBox Text="{Binding TimerStartZR}" Width="100"/>
+                                    </StackPanel>
                                 </StackPanel>
+                            </Border>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Mデバイス [シリンダ]" Width="180"/>
-                                    <TextBox Text="{Binding CylinderDeviceStartM}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsCylinderMemory}"/>
+                            <!-- 工程時間デバイス -->
+                            <Border BorderBrush="LightGray" BorderThickness="1" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="工程時間デバイス" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="ZR [工程タイム現在]" Width="160"/>
+                                        <TextBox Text="{Binding ProsTimeStartZR}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsProsTimeMemory}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="ZR [工程タイム前回]" Width="160"/>
+                                        <TextBox Text="{Binding ProsTimePreviousStartZR}" Width="100"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="ZR [CYタイム]" Width="160"/>
+                                        <TextBox Text="{Binding CyTimeStartZR}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsCyTimeMemory}"/>
+                                    </StackPanel>
                                 </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Dデバイス [速度変化指令]" Width="180"/>
-                                    <TextBox Text="{Binding CylinderDeviceStartD}" Width="100"/>
+                    <!-- 右列: Cycle用デバイス -->
+                    <Border Grid.Column="1" BorderBrush="#4CAF50" BorderThickness="2" Padding="10" Margin="5,0,0,0" CornerRadius="5">
+                        <StackPanel>
+                            <TextBlock Text="Cycle用デバイス (Cycleごとに適用)" FontWeight="Bold" FontSize="14" Foreground="#4CAF50" Margin="0,0,0,10"/>
+
+                            <!-- 工程デバイス -->
+                            <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="工程デバイス" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Lデバイス [工程]" Width="160"/>
+                                        <TextBox Text="{Binding ProcessDeviceStartL}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsProcessMemory}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Lデバイス [工程詳細]" Width="160"/>
+                                        <TextBox Text="{Binding DetailDeviceStartL}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsDetailMemory}"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
+                            </Border>
 
-                        <!-- エラーデバイス -->
-                        <Border BorderBrush="LightGray" BorderThickness="1" Padding="10">
-                            <StackPanel>
-                                <TextBlock Text="エラーデバイス" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
+                            <!-- 操作デバイス -->
+                            <Border BorderBrush="LightGray" BorderThickness="1" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="操作デバイス" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
 
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Mデバイス [エラー]" Width="180"/>
-                                    <TextBox Text="{Binding ErrorDeviceStartM}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsErrorMemory}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Mデバイス [操作]" Width="160"/>
+                                        <TextBox Text="{Binding OperationDeviceStartM}" Width="100"/>
+                                        <CheckBox Content="メモリ保存" IsChecked="{Binding IsOperationMemory}"/>
+                                    </StackPanel>
                                 </StackPanel>
-
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Tデバイス [エラー]" Width="180"/>
-                                    <TextBox Text="{Binding ErrorDeviceStartT}" Width="100"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <!-- 右列 -->
-                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                        <!-- タイマーデバイス -->
-                        <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="タイマーデバイス" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
-
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Tデバイス [タイマ]" Width="180"/>
-                                    <TextBox Text="{Binding DeviceStartT}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsTimerMemory}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="ZR [タイマ]" Width="180"/>
-                                    <TextBox Text="{Binding TimerStartZR}" Width="100"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- 工程時間デバイス -->
-                        <Border BorderBrush="LightGray" BorderThickness="1" Padding="10">
-                            <StackPanel>
-                                <TextBlock Text="工程時間デバイス" FontWeight="Bold" FontSize="14" Margin="0,0,0,5"/>
-
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="ZR [工程タイム現在]" Width="180"/>
-                                    <TextBox Text="{Binding ProsTimeStartZR}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsProsTimeMemory}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="ZR [工程タイム前回]" Width="180"/>
-                                    <TextBox Text="{Binding ProsTimePreviousStartZR}" Width="100"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="ZR [CYタイム]" Width="180"/>
-                                    <TextBox Text="{Binding CyTimeStartZR}" Width="100"/>
-                                    <CheckBox Content="メモリ保存" IsChecked="{Binding IsCyTimeMemory}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </GroupBox>
         </ScrollViewer>
