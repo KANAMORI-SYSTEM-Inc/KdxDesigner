@@ -27,19 +27,24 @@ namespace KdxDesigner.Services.ErrorService
         }
 
         // Operationのリストを受け取り、Errorテーブルに保存する
-        public async Task SaveMnemonicDeviceOperation(
+        public async Task<int> SaveMnemonicDeviceOperation(
             List<Operation> operations,
             List<IO> iOs,
             int startNum,
             int startNumTimer,
             int plcId,
-            int cycleId)
+            int cycleId,
+            int startErrorNum = 0)
         {
             // MnemonicDeviceテーブルの既存データを取得
+            // 注: 複数Cycleを処理する際の重複を防ぐため、現在のCycleIdのエラーのみを取得
+            // （最初のCycleの前にエラーテーブル全体が削除されているため、
+            //  現在のCycleIdのエラーのみが存在するはず）
             var allExisting = await GetErrors(plcId, cycleId, (int)MnemonicType.Operation);
             var messages = await _repository.GetErrorMessagesAsync((int)MnemonicType.Operation);
 
-            int alarmCount = 0;
+            // 全Cycle通して一意なエラー番号を生成するため、開始値を受け取る
+            int alarmCount = startErrorNum;
             foreach (Operation operation in operations)
             {
                 if (operation == null) continue;
@@ -177,6 +182,9 @@ namespace KdxDesigner.Services.ErrorService
                 await _repository.SaveOrUpdateMemoriesBatchAsync(insertMemoriesT);
                 await _repository.UpdateErrorsAsync(updateErrors);
             }
+
+            // 次のCycleで使用するために、累積エラー番号を返す
+            return alarmCount;
         }
     }
 }

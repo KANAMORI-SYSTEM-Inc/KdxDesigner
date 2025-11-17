@@ -150,22 +150,44 @@ namespace KdxDesigner.ViewModels
         [RelayCommand]
         public void DBImport()
         {
-            // DBからすべてのメモリを取得
-            var memoryService = App.Services?.GetService<IMemoryService>()
-                ?? new Kdx.Infrastructure.Services.MemoryService(_repository);
-            var allMemories = memoryService.GetMemories(_plcId);
-
-            // フィルタされたリストを一時変数に
-            IEnumerable<Memory> filteredMemories = allMemories;
-
-            if (SelectedMemoryCategory != null)
+            try
             {
-                int id = SelectedMemoryCategory.ID;
-                filteredMemories = filteredMemories.Where(m => m.MemoryCategory == id);
-            }
+                // DBからすべてのメモリを取得
+                var memoryService = App.Services?.GetService<IMemoryService>()
+                    ?? new Kdx.Infrastructure.Services.MemoryService(_repository);
+                var allMemories = memoryService.GetMemories(_plcId);
 
-            // ObservableCollection に再代入（ここで UI に変更が通知される）
-            Memories = new ObservableCollection<Memory>(filteredMemories);
+                // デバッグ情報をステータスメッセージに表示
+                SaveStatusMessage = $"取得データ数: {allMemories.Count}件";
+
+                // フィルタされたリストを一時変数に
+                IEnumerable<Memory> filteredMemories = allMemories;
+
+                if (SelectedMemoryCategory != null)
+                {
+                    int id = SelectedMemoryCategory.ID;
+                    var beforeCount = filteredMemories.Count();
+
+                    // MemoryCategoryがnullのデータも含めて、選択されたカテゴリまたはnullのデータを表示
+                    // これにより、MnemonicDeviceから生成されたMemoryCategoryがnullのデータも表示される
+                    filteredMemories = filteredMemories.Where(m => m.MemoryCategory == id || m.MemoryCategory == null);
+
+                    var afterCount = filteredMemories.Count();
+                    SaveStatusMessage = $"取得: {allMemories.Count}件, フィルタ後: {afterCount}件 (カテゴリID: {id})";
+                }
+                else
+                {
+                    SaveStatusMessage = $"取得: {allMemories.Count}件 (フィルタなし)";
+                }
+
+                // ObservableCollection に再代入（ここで UI に変更が通知される）
+                Memories = new ObservableCollection<Memory>(filteredMemories);
+            }
+            catch (Exception ex)
+            {
+                SaveStatusMessage = $"エラー: {ex.Message}";
+                MessageBox.Show($"データの取得中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
 

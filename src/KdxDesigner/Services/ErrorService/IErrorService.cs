@@ -34,12 +34,15 @@ namespace KdxDesigner.Services.ErrorService
         /// <param name="startNumTimer">タイマー開始番号</param>
         /// <param name="plcId">PLC ID</param>
         /// <param name="cycleId">サイクルID</param>
-        Task SaveMnemonicDeviceOperation(
+        /// <param name="startErrorNum">エラー番号開始値（全Cycle通して一意にするため）</param>
+        /// <returns>次のエラー番号（累積カウント）</returns>
+        Task<int> SaveMnemonicDeviceOperation(
             List<Operation> operations,
             List<IO> iOs,
             int startNum,
             int startNumTimer,
             int plcId,
-            int cycleId);
+            int cycleId,
+            int startErrorNum = 0);
     }
 }

@@ -33,7 +33,14 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// すべてのMnemonicDeviceをクリア
         /// </summary>
         void ClearAllMnemonicDevices(int plcId);
-        
+
+        /// <summary>
+        /// 特定のMnemonicIdのデバイスを削除
+        /// </summary>
+        /// <param name="plcId">PLC ID</param>
+        /// <param name="mnemonicId">削除するMnemonic ID</param>
+        void DeleteMnemonicDevicesByMnemonicId(int plcId, int mnemonicId);
+
         #endregion
         
         #region MnemonicTimerDevice Operations

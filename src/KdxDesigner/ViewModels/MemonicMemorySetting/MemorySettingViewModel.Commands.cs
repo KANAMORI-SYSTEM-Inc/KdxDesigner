@@ -68,8 +68,22 @@ namespace KdxDesigner.ViewModels.Settings
         [RelayCommand]
         private void CreateNewCycleProfile()
         {
-            // プロファイル入力ダイアログを表示
-            var dialog = new ProfileInputDialog
+            // PLCが選択されているか確認
+            if (SelectedPlc == null)
+            {
+                MessageBox.Show("PLCを選択してください。", "エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // プロファイル入力ダイアログを表示（Cycle選択対応、デバイス設定も渡す）
+            var dialog = new ProfileInputDialog(
+                _repository,
+                SelectedPlc.Id,
+                existingCycleId: 0,
+                processDeviceStartL: ProcessDeviceStartL,
+                detailDeviceStartL: DetailDeviceStartL,
+                operationDeviceStartM: OperationDeviceStartM)
             {
                 DialogTitle = "Cycle用プロファイル作成",
                 Owner = Application.Current.Windows.OfType<MemorySettingWindow>().FirstOrDefault()
@@ -77,16 +91,16 @@ namespace KdxDesigner.ViewModels.Settings
 
             if (dialog.ShowDialog() == true)
             {
-                // 現在の設定値を使用して新しいプロファイルを作成
+                // ダイアログで入力された設定値を使用して新しいプロファイルを作成
                 var newProfile = new CycleMemoryProfile
                 {
                     Name = dialog.ProfileName,
                     Description = dialog.ProfileDescription,
-                    PlcId = SelectedPlc?.Id ?? 2,
-                    CycleId = SelectedCycle?.Id ?? 0,
-                    ProcessDeviceStartL = ProcessDeviceStartL,
-                    DetailDeviceStartL = DetailDeviceStartL,
-                    OperationDeviceStartM = OperationDeviceStartM,
+                    PlcId = SelectedPlc.Id,
+                    CycleId = dialog.ProfileCycleIdValue, // Cycle選択から取得
+                    ProcessDeviceStartL = dialog.ProcessDeviceStartL, // ダイアログから取得
+                    DetailDeviceStartL = dialog.DetailDeviceStartL, // ダイアログから取得
+                    OperationDeviceStartM = dialog.OperationDeviceStartM, // ダイアログから取得
                     IsDefault = false
                 };
 
@@ -155,11 +169,9 @@ namespace KdxDesigner.ViewModels.Settings
                         ApplyPlcProfile(SelectedPlcProfile);
                     }
 
-                    // 2. PLC全体のデバイスを保存（Cylinder, Error, Timer, ProsTime, Speed）（1回のみ）
-                    progressViewModel.UpdateStatus("PLC全体のデバイスを準備中...");
-                    await SavePlcDevices(progressViewModel);
-
-                    // 3. Cycle用プロファイルをループして各Cycleの設定を適用
+                    // 2. Cycle用プロファイルをループして各Cycleの設定を適用
+                    int totalTimerCount = 0;
+                    int totalErrorCount = 0;
                     if (SelectedCycleProfiles != null && SelectedCycleProfiles.Any())
                     {
                         int cycleIndex = 0;
@@ -172,10 +184,15 @@ namespace KdxDesigner.ViewModels.Settings
                             // Cycleプロファイルの設定を適用
                             ApplyCycleProfile(cycleProfile);
 
-                            // Cycleごとのデバイスを保存
-                            await SaveCycleDevices(cycleProfile, progressViewModel, isFirstCycle);
+                            // Cycleごとのデバイスを保存し、タイマーカウントとエラーカウントを累積
+                            (totalTimerCount, totalErrorCount) = await SaveCycleDevices(cycleProfile, progressViewModel, isFirstCycle, totalTimerCount, totalErrorCount);
                         }
                     }
+
+                    // 3. PLC全体のデバイスを保存（Cylinder, Error, Timer, ProsTime, Speed）（1回のみ）
+                    // Cycle処理で使用されたタイマー数を引数として渡す
+                    progressViewModel.UpdateStatus($"PLC全体のデバイスを保存中... (Cycleタイマー数: {totalTimerCount})");
+                    await SavePlcDevices(progressViewModel, totalTimerCount);
 
                     // メモリ設定状態を更新
                     await UpdateMemoryConfigurationStatus();
@@ -282,8 +299,22 @@ namespace KdxDesigner.ViewModels.Settings
                 return;
             }
 
-            // プロファイル入力ダイアログを表示（既存の値を設定）
-            var dialog = new ProfileInputDialog
+            // PLCが選択されているか確認
+            if (SelectedPlc == null)
+            {
+                MessageBox.Show("PLCを選択してください。", "エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // プロファイル入力ダイアログを表示（既存の値を設定、Cycle選択対応、デバイス設定も含む）
+            var dialog = new ProfileInputDialog(
+                _repository,
+                SelectedPlc.Id,
+                existingCycleId: profileToEdit.CycleId,
+                processDeviceStartL: profileToEdit.ProcessDeviceStartL,
+                detailDeviceStartL: profileToEdit.DetailDeviceStartL,
+                operationDeviceStartM: profileToEdit.OperationDeviceStartM)
             {
                 DialogTitle = "Cycle用プロファイル編集",
                 ProfileName = profileToEdit.Name,
@@ -293,12 +324,13 @@ namespace KdxDesigner.ViewModels.Settings
 
             if (dialog.ShowDialog() == true)
             {
-                // プロファイルを更新
+                // プロファイルを更新（ダイアログで入力された値を使用）
                 profileToEdit.Name = dialog.ProfileName;
                 profileToEdit.Description = dialog.ProfileDescription;
-                profileToEdit.ProcessDeviceStartL = ProcessDeviceStartL;
-                profileToEdit.DetailDeviceStartL = DetailDeviceStartL;
-                profileToEdit.OperationDeviceStartM = OperationDeviceStartM;
+                profileToEdit.CycleId = dialog.ProfileCycleIdValue; // Cycle選択から取得
+                profileToEdit.ProcessDeviceStartL = dialog.ProcessDeviceStartL; // ダイアログから取得
+                profileToEdit.DetailDeviceStartL = dialog.DetailDeviceStartL; // ダイアログから取得
+                profileToEdit.OperationDeviceStartM = dialog.OperationDeviceStartM; // ダイアログから取得
 
                 // プロファイルを保存
                 _cycleProfileManager.SaveProfile(profileToEdit);

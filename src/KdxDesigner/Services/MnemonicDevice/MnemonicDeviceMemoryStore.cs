@@ -140,7 +140,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                 {
                     _mnemonicDevices[plcId].Clear();
                 }
-                
+
                 // 関連するメモリキャッシュもクリア
                 if (_generatedMemories.ContainsKey(plcId))
                 {
@@ -148,7 +148,30 @@ namespace KdxDesigner.Services.MnemonicDevice
                 }
             }
         }
-        
+
+        /// <summary>
+        /// 特定のMnemonicIdのデバイスを削除
+        /// </summary>
+        /// <param name="plcId">PLC ID</param>
+        /// <param name="mnemonicId">削除するMnemonic ID</param>
+        public void DeleteMnemonicDevicesByMnemonicId(int plcId, int mnemonicId)
+        {
+            lock (_lock)
+            {
+                if (_mnemonicDevices.ContainsKey(plcId))
+                {
+                    // 指定されたMnemonicIdのデバイスを削除
+                    _mnemonicDevices[plcId].RemoveAll(d => d.MnemonicId == mnemonicId);
+                }
+
+                // 関連するメモリキャッシュから該当するMnemonicIdのデータを削除
+                if (_generatedMemories.ContainsKey(plcId))
+                {
+                    _generatedMemories[plcId].RemoveAll(m => m.MnemonicId == mnemonicId);
+                }
+            }
+        }
+
         #endregion
         
         #region MnemonicTimerDevice Operations

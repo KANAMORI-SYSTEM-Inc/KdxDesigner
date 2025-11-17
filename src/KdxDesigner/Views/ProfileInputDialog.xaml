@@ -1,12 +1,16 @@
 <Window x:Class="KdxDesigner.Views.ProfileInputDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="プロファイル作成" Height="250" Width="450"
+        Title="プロファイル作成" Height="550" Width="500"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -24,15 +28,72 @@
                      Padding="5" Height="30"/>
         </StackPanel>
 
+        <!-- サイクル選択 -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10" Visibility="{Binding ShowCycleSelector, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="サイクル *" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <ComboBox x:Name="CycleComboBox"
+                      ItemsSource="{Binding AvailableCycles}"
+                      SelectedItem="{Binding SelectedCycle, UpdateSourceTrigger=PropertyChanged}"
+                      Padding="5" Height="30">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Id}" FontWeight="Bold" Margin="0,0,5,0"/>
+                            <TextBlock Text="-" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding CycleName}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- デバイス設定 (Cycle用プロファイル時のみ表示) -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,10" Visibility="{Binding ShowDeviceSettings, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="デバイス設定" FontWeight="SemiBold" Margin="0,0,0,10" FontSize="14"/>
+
+            <!-- 工程デバイス開始番地 (L) -->
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="工程デバイス開始番地 (L):" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding ProcessDeviceStartL, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="5" Height="30"/>
+            </Grid>
+
+            <!-- 工程詳細デバイス開始番地 (L) -->
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="工程詳細デバイス開始番地 (L):" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding DetailDeviceStartL, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="5" Height="30"/>
+            </Grid>
+
+            <!-- 操作デバイス開始番地 (M) -->
+            <Grid Margin="0,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="操作デバイス開始番地 (M):" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding OperationDeviceStartM, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="5" Height="30"/>
+            </Grid>
+        </StackPanel>
+
         <!-- 説明入力 -->
-        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+        <StackPanel Grid.Row="4" Margin="0,0,0,10">
             <TextBlock Text="説明" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding ProfileDescription, UpdateSourceTrigger=PropertyChanged}"
                      Padding="5" Height="60" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
         </StackPanel>
 
         <!-- ボタン -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="OK" IsDefault="True" Click="OkButton_Click"
                     Width="80" Height="30" Margin="0,0,10,0"
                     Background="#2196F3" Foreground="White"/>

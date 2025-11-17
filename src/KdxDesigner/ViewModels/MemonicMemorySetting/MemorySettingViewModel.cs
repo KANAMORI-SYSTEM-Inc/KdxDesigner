@@ -225,16 +225,20 @@ namespace KdxDesigner.ViewModels.Settings
         /// PLC全体のデバイスを保存（Cylinder, Error, Timer, ProsTime, Speed）
         /// ※PLC全体で1回のみ実行
         /// </summary>
-        private async Task SavePlcDevices(MemoryProgressViewModel? progressViewModel = null)
+        /// <param name="progressViewModel">進捗ViewModel</param>
+        /// <param name="cycleTimerCount">Cycle処理で使用されたタイマー数（CylinderのTimerはこの後から開始）</param>
+        private async Task SavePlcDevices(MemoryProgressViewModel? progressViewModel = null, int cycleTimerCount = 0)
         {
             if (SelectedPlc == null || _repository == null)
             {
                 throw new InvalidOperationException("PLCまたはリポジトリが初期化されていません。");
             }
 
-            // 既存のニーモニックデバイスを削除（古いデータのクリーンアップ）
-            progressViewModel?.UpdateStatus("既存のニーモニックデバイスを削除中...");
-            await _mnemonicService!.DeleteAllMnemonicDevices();
+            // 既存のCYデバイスのみを削除（ProcessDetail/Operationデバイスは保持）
+            // 注: DeleteAllMnemonicDevices()を呼び出すと、Cycleで保存したProcessDetail/Operationデバイスも
+            // すべて削除されてしまうため、CYデバイスのみを削除する
+            progressViewModel?.UpdateStatus("既存のシリンダーデバイスを削除中...");
+            await _mnemonicService!.DeleteMnemonicDevice(SelectedPlc.Id, (int)MnemonicType.CY);
 
             // Cylinderデータの取得
             progressViewModel?.UpdateStatus("シリンダーデータを取得中...");
@@ -265,19 +269,17 @@ namespace KdxDesigner.ViewModels.Settings
             }
 
             // Timerデバイスの保存（Cylinderに関連するもののみ）
-            progressViewModel?.UpdateStatus("シリンダーのタイマーを保存中...");
+            // Cycle処理で使用されたタイマー数の後から開始
+            progressViewModel?.UpdateStatus($"シリンダーのタイマーを保存中... (開始カウント: {cycleTimerCount})");
             if (_timerService != null)
             {
                 await _repository.DeleteAllMnemonicTimerDeviceAsync();
-                await _timerService.SaveWithCY(timers, cylinders, DeviceStartT, SelectedPlc.Id, 0);
+                await _timerService.SaveWithCY(timers, cylinders, DeviceStartT, SelectedPlc.Id, cycleTimerCount);
+                progressViewModel?.AddLog($"シリンダータイマー保存完了 (開始位置: {cycleTimerCount})");
             }
 
-            // Errorテーブルの初期化（削除のみ、各Cycleで保存）
-            progressViewModel?.UpdateStatus("エラーテーブルを初期化中...");
-            if (_errorService != null)
-            {
-                await _errorService.DeleteErrorTable();
-            }
+            // Errorテーブルは各Cycleで保存済み（SaveCycleDevicesで処理）
+            // ここでは削除しない
 
             // Speedテーブルの保存
             progressViewModel?.UpdateStatus("速度テーブルを保存中...");
@@ -297,7 +299,10 @@ namespace KdxDesigner.ViewModels.Settings
         /// <param name="cycleProfile">Cycle用プロファイル</param>
         /// <param name="progressViewModel">進捗ViewModel</param>
         /// <param name="isFirstCycle">最初のCycleかどうか（ProsTimeテーブルの削除判定に使用）</param>
-        private async Task SaveCycleDevices(CycleMemoryProfile cycleProfile, MemoryProgressViewModel? progressViewModel = null, bool isFirstCycle = false)
+        /// <param name="currentTimerCount">現在のタイマーカウント（前のCycleから引き継ぐ）</param>
+        /// <param name="currentErrorCount">現在のエラーカウント（前のCycleから引き継ぐ）</param>
+        /// <returns>Tuple&lt;更新されたタイマーカウント, 更新されたエラーカウント&gt;</returns>
+        private async Task<(int timerCount, int errorCount)> SaveCycleDevices(CycleMemoryProfile cycleProfile, MemoryProgressViewModel? progressViewModel = null, bool isFirstCycle = false, int currentTimerCount = 0, int currentErrorCount = 0)
         {
             if (SelectedPlc == null || _repository == null)
             {
@@ -311,10 +316,27 @@ namespace KdxDesigner.ViewModels.Settings
             if (targetCycle == null)
             {
                 progressViewModel?.AddLog($"警告: CycleId={cycleProfile.CycleId} のCycleが見つかりません。スキップします。");
-                return;
+                return (currentTimerCount, currentErrorCount);
             }
 
             progressViewModel?.UpdateStatus($"Cycle '{targetCycle.CycleName}' のデータを取得中...");
+
+            // 既存のProcess/ProcessDetail/Operationデバイスを削除（重複を防ぐため）
+            // 注: 最初のCycleの場合のみ削除（2回目以降のCycleでは前のCycleのデータを保持）
+            if (isFirstCycle)
+            {
+                progressViewModel?.UpdateStatus("既存の工程・工程詳細・操作デバイスを削除中...");
+                await _mnemonicService!.DeleteMnemonicDevice(SelectedPlc.Id, (int)MnemonicType.Process);
+                await _mnemonicService!.DeleteMnemonicDevice(SelectedPlc.Id, (int)MnemonicType.ProcessDetail);
+                await _mnemonicService!.DeleteMnemonicDevice(SelectedPlc.Id, (int)MnemonicType.Operation);
+
+                // Errorテーブルの初期化（最初のCycleの前に削除）
+                progressViewModel?.UpdateStatus("エラーテーブルを初期化中...");
+                if (_errorService != null)
+                {
+                    await _errorService.DeleteErrorTable();
+                }
+            }
 
             // ProcessDetailデータの取得
             var details = (await _repository.GetProcessDetailsAsync())
@@ -341,26 +363,27 @@ namespace KdxDesigner.ViewModels.Settings
             _mnemonicService!.SaveMnemonicDeviceOperation(operations, cycleProfile.OperationDeviceStartM, SelectedPlc.Id);
 
             // Timerデバイスの保存（ProcessDetailとOperationに関連するもの）
+            int timerCount = currentTimerCount;
             if (_timerService != null)
             {
                 progressViewModel?.UpdateStatus("タイマーデバイスを保存中...");
                 var allTimers = await _repository.GetTimersAsync();
                 var timers = allTimers.Where(t => t.CycleId == targetCycle.Id).ToList();
 
-                int timerCount = 0;
                 timerCount += await _timerService.SaveWithDetail(timers, details, DeviceStartT, SelectedPlc.Id, timerCount);
                 timerCount += await _timerService.SaveWithOperation(timers, operations, DeviceStartT, SelectedPlc.Id, timerCount);
 
-                progressViewModel?.AddLog($"タイマーデバイス保存完了 ({timerCount}件)");
+                progressViewModel?.AddLog($"タイマーデバイス保存完了 (このCycle: {timerCount - currentTimerCount}件, 累計: {timerCount}件)");
             }
 
             // Errorテーブルの保存（Operationに関連するもの）
+            int errorCount = currentErrorCount;
             if (_errorService != null)
             {
                 progressViewModel?.UpdateStatus("エラーテーブルを保存中...");
                 var ioList = await _repository.GetIoListAsync();
-                await _errorService.SaveMnemonicDeviceOperation(operations, ioList, ErrorDeviceStartM, ErrorDeviceStartT, SelectedPlc.Id, targetCycle.Id);
-                progressViewModel?.AddLog("エラーテーブル保存完了");
+                errorCount = await _errorService.SaveMnemonicDeviceOperation(operations, ioList, ErrorDeviceStartM, ErrorDeviceStartT, SelectedPlc.Id, targetCycle.Id, errorCount);
+                progressViewModel?.AddLog($"エラーテーブル保存完了 (このCycle: {errorCount - currentErrorCount}件, 累計: {errorCount}件)");
             }
 
             // ProsTimeテーブルの保存
@@ -377,6 +400,7 @@ namespace KdxDesigner.ViewModels.Settings
             }
 
             progressViewModel?.AddLog($"Cycle '{targetCycle.CycleName}' のデバイス保存完了");
+            return (timerCount, errorCount);
         }
 
         /// <summary>

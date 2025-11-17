@@ -108,13 +108,17 @@ namespace KdxDesigner.Services.MnemonicDevice
         /// <summary>
         /// 特定のニーモニックデバイスを削除
         /// </summary>
-        public async Task DeleteMnemonicDevice(int mnemonicId, int recordId)
+        /// <param name="plcId">PLC ID</param>
+        /// <param name="mnemonicId">削除するMnemonic ID</param>
+        public async Task DeleteMnemonicDevice(int plcId, int mnemonicId)
         {
-            // TODO: メモリストアから特定のデバイスを削除する実装
-            // 現在は未実装のため、データベースサービスに委譲
+            // メモリストアから特定のMnemonicIdのデバイスを削除
+            _memoryStore.DeleteMnemonicDevicesByMnemonicId(plcId, mnemonicId);
+
+            // データベースからも削除（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
-                await _dbService.DeleteMnemonicDevice(mnemonicId, recordId);
+                await _dbService.DeleteMnemonicDevice(plcId, mnemonicId);
             }
         }
         
