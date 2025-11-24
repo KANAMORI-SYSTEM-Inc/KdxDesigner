@@ -60,7 +60,7 @@ namespace KdxDesigner.ViewModels
         }
 
         [RelayCommand]
-        private void Save()
+        private async Task Save()
         {
             // プロセスのプロパティを更新
             _process.ProcessName = ProcessName;
@@ -76,8 +76,8 @@ namespace KdxDesigner.ViewModels
             _process.Comment2 = Comment2;
             _process.SortNumber = SortNumber;
 
-            // データベースに保存
-            _ = _repository.UpdateProcessAsync(_process);
+            // データベースに保存（完了を待つ）
+            await _repository.UpdateProcessAsync(_process);
 
             DialogResult = true;
             RequestClose?.Invoke();

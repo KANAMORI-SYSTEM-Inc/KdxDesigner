@@ -42,55 +42,6 @@ namespace KdxDesigner.Views
             }
         }
 
-        private void ProcessGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Delete && DataContext is MainViewModel vm)
-            {
-                if (vm.SelectedProcess != null)
-                {
-                    vm.DeleteSelectedProcessCommand.Execute(null);
-                    e.Handled = true;
-                }
-            }
-        }
-
-        private void ProcessDetailGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Delete && DataContext is MainViewModel vm)
-            {
-                if (vm.SelectedProcessDetail != null)
-                {
-                    vm.DeleteSelectedProcessDetailCommand.Execute(null);
-                    e.Handled = true;
-                }
-            }
-        }
-
-        private void OperationGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Delete && DataContext is MainViewModel vm)
-            {
-                var grid = sender as DataGrid;
-                if (grid?.SelectedItem != null)
-                {
-                    vm.DeleteSelectedOperationCommand.Execute(null);
-                    e.Handled = true;
-                }
-            }
-        }
-
-        private void ProcessGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (DataContext is MainViewModel vm && vm.SelectedProcess != null)
-            {
-                // ヘッダーやスクロールバーをダブルクリックした場合は無視
-                var dataGrid = sender as DataGrid;
-                if (dataGrid?.SelectedItem != null)
-                {
-                    vm.EditProcessCommand.Execute(null);
-                }
-            }
-        }
 
         private async void OperationGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {

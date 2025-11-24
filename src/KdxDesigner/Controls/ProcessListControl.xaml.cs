@@ -331,7 +331,7 @@ namespace KdxDesigner.Controls
             }
         }
 
-        private void EditProcessProperties_Click(object sender, RoutedEventArgs e)
+        private async void EditProcessProperties_Click(object sender, RoutedEventArgs e)
         {
             if (SelectedProcess == null || Repository == null)
             {
@@ -341,6 +341,12 @@ namespace KdxDesigner.Controls
 
             try
             {
+                // DataGridの編集トランザクションをコミット（編集モードを終了）
+                ProcessGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+                // 編集前のIDを保存
+                var selectedProcessId = SelectedProcess.Id;
+
                 // ProcessPropertiesWindowを開く
                 var window = new ProcessPropertiesWindow(Repository, SelectedProcess)
                 {
@@ -349,15 +355,26 @@ namespace KdxDesigner.Controls
 
                 if (window.ShowDialog() == true)
                 {
-                    // プロセスの更新をUIに反映
-                    var index = Processes?.IndexOf(SelectedProcess) ?? -1;
-                    if (index >= 0 && Processes != null)
-                    {
-                        Processes[index] = SelectedProcess;
-                    }
-
                     // イベントを発火
                     ProcessUpdated?.Invoke(this, SelectedProcess);
+
+                    MessageBox.Show("工程を更新しました。", "更新完了", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // データベースから最新のデータを再読み込みしてUIを更新
+                    if (CycleId != null)
+                    {
+                        var allProcesses = await Repository.GetProcessesAsync();
+                        var processes = allProcesses
+                            .Where(p => p.CycleId == CycleId.Value)
+                            .OrderBy(p => p.SortNumber)
+                            .ToList();
+
+                        // 新しいObservableCollectionを作成して置き換え（編集トランザクションの競合を回避）
+                        Processes = new ObservableCollection<Process>(processes);
+
+                        // 編集したプロセスを再選択
+                        SelectedProcess = Processes?.FirstOrDefault(p => p.Id == selectedProcessId);
+                    }
                 }
             }
             catch (Exception ex)

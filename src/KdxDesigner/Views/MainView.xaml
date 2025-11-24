@@ -29,13 +29,6 @@
                 <MenuItem Header="全ての工程フロー詳細を閉じる" Command="{Binding CloseAllProcessFlowWindowsCommand}" />
                 <Separator/>
             </MenuItem>
-            <MenuItem Header="_編集">
-                <MenuItem Header="すべての変更を保存" Command="{Binding SaveAllChangesCommand}" />
-                <Separator/>
-                <MenuItem Header="操作のみ保存" Command="{Binding SaveOperationCommand}" />
-                <Separator/>
-                <MenuItem Header="工程プロパティを編集" Command="{Binding EditProcessCommand}" />
-            </MenuItem>
         </Menu>
 
         <Grid Margin="10">
@@ -137,12 +130,9 @@
                         <DataGrid Grid.Row="1" Grid.Column="0" Margin="5" x:Name="ProcessGrid" ItemsSource="{Binding Processes}" AutoGenerateColumns="False"
                                   SelectedItem="{Binding SelectedProcess}"
                                   SelectionMode="Extended" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="False"
-                                  SelectionChanged="ProcessGrid_SelectionChanged" PreviewKeyDown="ProcessGrid_PreviewKeyDown"
-                                  MouseDoubleClick="ProcessGrid_MouseDoubleClick">
+                                  SelectionChanged="ProcessGrid_SelectionChanged">
                             <DataGrid.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="プロパティを編集(_E)" Command="{Binding EditProcessCommand}"/>
-                                    <Separator/>
                                     <MenuItem Header="工程フロー詳細を開く" Command="{Binding OpenProcessFlowDetailCommand}"/>
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
@@ -173,7 +163,7 @@
                         </DataGrid>
 
                         <DataGrid Grid.Row="1" Grid.Column="1" Margin="5" ItemsSource="{Binding ProcessDetails}" SelectedItem="{Binding SelectedProcessDetail}" AutoGenerateColumns="False"
-                                  SelectionChanged="DetailGrid_SelectionChanged" CanUserAddRows="False" IsReadOnly="False" PreviewKeyDown="ProcessDetailGrid_PreviewKeyDown">
+                                  SelectionChanged="DetailGrid_SelectionChanged" CanUserAddRows="False" IsReadOnly="False">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True" Width="40"/>
                                 <DataGridTextColumn Header="工程ID" Binding="{Binding ProcessId}" IsReadOnly="True" Width="60"/>
@@ -221,7 +211,7 @@
                         </DataGrid>
 
                         <DataGrid Grid.Row="1" Grid.Column="2" Margin="5" x:Name="OperationGrid" ItemsSource="{Binding SelectedOperations}" AutoGenerateColumns="False"
-                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" PreviewKeyDown="OperationGrid_PreviewKeyDown" MouseDoubleClick="OperationGrid_MouseDoubleClick">
+                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" MouseDoubleClick="OperationGrid_MouseDoubleClick">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="操作名" Binding="{Binding OperationName}" Width="150"/>

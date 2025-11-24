@@ -19,7 +19,12 @@ namespace KdxDesigner.Views
             // ViewModelからのクローズ要求を処理
             _viewModel.RequestClose += () =>
             {
-                // 非モーダルウィンドウではDialogResultは不要
+                // ShowDialog()で表示された場合のみDialogResultを設定可能
+                // Show()で表示された場合は設定するとInvalidOperationExceptionが発生する
+                if (System.Windows.Interop.ComponentDispatcher.IsThreadModal)
+                {
+                    DialogResult = _viewModel.DialogResult;
+                }
                 Close();
             };
         }
