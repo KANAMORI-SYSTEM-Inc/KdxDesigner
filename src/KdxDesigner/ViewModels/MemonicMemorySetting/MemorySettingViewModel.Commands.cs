@@ -161,6 +161,14 @@ namespace KdxDesigner.ViewModels.Settings
                     progressViewModel.UpdateStatus("メモリ設定を開始しています...");
                     await Task.Delay(100); // UIの更新を待つ
 
+                    // 既存のMemoryテーブルデータを削除（PLCID単位で一括削除）
+                    if (SelectedPlc != null)
+                    {
+                        progressViewModel.UpdateStatus($"既存のメモリデータを削除中... (PlcId={SelectedPlc.Id})");
+                        await _repository.DeleteMemoriesByPlcIdAsync(SelectedPlc.Id);
+                        progressViewModel.AddLog($"既存のメモリデータを削除しました (PlcId={SelectedPlc.Id})");
+                    }
+
                     // 新プロファイルシステム対応の実装
                     // 1. PLC用プロファイルの設定を適用（1回のみ）
                     if (SelectedPlcProfile != null)

@@ -350,17 +350,22 @@ namespace KdxDesigner.ViewModels.Settings
                 .OrderBy(o => o.SortNumber)
                 .ToList();
 
+            var processes = (await _repository.GetProcessesAsync())
+                .Where(p => p.CycleId == targetCycle.Id)
+                .OrderBy(p => p.SortNumber)
+                .ToList();
+
             // Processデバイスの保存
-            progressViewModel?.UpdateStatus($"工程デバイスを保存中... ({Processes.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceProcess(Processes.ToList(), cycleProfile.ProcessDeviceStartL, SelectedPlc.Id);
+            progressViewModel?.UpdateStatus($"工程デバイスを保存中... ({processes.Count}件)");
+            _mnemonicService!.SaveMnemonicDeviceProcess(processes.ToList(), cycleProfile.ProcessDeviceStartL, SelectedPlc.Id, cycleProfile.CycleId);
 
             // ProcessDetailデバイスの保存
             progressViewModel?.UpdateStatus($"工程詳細デバイスを保存中... ({details.Count}件)");
-            await _mnemonicService!.SaveMnemonicDeviceProcessDetail(details, cycleProfile.DetailDeviceStartL, SelectedPlc.Id);
+            await _mnemonicService!.SaveMnemonicDeviceProcessDetail(details, cycleProfile.DetailDeviceStartL, SelectedPlc.Id, cycleProfile.CycleId);
 
             // Operationデバイスの保存
             progressViewModel?.UpdateStatus($"操作デバイスを保存中... ({operations.Count}件)");
-            _mnemonicService!.SaveMnemonicDeviceOperation(operations, cycleProfile.OperationDeviceStartM, SelectedPlc.Id);
+            _mnemonicService!.SaveMnemonicDeviceOperation(operations, cycleProfile.OperationDeviceStartM, SelectedPlc.Id, cycleProfile.CycleId);
 
             // Timerデバイスの保存（ProcessDetailとOperationに関連するもの）
             int timerCount = currentTimerCount;

@@ -169,17 +169,18 @@ namespace KdxDesigner.ViewModels
             System.Diagnostics.Debug.WriteLine($"Start conditions count: {startConditions.Count}");
             System.Diagnostics.Debug.WriteLine($"Finish conditions count: {finishConditions.Count}");
 
-            // Process -> ProcessDetail (開始条件)
+            // ProcessDetail -> Process (開始条件)
+            // ProcessStartConditionは「StartProcessDetailIdが完了したらProcessIdを開始する」という意味
             int startConnectionsCreated = 0;
             foreach (var startCondition in startConditions)
             {
                 System.Diagnostics.Debug.WriteLine($"Processing start condition: ProcessId={startCondition.ProcessId}, StartProcessDetailId={startCondition.StartProcessDetailId}, Sensor={startCondition.StartSensor}");
 
-                if (processNodeDict.ContainsKey(startCondition.ProcessId) &&
-                    detailNodeDict.ContainsKey(startCondition.StartProcessDetailId))
+                if (detailNodeDict.ContainsKey(startCondition.StartProcessDetailId) &&
+                    processNodeDict.ContainsKey(startCondition.ProcessId))
                 {
-                    var fromNode = processNodeDict[startCondition.ProcessId];
-                    var toNode = detailNodeDict[startCondition.StartProcessDetailId];
+                    var fromNode = detailNodeDict[startCondition.StartProcessDetailId];  // ProcessDetail (接続元)
+                    var toNode = processNodeDict[startCondition.ProcessId];  // Process (接続先)
 
                     var connection = new ProcessFlowConnection(fromNode, toNode)
                     {
@@ -191,11 +192,11 @@ namespace KdxDesigner.ViewModels
                     AllConnections.Add(connection);
                     Connections.Add(connection);
                     startConnectionsCreated++;
-                    System.Diagnostics.Debug.WriteLine($"✓ Created START connection: Process {fromNode.Process?.ProcessName} (ID={startCondition.ProcessId}) -> ProcessDetail {toNode.ProcessDetail?.DetailName} (ID={startCondition.StartProcessDetailId})");
+                    System.Diagnostics.Debug.WriteLine($"✓ Created START connection: ProcessDetail {fromNode.ProcessDetail?.DetailName} (ID={startCondition.StartProcessDetailId}) -> Process {toNode.Process?.ProcessName} (ID={startCondition.ProcessId})");
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"✗ Skipped start condition: Process node exists={processNodeDict.ContainsKey(startCondition.ProcessId)}, Detail node exists={detailNodeDict.ContainsKey(startCondition.StartProcessDetailId)}");
+                    System.Diagnostics.Debug.WriteLine($"✗ Skipped start condition: Detail node exists={detailNodeDict.ContainsKey(startCondition.StartProcessDetailId)}, Process node exists={processNodeDict.ContainsKey(startCondition.ProcessId)}");
                 }
             }
 
@@ -448,6 +449,19 @@ namespace KdxDesigner.ViewModels
             _processFinishConditions = finishConditionsTask.Result;
             _dbConnections = connectionsTask.Result;
             _dbFinishes = finishesTask.Result;
+
+            // CycleIdがnullの既存データを更新
+            foreach (var startCondition in _processStartConditions.Where(s => s.CycleId == null))
+            {
+                startCondition.CycleId = _cycleId;
+                await _repository.UpdateProcessStartConditionAsync(startCondition);
+            }
+
+            foreach (var finishCondition in _processFinishConditions.Where(f => f.CycleId == null))
+            {
+                finishCondition.CycleId = _cycleId;
+                await _repository.UpdateProcessFinishConditionAsync(finishCondition);
+            }
 
             // すべての工程のIDとProcessNameのマッピングを作成
             var processMap = processes
@@ -1143,6 +1157,36 @@ namespace KdxDesigner.ViewModels
 
                     if (existingConnection == null && _connectionStartNode.ProcessDetail != null && node.Process != null)
                     {
+                        // データベース内の既存接続もチェック
+                        if (_isCreatingFinishConnection)
+                        {
+                            var existingDbFinish = _processFinishConditions.FirstOrDefault(f =>
+                                f.ProcessId == node.Process.Id &&
+                                f.FinishProcessDetailId == _connectionStartNode.ProcessDetail.Id);
+
+                            if (existingDbFinish != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine("⚠️ 同じ終了条件接続が既にデータベースに存在します。スキップします。");
+                                IsConnecting = false;
+                                _connectionStartNode = null;
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            var existingDbStart = _processStartConditions.FirstOrDefault(s =>
+                                s.ProcessId == node.Process.Id &&
+                                s.StartProcessDetailId == _connectionStartNode.ProcessDetail.Id);
+
+                            if (existingDbStart != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine("⚠️ 同じ開始条件接続が既にデータベースに存在します。スキップします。");
+                                IsConnecting = false;
+                                _connectionStartNode = null;
+                                return;
+                            }
+                        }
+
                         var newConnection = new ProcessFlowConnection(_connectionStartNode, node)
                         {
                             ConnectionType = ConnectionType.ProcessToDetail,  // 緑色で表示
@@ -1159,6 +1203,7 @@ namespace KdxDesigner.ViewModels
                             // ProcessDetailからProcessへの終了条件接続 → ProcessFinishConditionテーブル
                             var dbFinish = new ProcessFinishCondition
                             {
+                                CycleId = _cycleId,  // 現在のCycleIdを設定
                                 ProcessId = node.Process.Id,  // ProcessのID
                                 FinishProcessDetailId = _connectionStartNode.ProcessDetail.Id,  // ProcessDetailのID
                                 FinishSensor = ""
@@ -1172,6 +1217,7 @@ namespace KdxDesigner.ViewModels
                             // ProcessDetailからProcessへの開始条件接続 → ProcessStartConditionテーブル
                             var dbStart = new ProcessStartCondition
                             {
+                                CycleId = _cycleId,  // 現在のCycleIdを設定
                                 ProcessId = node.Process.Id,  // ProcessのID
                                 StartProcessDetailId = _connectionStartNode.ProcessDetail.Id,  // ProcessDetailのID
                                 StartSensor = ""
@@ -1542,7 +1588,7 @@ namespace KdxDesigner.ViewModels
                             f.FinishProcessDetailId == connection.FromNode.ProcessDetail.Id);
                         if (finish != null)
                         {
-                            await _repository.DeleteProcessFinishConditionAsync(finish.Id);
+                            await _repository.DeleteProcessFinishConditionAsync(finish.ProcessId, finish.FinishProcessDetailId);
                             _processFinishConditions.Remove(finish);
                         }
                     }
@@ -1554,24 +1600,26 @@ namespace KdxDesigner.ViewModels
                             s.StartProcessDetailId == connection.FromNode.ProcessDetail.Id);
                         if (start != null)
                         {
-                            await _repository.DeleteProcessStartConditionAsync(start.Id);
+                            await _repository.DeleteProcessStartConditionAsync(start.ProcessId, start.StartProcessDetailId);
                             _processStartConditions.Remove(start);
                         }
                     }
                 }
-                // Process -> ProcessDetail の接続
-                else if (connection.FromNode.NodeType == ProcessFlowNodeType.Process &&
-                    connection.ToNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
-                    connection.FromNode.Process != null &&
-                    connection.ToNode.ProcessDetail != null)
+                // ProcessDetail -> Process の接続（開始条件として保存されている）
+                // 注意: ProcessStartConditionはProcessDetail->Processの接続を表す
+                else if (connection.FromNode.NodeType == ProcessFlowNodeType.ProcessDetail &&
+                    connection.ToNode.NodeType == ProcessFlowNodeType.Process &&
+                    connection.FromNode.ProcessDetail != null &&
+                    connection.ToNode.Process != null &&
+                    !connection.IsFinishConnection)
                 {
-                    // ProcessStartConditionから削除（Process->ProcessDetailは開始条件）
+                    // ProcessStartConditionから削除
                     var start = _processStartConditions.FirstOrDefault(s =>
-                        s.ProcessId == connection.FromNode.Process.Id &&
-                        s.StartProcessDetailId == connection.ToNode.ProcessDetail.Id);
+                        s.ProcessId == connection.ToNode.Process.Id &&
+                        s.StartProcessDetailId == connection.FromNode.ProcessDetail.Id);
                     if (start != null)
                     {
-                        await _repository.DeleteProcessStartConditionAsync(start.Id);
+                        await _repository.DeleteProcessStartConditionAsync(start.ProcessId, start.StartProcessDetailId);
                         _processStartConditions.Remove(start);
                     }
                 }

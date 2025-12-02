@@ -54,70 +54,35 @@ namespace KdxDesigner.Models
         {
             get
             {
-                // 終了条件の場合は逆方向にする（ToNodeから出発）
-                if (IsFinishConnection)
+                // 終了条件も通常接続も同じ向き：FromNodeから出発
+                var nodeWidth = FromNode.NodeWidth;
+                var nodeHeight = FromNode.NodeHeight;
+                var fromCenter = new Point(FromNode.Position.X + nodeWidth / 2, FromNode.Position.Y + nodeHeight / 2);
+                var toCenter = new Point(ToNode.Position.X + ToNode.NodeWidth / 2, ToNode.Position.Y + ToNode.NodeHeight / 2);
+
+                // 接続線の角度を計算
+                var angle = Math.Atan2(toCenter.Y - fromCenter.Y, toCenter.X - fromCenter.X);
+
+                // ノードの端の点を計算
+                var edgeX = FromNode.Position.X + nodeWidth; // ノードの右端
+                var edgeY = FromNode.Position.Y + nodeHeight / 2;  // ノードの中央Y
+
+                // 角度に基づいて適切な端点を選択
+                if (Math.Abs(angle) <= Math.PI / 4) // 右方向
                 {
-                    var nodeWidth = ToNode.NodeWidth;
-                    var nodeHeight = ToNode.NodeHeight;
-                    var toCenter = new Point(ToNode.Position.X + nodeWidth / 2, ToNode.Position.Y + nodeHeight / 2);
-                    var fromCenter = new Point(FromNode.Position.X + FromNode.NodeWidth / 2, FromNode.Position.Y + FromNode.NodeHeight / 2);
-                    
-                    // 接続線の角度を計算
-                    var angle = Math.Atan2(fromCenter.Y - toCenter.Y, fromCenter.X - toCenter.X);
-                    
-                    // ノードの端の点を計算
-                    var edgeX = ToNode.Position.X + nodeWidth; // ノードの右端
-                    var edgeY = ToNode.Position.Y + nodeHeight / 2;  // ノードの中央Y
-                    
-                    // 角度に基づいて適切な端点を選択
-                    if (Math.Abs(angle) <= Math.PI / 4) // 右方向
-                    {
-                        return new Point(edgeX, edgeY);
-                    }
-                    else if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) // 下方向
-                    {
-                        return new Point(toCenter.X, ToNode.Position.Y + nodeHeight);
-                    }
-                    else if (angle < -Math.PI / 4 && angle >= -3 * Math.PI / 4) // 上方向
-                    {
-                        return new Point(toCenter.X, ToNode.Position.Y);
-                    }
-                    else // 左方向
-                    {
-                        return new Point(ToNode.Position.X, edgeY);
-                    }
+                    return new Point(edgeX, edgeY);
                 }
-                else
+                else if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) // 下方向
                 {
-                    var nodeWidth = FromNode.NodeWidth;
-                    var nodeHeight = FromNode.NodeHeight;
-                    var fromCenter = new Point(FromNode.Position.X + nodeWidth / 2, FromNode.Position.Y + nodeHeight / 2);
-                    var toCenter = new Point(ToNode.Position.X + ToNode.NodeWidth / 2, ToNode.Position.Y + ToNode.NodeHeight / 2);
-                    
-                    // 接続線の角度を計算
-                    var angle = Math.Atan2(toCenter.Y - fromCenter.Y, toCenter.X - fromCenter.X);
-                    
-                    // ノードの端の点を計算
-                    var edgeX = FromNode.Position.X + nodeWidth; // ノードの右端
-                    var edgeY = FromNode.Position.Y + nodeHeight / 2;  // ノードの中央Y
-                    
-                    // 角度に基づいて適切な端点を選択
-                    if (Math.Abs(angle) <= Math.PI / 4) // 右方向
-                    {
-                        return new Point(edgeX, edgeY);
-                    }
-                    else if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) // 下方向
-                    {
-                        return new Point(fromCenter.X, FromNode.Position.Y + nodeHeight);
-                    }
-                    else if (angle < -Math.PI / 4 && angle >= -3 * Math.PI / 4) // 上方向
-                    {
-                        return new Point(fromCenter.X, FromNode.Position.Y);
-                    }
-                    else // 左方向
-                    {
-                        return new Point(FromNode.Position.X, edgeY);
-                    }
+                    return new Point(fromCenter.X, FromNode.Position.Y + nodeHeight);
+                }
+                else if (angle < -Math.PI / 4 && angle >= -3 * Math.PI / 4) // 上方向
+                {
+                    return new Point(fromCenter.X, FromNode.Position.Y);
+                }
+                else // 左方向
+                {
+                    return new Point(FromNode.Position.X, edgeY);
                 }
             }
         }
@@ -126,62 +91,31 @@ namespace KdxDesigner.Models
         {
             get
             {
-                // 終了条件の場合は逆方向にする（FromNodeに到着）
-                if (IsFinishConnection)
+                // 終了条件も通常接続も同じ向き：ToNodeに到着
+                var nodeWidth = ToNode.NodeWidth;
+                var nodeHeight = ToNode.NodeHeight;
+                var fromCenter = new Point(FromNode.Position.X + FromNode.NodeWidth / 2, FromNode.Position.Y + FromNode.NodeHeight / 2);
+                var toCenter = new Point(ToNode.Position.X + nodeWidth / 2, ToNode.Position.Y + nodeHeight / 2);
+
+                // 接続線の角度を計算（逆方向）
+                var angle = Math.Atan2(fromCenter.Y - toCenter.Y, fromCenter.X - toCenter.X);
+
+                // ノードの端の点を計算
+                if (Math.Abs(angle) <= Math.PI / 4) // 右方向から来る
                 {
-                    var nodeWidth = FromNode.NodeWidth;
-                    var nodeHeight = FromNode.NodeHeight;
-                    var fromCenter = new Point(FromNode.Position.X + nodeWidth / 2, FromNode.Position.Y + nodeHeight / 2);
-                    var toCenter = new Point(ToNode.Position.X + ToNode.NodeWidth / 2, ToNode.Position.Y + ToNode.NodeHeight / 2);
-                    
-                    // 接続線の角度を計算（逆方向）
-                    var angle = Math.Atan2(toCenter.Y - fromCenter.Y, toCenter.X - fromCenter.X);
-                    
-                    // ノードの端の点を計算
-                    if (Math.Abs(angle) <= Math.PI / 4) // 右方向から来る
-                    {
-                        return new Point(FromNode.Position.X + nodeWidth, fromCenter.Y);
-                    }
-                    else if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) // 下方向から来る
-                    {
-                        return new Point(fromCenter.X, FromNode.Position.Y + nodeHeight);
-                    }
-                    else if (angle < -Math.PI / 4 && angle >= -3 * Math.PI / 4) // 上方向から来る
-                    {
-                        return new Point(fromCenter.X, FromNode.Position.Y);
-                    }
-                    else // 左方向から来る
-                    {
-                        return new Point(FromNode.Position.X, fromCenter.Y);
-                    }
+                    return new Point(ToNode.Position.X + nodeWidth, toCenter.Y);
                 }
-                else
+                else if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) // 下方向から来る
                 {
-                    var nodeWidth = ToNode.NodeWidth;
-                    var nodeHeight = ToNode.NodeHeight;
-                    var fromCenter = new Point(FromNode.Position.X + FromNode.NodeWidth / 2, FromNode.Position.Y + FromNode.NodeHeight / 2);
-                    var toCenter = new Point(ToNode.Position.X + nodeWidth / 2, ToNode.Position.Y + nodeHeight / 2);
-                    
-                    // 接続線の角度を計算（逆方向）
-                    var angle = Math.Atan2(fromCenter.Y - toCenter.Y, fromCenter.X - toCenter.X);
-                    
-                    // ノードの端の点を計算
-                    if (Math.Abs(angle) <= Math.PI / 4) // 右方向から来る
-                    {
-                        return new Point(ToNode.Position.X + nodeWidth, toCenter.Y);
-                    }
-                    else if (angle > Math.PI / 4 && angle <= 3 * Math.PI / 4) // 下方向から来る
-                    {
-                        return new Point(toCenter.X, ToNode.Position.Y + nodeHeight);
-                    }
-                    else if (angle < -Math.PI / 4 && angle >= -3 * Math.PI / 4) // 上方向から来る
-                    {
-                        return new Point(toCenter.X, ToNode.Position.Y);
-                    }
-                    else // 左方向から来る
-                    {
-                        return new Point(ToNode.Position.X, toCenter.Y);
-                    }
+                    return new Point(toCenter.X, ToNode.Position.Y + nodeHeight);
+                }
+                else if (angle < -Math.PI / 4 && angle >= -3 * Math.PI / 4) // 上方向から来る
+                {
+                    return new Point(toCenter.X, ToNode.Position.Y);
+                }
+                else // 左方向から来る
+                {
+                    return new Point(ToNode.Position.X, toCenter.Y);
                 }
             }
         }

@@ -1,7 +1,6 @@
-using System.Windows;
-using Kdx.Contracts.DTOs;
 using Kdx.Infrastructure.Supabase.Repositories;
 using KdxDesigner.ViewModels;
+using System.Windows;
 using Process = Kdx.Contracts.DTOs.Process;
 
 namespace KdxDesigner.Views

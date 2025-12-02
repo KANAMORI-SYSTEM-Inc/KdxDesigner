@@ -19,8 +19,7 @@ namespace KdxDesigner.ViewModels.Settings
             public Machine? Machine { get; }
             public MachineName? MachineName { get; }
             public CylinderCycle? CylinderCycle { get; }
-            public string DisplayMachineName =>
-            MachineName?.FullName ?? "-";
+            public string DisplayMachineName => MachineName?.FullName ?? "-";
             public CylinderViewModel(Cylinder c, Machine? m, MachineName? mn, CylinderCycle? cc)
             {
                 Cylinder = c; Machine = m; MachineName = mn;

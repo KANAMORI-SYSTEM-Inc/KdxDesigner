@@ -11,9 +11,6 @@ namespace KdxDesigner.ViewModels
     {
         // その他ボタン処理
 
-
-
-
         // 出力処理
         /// <summary>
         /// 出力ウィンドウを表示

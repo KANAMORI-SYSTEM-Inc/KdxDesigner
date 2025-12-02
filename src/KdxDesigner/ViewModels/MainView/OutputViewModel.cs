@@ -146,13 +146,17 @@ namespace KdxDesigner.ViewModels
                     _mainViewModel.Repository,
                     _mainViewModel.SelectedPlc.Id,
                     _mainViewModel._ioSelectorService);
+
+                // インスタンスの作成
                 var operationBuilder = new OperationBuilder(
                     _mainViewModel,
                     opErrorAggregator,
                     opIoAddressService);
+
+                // operationの出力
                 var operationRows = operationBuilder.GenerateLadder(
                     data.JoinedProcessDetailList,
-                    data.JoinedOperationList,
+                    data.JoinedOperationListOutput,
                     data.JoinedCylinderList,
                     data.JoinedOperationWithTimerList,
                     data.SpeedDevice,
@@ -287,6 +291,7 @@ namespace KdxDesigner.ViewModels
                   List<MnemonicDeviceWithProcessDetail> JoinedProcessDetailList,
                   List<MnemonicTimerDeviceWithDetail> JoinedProcessDetailWithTimerList,
                   List<MnemonicDeviceWithOperation> JoinedOperationList,
+                  List<MnemonicDeviceWithOperation> JoinedOperationListOutput,
                   List<MnemonicDeviceWithCylinder> JoinedCylinderList,
                   List<MnemonicTimerDeviceWithOperation> JoinedOperationWithTimerList,
                   List<MnemonicTimerDeviceWithCylinder> JoinedCylinderWithTimerList,
@@ -309,6 +314,7 @@ namespace KdxDesigner.ViewModels
                     (new List<MnemonicDeviceWithProcess>(),
                      new List<MnemonicDeviceWithProcessDetail>(),
                      new List<MnemonicTimerDeviceWithDetail>(),
+                     new List<MnemonicDeviceWithOperation>(),
                      new List<MnemonicDeviceWithOperation>(),
                      new List<MnemonicDeviceWithCylinder>(),
                      new List<MnemonicTimerDeviceWithOperation>(),
@@ -342,6 +348,7 @@ namespace KdxDesigner.ViewModels
                     (new List<MnemonicDeviceWithProcess>(),
                      new List<MnemonicDeviceWithProcessDetail>(),
                      new List<MnemonicTimerDeviceWithDetail>(),
+                     new List<MnemonicDeviceWithOperation>(),
                      new List<MnemonicDeviceWithOperation>(),
                      new List<MnemonicDeviceWithCylinder>(),
                      new List<MnemonicTimerDeviceWithOperation>(),
@@ -408,6 +415,12 @@ namespace KdxDesigner.ViewModels
                 => new MnemonicDeviceWithOperation { Mnemonic = m, Operation = o })
                 .OrderBy(x => x.Mnemonic.StartNum).ToList();
 
+            var outputOperation = operations.Where(op => op.CycleId == cycleId).ToList();
+            var joinedOperationListOutput = devicesO
+                .Join(outputOperation, m => m.RecordId, o => o.Id, (m, o)
+                => new MnemonicDeviceWithOperation { Mnemonic = m, Operation = o })
+                .OrderBy(x => x.Mnemonic.StartNum).ToList();
+
             var joinedCylinderList = devicesC
                 .Join(cylindersForPlc, m => m.RecordId, c => c.Id, (m, c)
                 => new MnemonicDeviceWithCylinder { Mnemonic = m, Cylinder = c })
@@ -430,6 +443,7 @@ namespace KdxDesigner.ViewModels
                 joinedProcessDetailList,
                 joinedProcessDetailWithTimerList,
                 joinedOperationList,
+                joinedOperationListOutput,
                 joinedCylinderList,
                 joinedOperationWithTimerList,
                 joinedCylinderWithTimerList,

@@ -1,13 +1,7 @@
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Kdx.Contracts.DTOs;
 using Kdx.Contracts.Enums;
 using Kdx.Contracts.Interfaces;
-using KdxDesigner.Models;
 using Kdx.Infrastructure.Supabase.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.PortableExecutable;
 
 namespace KdxDesigner.Services.MnemonicDevice
 {
@@ -24,7 +18,7 @@ namespace KdxDesigner.Services.MnemonicDevice
 
         // メモリストアのみを使用するかどうかのフラグ
         private bool _useMemoryStoreOnly = true;
-        
+
         public MnemonicDeviceHybridService(
             ISupabaseRepository repository,
             IMemoryService memoryService,
@@ -35,15 +29,16 @@ namespace KdxDesigner.Services.MnemonicDevice
             _dbService = new MnemonicDeviceService(repository, memoryService);
             _memoryService = memoryService;
         }
-        
+
         /// <summary>
         /// メモリストアのみを使用するかどうかを設定
         /// </summary>
+        /// <param name="useMemoryOnly">メモリストアのみを使用する場合はtrue</param>
         public void SetMemoryOnlyMode(bool useMemoryOnly)
         {
             _useMemoryStoreOnly = useMemoryOnly;
         }
-        
+
         /// <summary>
         /// PlcIdに基づいてニーモニックデバイスのリストを取得
         /// </summary>
@@ -51,45 +46,48 @@ namespace KdxDesigner.Services.MnemonicDevice
         {
             // まずメモリストアから取得を試みる
             var devices = _memoryStore.GetMnemonicDevices(plcId);
-            
+
             // メモリストアにデータがない場合、データベースから取得
             if (!devices.Any() && !_useMemoryStoreOnly)
             {
                 devices = await _dbService.GetMnemonicDevice(plcId);
-                
+
                 // データベースから取得したデータをメモリストアにキャッシュ
                 if (devices.Any())
                 {
                     _memoryStore.BulkAddMnemonicDevices(devices, plcId);
                 }
             }
-            
+
             return devices;
         }
-        
+
         /// <summary>
         /// PlcIdとMnemonicIdに基づいてニーモニックデバイスのリストを取得
         /// </summary>
+        /// <param name="plcId">PLC ID</param>
+        /// <param name="mnemonicId">ニーモニックID</param>
+        /// <returns>ニーモニックデバイスのリスト</returns>
         public async Task<List<Kdx.Contracts.DTOs.MnemonicDevice>> GetMnemonicDeviceByMnemonic(int plcId, int mnemonicId)
         {
             // メモリストアから取得
             var devices = _memoryStore.GetMnemonicDevicesByMnemonic(plcId, mnemonicId);
-            
+
             // メモリストアにデータがない場合、データベースから取得
             if (!devices.Any() && !_useMemoryStoreOnly)
             {
                 devices = await _dbService.GetMnemonicDeviceByMnemonic(plcId, mnemonicId);
-                
+
                 // データベースから取得したデータをメモリストアに追加
                 foreach (var device in devices)
                 {
                     _memoryStore.AddOrUpdateMnemonicDevice(device, plcId);
                 }
             }
-            
+
             return devices;
         }
-        
+
         /// <summary>
         /// すべてのニーモニックデバイスを削除
         /// </summary>
@@ -97,14 +95,14 @@ namespace KdxDesigner.Services.MnemonicDevice
         {
             // メモリストアをクリア
             _memoryStore.ClearAll();
-            
+
             // データベースもクリア（メモリオンリーモードでない場合）
             if (!_useMemoryStoreOnly)
             {
                 await _dbService.DeleteAllMnemonicDevices();
             }
         }
-        
+
         /// <summary>
         /// 特定のニーモニックデバイスを削除
         /// </summary>
@@ -121,10 +119,14 @@ namespace KdxDesigner.Services.MnemonicDevice
                 await _dbService.DeleteMnemonicDevice(plcId, mnemonicId);
             }
         }
-        
+
         /// <summary>
         /// Process用のニーモニックデバイスを保存（Cycle用プロファイル）
         /// </summary>
+        /// <param name="processes">プロセスのリスト</param>
+        /// <param name="startNum">開始番号</param>
+        /// <param name="plcId">PLC ID</param>
+        /// <param name="cycleId">サイクルID</param>
         public void SaveMnemonicDeviceProcess(List<Process> processes, int startNum, int plcId, int? cycleId = null)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
@@ -168,16 +170,20 @@ namespace KdxDesigner.Services.MnemonicDevice
                 _dbService.SaveMnemonicDeviceProcess(processes, startNum, plcId, cycleId);
             }
         }
-        
+
         /// <summary>
         /// ProcessDetail用のニーモニックデバイスを保存（Cycle用プロファイル）
         /// </summary>
+        /// <param name="details">プロセス詳細のリスト</param>
+        /// <param name="startNum">開始番号</param>
+        /// <param name="plcId">PLC ID</param>
+        /// <param name="cycleId">サイクルID</param>
         public async Task SaveMnemonicDeviceProcessDetail(List<ProcessDetail> details, int startNum, int plcId, int? cycleId = null)
         {
             var devices = new List<Kdx.Contracts.DTOs.MnemonicDevice>();
             var memories = new List<Kdx.Contracts.DTOs.Memory>();
 
-            
+
 
             foreach (var detail in details)
             {
@@ -228,7 +234,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                             // 例: _errorAggregator.AddError(...);
                         }
                     }
-                    else if(cY != null)
+                    else if (cY != null)
                     {
                         // CYが見つからなかったか、CYにMachineIdがなかった場合のエラーハンドリング（任意）
 
@@ -254,19 +260,19 @@ namespace KdxDesigner.Services.MnemonicDevice
                     Comment1 = comment1,
                     Comment2 = comment2
                 };
-                
+
                 devices.Add(device);
-                
+
                 // メモリデータも生成
                 for (int i = 0; i < device.OutCoilCount; i++)
                 {
                     var memory = GenerateMemoryForDevice(device, i);
                     memories.Add(memory);
                 }
-                
+
                 startNum += 5;
             }
-            
+
             // メモリストアに保存
             _memoryStore.BulkAddMnemonicDevices(devices, plcId);
             _memoryService.SaveMemories(plcId, memories);
@@ -276,7 +282,7 @@ namespace KdxDesigner.Services.MnemonicDevice
             existingMemories.AddRange(memories);
             _memoryStore.CacheGeneratedMemories(existingMemories, plcId);
         }
-        
+
         /// <summary>
         /// Operation用のニーモニックデバイスを保存（Cycle用プロファイル）
         /// </summary>
@@ -327,7 +333,7 @@ namespace KdxDesigner.Services.MnemonicDevice
                 _dbService.SaveMnemonicDeviceOperation(operations, startNum, plcId, cycleId);
             }
         }
-        
+
         /// <summary>
         /// CY用のニーモニックデバイスを保存（PLC用プロファイル - CycleIdはnull）
         /// </summary>
@@ -393,7 +399,7 @@ namespace KdxDesigner.Services.MnemonicDevice
 
             }
         }
-        
+
         /// <summary>
         /// メモリストアから直接メモリデータを取得
         /// データベースアクセスを避けてパフォーマンスを向上
@@ -402,10 +408,12 @@ namespace KdxDesigner.Services.MnemonicDevice
         {
             return _memoryStore.GetCachedMemories(plcId);
         }
-        
+
         /// <summary>
         /// デバイス情報からメモリデータを生成
         /// </summary>
+        /// <param name="device">ニーモニックデバイス情報</param>
+        /// <param name="outcoilIndex">アウトコイルインデックス</param>
         private Kdx.Contracts.DTOs.Memory GenerateMemoryForDevice(Kdx.Contracts.DTOs.MnemonicDevice device, int outcoilIndex)
         {
             var deviceNum = device.StartNum + outcoilIndex;
@@ -440,48 +448,9 @@ namespace KdxDesigner.Services.MnemonicDevice
 
             string row3 = device.MnemonicId switch
             {
-                1 => outcoilIndex switch
-                {
-                    0 => "開始条件",
-                    1 => "開始",
-                    2 => "実行中",
-                    3 => "終了条件",
-                    4 => "終了",
-                    _ => ""
-                },
-                2 => outcoilIndex switch
-                {
-                    0 => "開始条件",
-                    1 => "開始",
-                    2 => "実行中",
-                    3 => "操作釦",
-                    4 => "終了",
-                    _ => ""
-                },
-                3 => outcoilIndex switch
-                {
-                    0 => "自動運転",
-                    1 => "操作ｽｲｯﾁ",
-                    2 => "手動運転",
-                    3 => "ｶｳﾝﾀ",
-                    4 => "個別ﾘｾｯﾄ",
-                    5 => "操作開始",
-                    6 => "出力可",
-                    7 => "開始",
-                    8 => "切指令",
-                    9 => "制御ｾﾝｻ",
-                    10 => "速度1",
-                    11 => "速度2",
-                    12 => "速度3",
-                    13 => "速度4",
-                    14 => "速度5",
-                    15 => "強制減速",
-                    16 => "終了位置",
-                    17 => "出力切",
-                    18 => "BK作動",
-                    19 => "完了",
-                    _ => ""
-                },
+                1 => device.Comment2 ?? "",
+                2 => device.Comment2 ?? "",
+                3 => device.Comment2 ?? "",
                 4 => outcoilIndex switch
                 {
                     0 => "行き方向",
@@ -539,11 +508,50 @@ namespace KdxDesigner.Services.MnemonicDevice
                 _ => "未定義"
             };
 
-            string? row4 = device.MnemonicId switch
+            string row4 = device.MnemonicId switch
             {
-                1 => device.Comment2,
-                2 => device.Comment2,
-                3 => device.Comment2,
+                1 => outcoilIndex switch
+                {
+                    0 => "開始条件",
+                    1 => "開始",
+                    2 => "実行中",
+                    3 => "終了条件",
+                    4 => "終了",
+                    _ => ""
+                },
+                2 => outcoilIndex switch
+                {
+                    0 => "開始条件",
+                    1 => "開始",
+                    2 => "実行中",
+                    3 => "操作釦",
+                    4 => "終了",
+                    _ => ""
+                },
+                3 => outcoilIndex switch
+                {
+                    0 => "自動運転",
+                    1 => "操作ｽｲｯﾁ",
+                    2 => "手動運転",
+                    3 => "ｶｳﾝﾀ",
+                    4 => "個別ﾘｾｯﾄ",
+                    5 => "操作開始",
+                    6 => "出力可",
+                    7 => "開始",
+                    8 => "切指令",
+                    9 => "制御ｾﾝｻ",
+                    10 => "速度1",
+                    11 => "速度2",
+                    12 => "速度3",
+                    13 => "速度4",
+                    14 => "速度5",
+                    15 => "強制減速",
+                    16 => "終了位置",
+                    17 => "出力切",
+                    18 => "BK作動",
+                    19 => "完了",
+                    _ => ""
+                },
                 4 => outcoilIndex switch
                 {
                     0 => "自動指令",
@@ -618,35 +626,37 @@ namespace KdxDesigner.Services.MnemonicDevice
                 OutcoilNumber = outcoilIndex
             };
         }
-        
+
         /// <summary>
         /// メモリストアの統計情報を取得
         /// </summary>
+        /// <param name="plcId">PLC ID</param>
         public MnemonicDeviceStatistics GetStatistics(int plcId)
         {
             return _memoryStore.GetStatistics(plcId);
         }
-        
+
         /// <summary>
         /// メモリストアのデータをデータベースに永続化
         /// </summary>
+        /// <param name="plcId">PLC ID</param>
         public void PersistToDatabase(int plcId)
         {
             if (_useMemoryStoreOnly)
             {
                 // メモリストアのデータをデータベースに保存
                 var devices = _memoryStore.GetMnemonicDevices(plcId);
-                
+
                 // MnemonicIdごとにグループ化して保存
                 var processDevices = devices.Where(d => d.MnemonicId == (int)MnemonicType.Process).ToList();
                 var detailDevices = devices.Where(d => d.MnemonicId == (int)MnemonicType.ProcessDetail).ToList();
                 var operationDevices = devices.Where(d => d.MnemonicId == (int)MnemonicType.Operation).ToList();
                 var cyDevices = devices.Where(d => d.MnemonicId == (int)MnemonicType.CY).ToList();
-                
+
                 // TODO: 各タイプごとにデータベースに保存する処理を実装
                 // 現在はメモリストアのみで動作するため、必要に応じて実装
             }
         }
     }
-    
+
 }
