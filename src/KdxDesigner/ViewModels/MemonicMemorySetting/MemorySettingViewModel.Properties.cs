@@ -8,6 +8,7 @@ using KdxDesigner.Services.ErrorService;
 using KdxDesigner.Services.MemonicTimerDevice;
 using KdxDesigner.Services.MnemonicDevice;
 using KdxDesigner.Services.MnemonicSpeedDevice;
+using KdxDesigner.Services.ProsTimeData;
 using KdxDesigner.ViewModels.Managers;
 using System.Collections.ObjectModel;
 
@@ -27,7 +28,7 @@ namespace KdxDesigner.ViewModels.Settings
         // サービス
         private readonly IMnemonicDeviceService? _mnemonicService;
         private readonly IMnemonicTimerDeviceService? _timerService;
-        private readonly IProsTimeDeviceService? _prosTimeService;
+        private readonly ProsTimeDataBuilder? _prosTimeDataBuilder;
         private readonly IMnemonicSpeedDeviceService? _speedService;
         private readonly IMemoryService? _memoryService;
         private readonly ErrorService? _errorService;

@@ -234,7 +234,11 @@ namespace KdxDesigner.ViewModels.Settings
                     SelectedPlc?.Id,
                     SelectedCycle?.Id);
 
-                window.Owner = Application.Current.MainWindow;
+                var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+                if (mainWindow != null)
+                {
+                    window.Owner = mainWindow;
+                }
                 window.ShowDialog();
             }
             catch (Exception ex)

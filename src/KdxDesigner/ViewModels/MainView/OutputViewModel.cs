@@ -72,7 +72,7 @@ namespace KdxDesigner.ViewModels
                 return;
             }
 
-            if (_mainViewModel.Repository == null || _mainViewModel.SelectedPlc == null)
+            if (_mainViewModel.Repository == null || _mainViewModel.SelectedPlc == null || _mainViewModel._ioSelectorService == null)
             {
                 MessageBox.Show("システムの初期化が不完全なため、処理を実行できません。", "エラー");
                 return;
@@ -121,7 +121,7 @@ namespace KdxDesigner.ViewModels
                     pdErrorAggregator,
                     _mainViewModel.Repository,
                     _mainViewModel.SelectedPlc.Id,
-                    _mainViewModel._ioSelectorService);
+                    _mainViewModel._ioSelectorService!);
                 var detailBuilder = new ProcessDetailBuilder(
                     _mainViewModel,
                     pdErrorAggregator,
@@ -145,7 +145,7 @@ namespace KdxDesigner.ViewModels
                     opErrorAggregator,
                     _mainViewModel.Repository,
                     _mainViewModel.SelectedPlc.Id,
-                    _mainViewModel._ioSelectorService);
+                    _mainViewModel._ioSelectorService!);
 
                 // インスタンスの作成
                 var operationBuilder = new OperationBuilder(
@@ -174,7 +174,7 @@ namespace KdxDesigner.ViewModels
                     cyErrorAggregator,
                     _mainViewModel.Repository,
                     _mainViewModel.SelectedPlc.Id,
-                    _mainViewModel._ioSelectorService);
+                    _mainViewModel._ioSelectorService!);
                 var cylinderBuilder = new CylinderBuilder(
                     _mainViewModel,
                     cyErrorAggregator,
@@ -240,11 +240,12 @@ namespace KdxDesigner.ViewModels
             }
             catch (Exception ex)
             {
-                var errorMessage = $"出力処理中に致命的なエラーが発生しました: {ex.Message}";
+                var errorMessage = $"出力処理中に致命的なエラーが発生しました: {ex.ToString}";
                 StatusMessage = "エラーが発生しました。";
                 ProgressPercentage = 0;
 
                 MessageBox.Show(errorMessage, "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                var json = System.Text.Json.JsonSerializer.Serialize(new { Type = ex.GetType().Name, Message = ex.Message, StackTrace = ex.StackTrace, TargetSite = ex.TargetSite?.ToString(), InnerException = ex.InnerException == null ? null : new { Type = ex.InnerException.GetType().Name, Message = ex.InnerException.Message } }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
                 Debug.WriteLine($"{errorMessage}\n{ex.StackTrace}");
             }
             finally

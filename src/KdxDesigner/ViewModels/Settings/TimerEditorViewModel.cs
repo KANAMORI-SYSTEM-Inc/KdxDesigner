@@ -541,10 +541,12 @@ namespace KdxDesigner.ViewModels
         private void ViewMnemonicTimerDevices()
         {
             // MnemonicTimerDevice表示画面を開く
-            var dialog = new MnemonicTimerDeviceView(_repository, _mainViewModel)
+            var dialog = new MnemonicTimerDeviceView(_repository, _mainViewModel);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
             {
-                Owner = Application.Current.MainWindow
-            };
+                dialog.Owner = mainWindow;
+            }
             dialog.ShowDialog();
         }
 
@@ -641,10 +643,12 @@ namespace KdxDesigner.ViewModels
             var plcId = _mainViewModel.SelectedPlc?.Id ?? 0;
 
             // RecordIds編集ダイアログを開く
-            var dialog = new RecordIdsEditorDialog(SelectedTimer, _repository, plcId)
+            var dialog = new RecordIdsEditorDialog(SelectedTimer, _repository, plcId);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
             {
-                Owner = Application.Current.MainWindow
-            };
+                dialog.Owner = mainWindow;
+            }
 
             if (dialog.ShowDialog() == true)
             {

@@ -167,10 +167,12 @@ namespace KdxDesigner.ViewModels
             try
             {
                 // OperationPropertiesWindowを開く
-                var window = new OperationPropertiesWindow(_repository, SelectedOperation, PlcId)
+                var window = new OperationPropertiesWindow(_repository, SelectedOperation, PlcId);
+                var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+                if (mainWindow != null)
                 {
-                    Owner = Application.Current.MainWindow
-                };
+                    window.Owner = mainWindow;
+                }
 
                 if (window.ShowDialog() == true)
                 {

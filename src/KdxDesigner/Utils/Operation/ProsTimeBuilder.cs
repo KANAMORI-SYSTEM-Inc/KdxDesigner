@@ -21,6 +21,12 @@ namespace KdxDesigner.Utils.Operation
             List<LadderCsvRow>? result = new();
             var prosTimeList = prosTimes.Where(p => p.RecordId == operation.Id).OrderBy(p => p.SortId).ToList();
 
+            // ProsTimeデータが存在しない場合は空のリストを返す
+            if (prosTimeList.Count == 0)
+            {
+                return result;
+            }
+
             // カウント信号の追加
             result.Add(LadderRow.AddLD(SettingsManager.Settings.PauseSignal));
             result.Add(LadderRow.AddAND(label + (outNum + 5).ToString()));
@@ -40,7 +46,7 @@ namespace KdxDesigner.Utils.Operation
                         break;
                     default: // 出力可、開始、出力停止、完了 
                         result.Add(LadderRow.AddLD(label + (outNum + 3).ToString()));
-                        result.Add(LadderRow.AddANI(label + (outNum + pros.CategoryId - 1).ToString()));
+                        result.Add(LadderRow.AddANI(label + (outNum + pros.OutcoilNumber).ToString()));
                         result.Add(LadderRow.AddINC(pros.CurrentDevice));
                         break;
                 }

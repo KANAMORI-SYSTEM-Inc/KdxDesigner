@@ -189,10 +189,12 @@ namespace KdxDesigner.ViewModels
 
             try
             {
-                var window = new CylinderPropertiesWindow(_repository, SelectedCylinder.Cylinder)
+                var window = new CylinderPropertiesWindow(_repository, SelectedCylinder.Cylinder);
+                var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+                if (mainWindow != null)
                 {
-                    Owner = Application.Current.MainWindow
-                };
+                    window.Owner = mainWindow;
+                }
 
                 if (window.ShowDialog() == true)
                 {

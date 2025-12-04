@@ -18,10 +18,12 @@ namespace KdxDesigner.ViewModels
         [RelayCommand]
         private void ProcessOutput()
         {
-            var outputWindow = new OutputWindow(this)
+            var outputWindow = new OutputWindow(this);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
             {
-                Owner = Application.Current.MainWindow
-            };
+                outputWindow.Owner = mainWindow;
+            }
             outputWindow.ShowDialog();
         }
 
@@ -38,10 +40,15 @@ namespace KdxDesigner.ViewModels
             }
 
             // MemorySettingWindowを開く
-            var window = new MemorySettingWindow(_repository, this)
+            var window = new MemorySettingWindow(_repository, this);
+
+            // Ownerを設定
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
             {
-                Owner = Application.Current.MainWindow
-            };
+                window.Owner = mainWindow;
+            }
+
             window.ShowDialog();
         }
 
@@ -53,10 +60,12 @@ namespace KdxDesigner.ViewModels
                 MessageBox.Show("PLCを選択してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            var window = new KdxDesigner.Views.ControlBoxViews(_repository, SelectedPlc.Id)
+            var window = new KdxDesigner.Views.ControlBoxViews(_repository, SelectedPlc.Id);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
             {
-                Owner = Application.Current.MainWindow // 親ウィンドウ設定
-            };
+                window.Owner = mainWindow;
+            }
             window.ShowDialog();
         }
 
@@ -97,6 +106,11 @@ namespace KdxDesigner.ViewModels
             var window = new IOConversionWindow();
             var viewModel = new IOConversionViewModel(_repository);
             window.DataContext = viewModel;
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                window.Owner = mainWindow;
+            }
             window.ShowDialog(); // モーダルダイアログとして表示
         }
 
@@ -112,10 +126,12 @@ namespace KdxDesigner.ViewModels
 
             try
             {
-                var window = new CylinderManagementWindow(_repository!, SelectedPlc.Id)
+                var window = new CylinderManagementWindow(_repository!, SelectedPlc.Id);
+                var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+                if (mainWindow != null)
                 {
-                    Owner = Application.Current.MainWindow
-                };
+                    window.Owner = mainWindow;
+                }
                 window.Show();
             }
             catch (Exception ex)
@@ -129,6 +145,11 @@ namespace KdxDesigner.ViewModels
         private void OpenSettings()
         {
             var view = new SettingsView();
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                view.Owner = mainWindow;
+            }
             view.ShowDialog();
         }
 
@@ -325,6 +346,11 @@ namespace KdxDesigner.ViewModels
             var window = new InterlockSettingsWindow();
             var viewModel = new InterlockSettingsViewModel(supabaseRepo, _repository!, SelectedPlc.Id, SelectedCycle.Id, window);
             window.DataContext = viewModel;
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                window.Owner = mainWindow;
+            }
             window.ShowDialog();
         }
 
@@ -338,6 +364,11 @@ namespace KdxDesigner.ViewModels
             }
 
             var view = new MemoryEditorView(SelectedPlc.Id, _repository);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                view.Owner = mainWindow;
+            }
             view.ShowDialog();
         }
 
@@ -352,6 +383,11 @@ namespace KdxDesigner.ViewModels
 
             // Viewにリポジトリのインスタンスを渡す
             var view = new LinkDeviceView(_repository);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                view.Owner = mainWindow;
+            }
             view.ShowDialog(); // モーダルダイアログとして表示
         }
 
@@ -365,6 +401,11 @@ namespace KdxDesigner.ViewModels
             }
 
             var view = new TimerEditorView(_repository, this);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
+            {
+                view.Owner = mainWindow;
+            }
             view.ShowDialog();
         }
 

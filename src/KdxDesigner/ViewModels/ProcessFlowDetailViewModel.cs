@@ -1893,9 +1893,13 @@ namespace KdxDesigner.ViewModels
                 var operationViewModel = new OperationViewModel(_repository, operation, _plcId);
                 var operationDialog = new Views.OperationEditorDialog
                 {
-                    DataContext = operationViewModel,
-                    Owner = Application.Current.MainWindow
+                    DataContext = operationViewModel
                 };
+                var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+                if (mainWindow != null)
+                {
+                    operationDialog.Owner = mainWindow;
+                }
 
                 bool? dialogResult = false;
                 operationViewModel.SetCloseAction(async (result) =>
@@ -2127,10 +2131,12 @@ namespace KdxDesigner.ViewModels
             }
 
             // Process選択ダイアログを表示
-            var dialog = new ProcessSelectionDialog(Processes.ToList(), SelectedNode.ProcessDetail.ProcessId)
+            var dialog = new ProcessSelectionDialog(Processes.ToList(), SelectedNode.ProcessDetail.ProcessId);
+            var mainWindow = Application.Current.Windows.OfType<MainView>().FirstOrDefault();
+            if (mainWindow != null)
             {
-                Owner = Application.Current.MainWindow
-            };
+                dialog.Owner = mainWindow;
+            }
 
             if (dialog.ShowDialog() == true && dialog.SelectedProcess != null)
             {

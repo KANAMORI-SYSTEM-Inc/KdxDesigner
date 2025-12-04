@@ -27,7 +27,7 @@ namespace KdxDesigner.ViewModels.Settings
             // サービスの取得（MainViewModelから）
             _mnemonicService = mainViewModel._mnemonicService;
             _timerService = mainViewModel._timerService;
-            _prosTimeService = mainViewModel._prosTimeService;
+            _prosTimeDataBuilder = new Services.ProsTimeData.ProsTimeDataBuilder(repository);
             _speedService = mainViewModel._speedService;
             _memoryService = mainViewModel._memoryService;
             _errorService = mainViewModel._errorService;
@@ -392,16 +392,37 @@ namespace KdxDesigner.ViewModels.Settings
             }
 
             // ProsTimeテーブルの保存
-            if (_prosTimeService != null)
+            if (_prosTimeDataBuilder != null)
             {
                 progressViewModel?.UpdateStatus("工程時間テーブルを保存中...");
+
                 // 最初のCycleの場合のみテーブルを削除
                 if (isFirstCycle)
                 {
-                    _prosTimeService.DeleteProsTimeTable();
+                    await _repository.DeleteProsTimeTableAsync();
                 }
-                _prosTimeService.SaveProsTime(operations, ProsTimeStartZR, ProsTimePreviousStartZR, CyTimeStartZR, SelectedPlc.Id);
-                progressViewModel?.AddLog("工程時間テーブル保存完了");
+
+                // ProsTimeとMemoryデータを生成（ビジネスロジック）
+                var prosTimeData = await _prosTimeDataBuilder.BuildProsTimeDataAsync(
+                    operations,
+                    ProsTimeStartZR,
+                    ProsTimePreviousStartZR,
+                    CyTimeStartZR,
+                    SelectedPlc.Id);
+
+                // 生成されたデータをデータベースに一括保存
+                if (prosTimeData.ProsTimes.Any())
+                {
+                    await _repository.SaveOrUpdateProsTimesBatchAsync(prosTimeData.ProsTimes);
+                    await _repository.SaveOrUpdateMemoriesBatchAsync(prosTimeData.CurrentMemories);
+                    await _repository.SaveOrUpdateMemoriesBatchAsync(prosTimeData.PreviousMemories);
+                    await _repository.SaveOrUpdateMemoriesBatchAsync(prosTimeData.CylinderMemories);
+                    progressViewModel?.AddLog($"工程時間テーブル保存完了 ({prosTimeData.ProsTimes.Count}件)");
+                }
+                else
+                {
+                    progressViewModel?.AddLog("工程時間テーブル: 保存対象データがありません");
+                }
             }
 
             progressViewModel?.AddLog($"Cycle '{targetCycle.CycleName}' のデバイス保存完了");
